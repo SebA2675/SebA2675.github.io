@@ -86,7 +86,7 @@ card('Message styles',null,['Simple · Embed · Webhook (custom name/avatar)','C
 card('Sync','Every translation links to its source message.',['Edits update translations','Deletes remove them (if enabled)','Handle missing perms & deleted copies','No duplicate delivery'])]));
 
 sec('dash','Web dashboard','Admins manage everything without memorizing commands. Login with Discord OAuth2.',grid(
-['Overview','Auto Translation','Personal Languages (aggregate, private)','Moderation','Community Dictionary','AI Settings','Statistics','Premium','Logs'].map((x,i)=>card((i+1)+'. '+x))))); 
+['Overview','Auto Translation','Personal Languages (aggregate, private)','Moderation','Community Dictionary','AI Settings','Statistics','Premium','Logs'].map((x,i)=>card((i+1)+'. '+x)))); 
 
 sec('tech','Architecture & security','Bot, dashboard and workers are separate modules so we can scale.',grid([
 card('Stack',null,['TypeScript + Node.js + discord.js','PostgreSQL + Prisma/Drizzle, Redis cache','Job queue + temporary object storage','Next.js + Tailwind dashboard, Docker']),
