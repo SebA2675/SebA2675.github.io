@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Embed Dashboard</title>
+<style>
+  body { font-family: system-ui, sans-serif; background: #1e1f22; color: #f2f3f5; margin: 0; display: grid; place-items: center; min-height: 100vh; }
+  .card { background: #2b2d31; padding: 32px; border-radius: 12px; width: min(420px, 90vw); text-align: center; }
+  button { background: #5865f2; color: #fff; border: 0; padding: 12px 20px; border-radius: 8px; font-size: 16px; cursor: pointer; }
+  .muted { color: #b5bac1; font-size: 14px; }
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>Embed Dashboard</h1>
+  <p id="status" class="muted">Checking login...</p>
+  <button id="loginBtn" style="display:none">Log in with Discord</button>
+  <button id="logoutBtn" style="display:none; background:#4e5058">Log out</button>
+</div>
+<script>
+const API_URL = "PASTE_YOUR_API_URL_HERE";
+
+const statusEl = document.getElementById("status");
+const loginBtn = document.getElementById("loginBtn");
+const logoutBtn = document.getElementById("logoutBtn");
+
+function saveToken(t) { try { localStorage.setItem("token", t); } catch (e) {} }
+function loadToken() { try { return localStorage.getItem("token"); } catch (e) { return null; } }
+function clearToken() { try { localStorage.removeItem("token"); } catch (e) {} }
+
+if (location.hash.startsWith("#token=")) {
+  saveToken(location.hash.slice(7));
+  history.replaceState(null, "", location.pathname);
+}
+
+function showLoggedOut(msg) {
+  statusEl.textContent = msg;
+  loginBtn.style.display = "inline-block";
+  logoutBtn.style.display = "none";
+}
+
+async function start() {
+  const token = loadToken();
+  if (!token) { showLoggedOut("Not logged in."); return; }
+  try {
+    const res = await fetch(API_URL + "/me", { headers: { Authorization: "Bearer " + token } });
+    if (!res.ok) { clearToken(); showLoggedOut("Login expired. Please log in again."); return; }
+    const data = await res.json();
+    statusEl.textContent = "Logged in. Owner ID: " + data.user_id;
+    loginBtn.style.display = "none";
+    logoutBtn.style.display = "inline-block";
+  } catch (e) {
+    statusEl.textContent = "Could not reach the bot. Is it online?";
+  }
+}
+
+loginBtn.onclick = () => { location.href = API_URL + "/auth/login"; };
+logoutBtn.onclick = () => { clearToken(); showLoggedOut("Logged out."); };
+start();
+</script>
+</body>
+</html>
