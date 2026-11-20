@@ -57,6 +57,7 @@ label{display:block;font-size:12px;color:var(--muted);margin:10px 0 4px;text-tra
 .pbtn.blue{background:#5865f2}
 .pbtn.green{background:#248046}
 .pbtn.red{background:#da373c}
+.psel{display:flex;justify-content:space-between;background:#1e1f22;border:1px solid #3f4147;border-radius:6px;padding:8px 10px;margin:6px 0;color:#b5bac1;font-size:14px}
 .emoji{width:22px;height:22px;vertical-align:-5px}
 .overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);display:grid;place-items:center;z-index:50;padding:12px}
 .modal{background:#2b2d31;border-radius:12px;padding:18px;width:min(420px,100%);max-height:90vh;overflow:auto}
@@ -105,6 +106,7 @@ label{display:block;font-size:12px;color:var(--muted);margin:10px 0 4px;text-tra
         <button class="small" data-add="divider">Divider</button>
         <button class="small" data-add="box">Box</button>
         <button class="small" data-add="button_row">Buttons</button>
+        <button class="small" data-add="dropdown">Dropdown</button>
       </div>
     </div>
     <div class="col">
@@ -184,7 +186,7 @@ let dirty = false;
 let guilds = [];
 let roles = [];
 const uid = () => Math.random().toString(36).slice(2, 8);
-const NAMES = { text: "Text", images: "Images", divider: "Divider", box: "Box", button_row: "Buttons" };
+const NAMES = { text: "Text", images: "Images", divider: "Divider", box: "Box", button_row: "Buttons", dropdown: "Dropdown" };
 
 function esc(s) {
   return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
@@ -219,12 +221,17 @@ function newButton() {
   return { id: uid(), label: "Button", style: "grey", action: { type: "link", url: "https://" } };
 }
 
+function newOption() {
+  return { id: uid(), label: "Option", description: "", action: { type: "reply", reply_id: "" } };
+}
+
 function newBlock(type) {
   const id = uid();
   if (type === "text") return { id, type, content: "Write your text here" };
   if (type === "images") return { id, type, urls: [""] };
   if (type === "divider") return { id, type, spacing: "small", line: true };
   if (type === "box") return { id, type, accent: "#5865F2", children: [] };
+  if (type === "dropdown") return { id, type, placeholder: "Choose an option...", options: [newOption()] };
   return { id, type: "button_row", buttons: [newButton()] };
 }
 
@@ -238,6 +245,13 @@ function normalize(layout) {
         if (!x.action) x.action = { type: "link", url: x.url || "https://" };
         if (!x.style) x.style = "grey";
         delete x.url;
+      });
+    }
+    if (b.type === "dropdown") {
+      if (!Array.isArray(b.options)) b.options = [];
+      b.options.forEach((o) => {
+        if (!o.action) o.action = { type: "reply", reply_id: "" };
+        if (o.description === undefined) o.description = "";
       });
     }
   };
@@ -330,6 +344,7 @@ function countComponents(blocks) {
     n += 1;
     if (b.type === "box") b.children.forEach(one);
     if (b.type === "button_row") n += b.buttons.length;
+    if (b.type === "dropdown") n += 1;
   };
   blocks.forEach(one);
   return n;
@@ -345,11 +360,12 @@ function countChars(blocks) {
   return n;
 }
 
-function hasRoleButtons() {
+function hasRoleActions() {
   let found = false;
   const one = (b) => {
     if (b.type === "box") b.children.forEach(one);
     if (b.type === "button_row" && b.buttons.some((x) => x.action.type === "role")) found = true;
+    if (b.type === "dropdown" && b.options.some((o) => o.action.type === "role")) found = true;
   };
   cur.layout.blocks.forEach(one);
   cur.layout.replies.forEach((r) => r.blocks.forEach(one));
@@ -357,6 +373,7 @@ function hasRoleButtons() {
 }
 
 function problemsFor(blocks, prefix, p) {
+  const replyExists = (id) => cur.layout.replies.some((r) => r.id === id);
   const check = (b) => {
     if (b.type === "text" && !b.content.trim()) p.push(prefix + "has an empty text part");
     if (b.type === "images") {
@@ -372,8 +389,18 @@ function problemsFor(blocks, prefix, p) {
         const a = x.action;
         if (!x.label.trim()) p.push(prefix + "has a button with no label");
         if (a.type === "link" && !a.url.trim().startsWith("https://")) p.push(prefix + "has a button link not starting with https://");
-        if (a.type === "reply" && !cur.layout.replies.some((r) => r.id === a.reply_id)) p.push(prefix + "has a button with no reply chosen");
+        if (a.type === "reply" && !replyExists(a.reply_id)) p.push(prefix + "has a button with no reply chosen");
         if (a.type === "role" && !a.role_id) p.push(prefix + "has a role button with no role chosen");
+      });
+    }
+    if (b.type === "dropdown") {
+      if (!b.options.length) p.push(prefix + "has a dropdown with no options");
+      if (b.options.length > 25) p.push(prefix + "has a dropdown with more than 25 options");
+      b.options.forEach((o) => {
+        const a = o.action;
+        if (!o.label.trim()) p.push(prefix + "has a dropdown option with no label");
+        if (a.type === "reply" && !replyExists(a.reply_id)) p.push(prefix + "has a dropdown option with no reply chosen");
+        if (a.type === "role" && !a.role_id) p.push(prefix + "has a dropdown option with no role chosen");
       });
     }
     if (b.type === "box") b.children.forEach(check);
@@ -396,6 +423,7 @@ function label(b) {
   if (b.type === "images") return b.urls.filter((x) => x.trim()).length + " image(s)";
   if (b.type === "box") return b.children.length + " part(s)";
   if (b.type === "button_row") return b.buttons.map((x) => x.label).join(", ").slice(0, 30);
+  if (b.type === "dropdown") return b.options.length + " option(s)";
   return b.spacing + (b.line ? " line" : "");
 }
 
@@ -416,6 +444,9 @@ function renderBlock(b) {
       const link = x.action.type === "link";
       return '<span class="pbtn ' + (link ? "" : esc(x.style || "grey")) + '">' + inline(x.label) + (link ? " &#8599;" : "") + "</span>";
     }).join("") + "</div>";
+  }
+  if (b.type === "dropdown") {
+    return '<div class="psel"><span>' + esc(b.placeholder || "Choose an option...") + "</span><span>&#9662;</span></div>";
   }
   if (b.type === "box") {
     const c = /^#[0-9a-f]{6}$/i.test(b.accent) ? b.accent : "#5865F2";
@@ -463,6 +494,10 @@ function renderStatus() {
   $("saveBtn").textContent = dirty ? "Save *" : "Saved";
 }
 
+function roleList() {
+  return [["", "Choose..."]].concat(roles.map((r) => [r.id, r.name + (r.assignable ? "" : " (bot can't manage)")]));
+}
+
 function buttonEditor(x, i) {
   const a = x.action;
   let extra = "";
@@ -478,10 +513,9 @@ function buttonEditor(x, i) {
     }
   }
   if (a.type === "role") {
-    const list = [["", "Choose..."]].concat(roles.map((r) => [r.id, r.name + (r.assignable ? "" : " (bot can't manage)")]));
     extra = '<label>What it does</label><select data-f="bmode" data-i="' + i + '">' +
       opts([["toggle", "Toggle (add or remove)"], ["add", "Add the role"], ["remove", "Remove the role"]], a.mode) + "</select>" +
-      '<label>Role</label><select data-f="brole" data-i="' + i + '">' + opts(list, a.role_id) + "</select>";
+      '<label>Role</label><select data-f="brole" data-i="' + i + '">' + opts(roleList(), a.role_id) + "</select>";
   }
   const colour = a.type === "link" ? "" :
     '<label>Colour</label><select data-f="bstyle" data-i="' + i + '">' +
@@ -492,6 +526,32 @@ function buttonEditor(x, i) {
     opts([["link", "Open a link"], ["reply", "Show a private reply"], ["role", "Give or remove a role"]], a.type) + "</select>" +
     extra + colour +
     '<button class="small danger" data-act2="delbtn" data-i="' + i + '" style="margin-top:8px">Remove button</button></div>';
+}
+
+function optionEditor(o, i) {
+  const a = o.action;
+  let extra = "";
+  if (a.type === "reply") {
+    if (cur.layout.replies.length) {
+      const list = [["", "Choose..."]].concat(cur.layout.replies.map((r) => [r.id, r.name]));
+      extra = '<label>Reply to show</label><select data-f="oreply" data-i="' + i + '">' + opts(list, a.reply_id) + "</select>";
+    } else {
+      extra = '<p class="muted">Make a reply first with the "+ Reply" tab above the tree.</p>';
+    }
+  }
+  if (a.type === "role") {
+    extra = '<label>What it does</label><select data-f="omode" data-i="' + i + '">' +
+      opts([["toggle", "Toggle (add or remove)"], ["add", "Add the role"], ["remove", "Remove the role"]], a.mode) + "</select>" +
+      '<label>Role</label><select data-f="orole" data-i="' + i + '">' + opts(roleList(), a.role_id) + "</select>";
+  }
+  return '<div class="bcard"><label style="margin-top:0">Option ' + (i + 1) + " label</label>" +
+    '<input data-f="olabel" data-i="' + i + '" value="' + esc(o.label) + '">' +
+    "<label>Small description (optional)</label>" +
+    '<input data-f="odesc" data-i="' + i + '" value="' + esc(o.description || "") + '">' +
+    '<label>When chosen</label><select data-f="oaction" data-i="' + i + '">' +
+    opts([["reply", "Show a private reply"], ["role", "Give or remove a role"]], a.type) + "</select>" +
+    extra +
+    '<button class="small danger" data-act2="delopt" data-i="' + i + '" style="margin-top:8px">Remove option</button></div>';
 }
 
 function renderSettings() {
@@ -525,6 +585,10 @@ function renderSettings() {
   }
   if (b.type === "button_row") {
     h = b.buttons.map(buttonEditor).join("") + '<button class="small" data-act2="addbtn">+ Add button</button>';
+  }
+  if (b.type === "dropdown") {
+    h = '<label>Placeholder text</label><input data-f="dph" value="' + esc(b.placeholder || "") + '">' +
+      b.options.map(optionEditor).join("") + '<button class="small" data-act2="addopt">+ Add option</button>';
   }
   el.innerHTML = h;
 }
@@ -596,6 +660,17 @@ $("settings").addEventListener("input", (e) => {
     if (v === "role") b.buttons[i].action = { type: "role", mode: "toggle", role_id: "" };
     again = true;
   }
+  if (f === "dph") b.placeholder = v;
+  if (f === "olabel") b.options[i].label = v;
+  if (f === "odesc") b.options[i].description = v;
+  if (f === "oreply") b.options[i].action.reply_id = v;
+  if (f === "omode") b.options[i].action.mode = v;
+  if (f === "orole") b.options[i].action.role_id = v;
+  if (f === "oaction") {
+    if (v === "reply") b.options[i].action = { type: "reply", reply_id: "" };
+    if (v === "role") b.options[i].action = { type: "role", mode: "toggle", role_id: "" };
+    again = true;
+  }
   markDirty();
   renderTree();
   renderPreview();
@@ -620,6 +695,8 @@ $("settings").addEventListener("click", (e) => {
   const b = loc.list[loc.index];
   if (act === "addbtn") b.buttons.push(newButton());
   if (act === "delbtn") b.buttons.splice(Number(e.target.dataset.i), 1);
+  if (act === "addopt" && b.options.length < 25) b.options.push(newOption());
+  if (act === "delopt") b.options.splice(Number(e.target.dataset.i), 1);
   markDirty();
   renderAll();
 });
@@ -784,8 +861,8 @@ $("sendBtn").onclick = async () => {
 };
 
 async function send(path, withTarget) {
-  if (withTarget && hasRoleButtons() && cur.layout.guild_id && sg.value !== cur.layout.guild_id) {
-    setStatus("Role buttons use roles from another server. Change the server at the top of the builder to match.");
+  if (withTarget && hasRoleActions() && cur.layout.guild_id && sg.value !== cur.layout.guild_id) {
+    setStatus("Role actions use roles from another server. Change the server at the top of the builder to match.");
     return;
   }
   setStatus("Sending...");
