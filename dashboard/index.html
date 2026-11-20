@@ -12,6 +12,7 @@ button{font:inherit;cursor:pointer;border:0;border-radius:6px;padding:8px 12px;b
 button.primary{background:var(--accent)}
 button.danger{background:#da373c}
 button.small{padding:4px 8px;font-size:13px}
+button:disabled{opacity:.5;cursor:default}
 input,textarea,select{width:100%;background:#1e1f22;color:var(--text);border:1px solid var(--line);border-radius:6px;padding:8px;font:inherit}
 textarea{min-height:90px;resize:vertical}
 label{display:block;font-size:12px;color:var(--muted);margin:10px 0 4px;text-transform:uppercase}
@@ -24,9 +25,10 @@ label{display:block;font-size:12px;color:var(--muted);margin:10px 0 4px;text-tra
 .row{display:flex;align-items:center;gap:8px;background:var(--panel);padding:12px;border-radius:8px;margin-bottom:8px}
 .row .grow{flex:1;min-width:0}
 .muted{color:var(--muted);font-size:13px}
-.builder{display:grid;grid-template-columns:260px 1fr 290px;gap:12px;padding:12px;align-items:start}
+.builder{display:grid;grid-template-columns:260px 1fr 300px;gap:12px;padding:12px;align-items:start}
 @media(max-width:900px){.builder{grid-template-columns:1fr}}
 .col{background:var(--panel);border-radius:8px;padding:10px}
+#tabs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
 .node{display:flex;align-items:center;gap:6px;padding:6px;border-radius:6px;border:1px solid transparent;cursor:pointer;background:var(--panel2);margin-bottom:4px}
 .node.sel{border-color:var(--accent)}
 .node.child{margin-left:18px}
@@ -52,7 +54,14 @@ label{display:block;font-size:12px;color:var(--muted);margin:10px 0 4px;text-tra
 .pimgs img{width:100%;border-radius:6px;display:block}
 .pbtns{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}
 .pbtn{background:#4e5058;border-radius:4px;padding:6px 12px;font-size:14px}
+.pbtn.blue{background:#5865f2}
+.pbtn.green{background:#248046}
+.pbtn.red{background:#da373c}
 .emoji{width:22px;height:22px;vertical-align:-5px}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);display:grid;place-items:center;z-index:50;padding:12px}
+.modal{background:#2b2d31;border-radius:12px;padding:18px;width:min(420px,100%);max-height:90vh;overflow:auto}
+.btnrow{display:flex;gap:8px;flex-wrap:wrap}
+.bcard{border:1px solid var(--line);border-radius:6px;padding:8px;margin-bottom:8px}
 </style>
 </head>
 <body>
@@ -77,13 +86,16 @@ label{display:block;font-size:12px;color:var(--muted);margin:10px 0 4px;text-tra
 <div id="viewBuilder" class="hidden">
   <div class="top">
     <button id="backBtn">&larr; Back</button>
-    <input id="nameInput" style="flex:1;min-width:140px;max-width:320px" placeholder="Message name">
+    <input id="nameInput" style="flex:1;min-width:140px;max-width:260px" placeholder="Message name">
+    <select id="guildSel" style="width:auto;max-width:200px" title="Server used for roles"></select>
     <span id="counter" class="badge ok"></span>
     <span id="problems" class="badge ok"></span>
     <button class="primary" id="saveBtn">Saved</button>
+    <button class="primary" id="sendBtn">Send...</button>
   </div>
   <div class="builder">
     <div class="col">
+      <div id="tabs"></div>
       <b>Message tree</b>
       <div id="tree" style="margin-top:8px"></div>
       <div class="muted" style="margin-top:8px">Add a part (goes inside a selected Box):</div>
@@ -98,6 +110,7 @@ label{display:block;font-size:12px;color:var(--muted);margin:10px 0 4px;text-tra
     <div class="col">
       <div class="discord">
         <div class="msghead"><span>Griedon Embeds</span><span class="app">APP</span></div>
+        <div id="previewNote" class="muted" style="margin-bottom:6px"></div>
         <div id="preview"></div>
       </div>
     </div>
@@ -108,8 +121,22 @@ label{display:block;font-size:12px;color:var(--muted);margin:10px 0 4px;text-tra
   </div>
 </div>
 
+<div id="sendOverlay" class="overlay hidden">
+  <div class="modal">
+    <h2 style="margin:0 0 6px">Send to Discord</h2>
+    <label>Server</label><select id="sendGuild"></select>
+    <label>Channel</label><select id="sendChannel"></select>
+    <p id="sendStatus" class="muted" style="min-height:20px"></p>
+    <div class="btnrow">
+      <button class="primary" id="sendPost">Post as new</button>
+      <button id="sendUpdate">Update posted message</button>
+      <button id="sendClose">Close</button>
+    </div>
+  </div>
+</div>
+
 <script>
-const API_URL = "https://h5nngnplb6.apps.bot-hosting.cloud";
+const API_URL = "https://h5nngnplb6.apps.bot-hosting.cloud".replace(/\/+$/, "");
 const $ = (id) => document.getElementById(id);
 
 function saveToken(t) { try { localStorage.setItem("token", t); } catch (e) {} }
@@ -152,12 +179,21 @@ async function api(path, opts = {}) {
 
 let cur = null;
 let selId = null;
+let tab = "main";
 let dirty = false;
+let guilds = [];
+let roles = [];
 const uid = () => Math.random().toString(36).slice(2, 8);
 const NAMES = { text: "Text", images: "Images", divider: "Divider", box: "Box", button_row: "Buttons" };
 
 function esc(s) {
   return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
+function opts(list, selected) {
+  return list.map((o) =>
+    '<option value="' + esc(o[0]) + '"' + (o[0] === selected ? " selected" : "") + ">" + esc(o[1]) + "</option>"
+  ).join("");
 }
 
 function inline(s) {
@@ -179,17 +215,52 @@ function md(text) {
   }).join("");
 }
 
+function newButton() {
+  return { id: uid(), label: "Button", style: "grey", action: { type: "link", url: "https://" } };
+}
+
 function newBlock(type) {
   const id = uid();
   if (type === "text") return { id, type, content: "Write your text here" };
   if (type === "images") return { id, type, urls: [""] };
   if (type === "divider") return { id, type, spacing: "small", line: true };
   if (type === "box") return { id, type, accent: "#5865F2", children: [] };
-  return { id, type: "button_row", buttons: [{ id: uid(), label: "Button", url: "https://" }] };
+  return { id, type: "button_row", buttons: [newButton()] };
+}
+
+function normalize(layout) {
+  if (!Array.isArray(layout.blocks)) layout.blocks = [];
+  if (!Array.isArray(layout.replies)) layout.replies = [];
+  const fix = (b) => {
+    if (b.type === "box") b.children.forEach(fix);
+    if (b.type === "button_row") {
+      b.buttons.forEach((x) => {
+        if (!x.action) x.action = { type: "link", url: x.url || "https://" };
+        if (!x.style) x.style = "grey";
+        delete x.url;
+      });
+    }
+  };
+  layout.blocks.forEach(fix);
+  layout.replies.forEach((r) => {
+    if (!Array.isArray(r.blocks)) r.blocks = [];
+    r.blocks.forEach(fix);
+  });
+  return layout;
+}
+
+function activeReply() {
+  if (tab === "main") return null;
+  return cur.layout.replies.find((r) => r.id === tab) || null;
+}
+
+function activeBlocks() {
+  const r = activeReply();
+  return r ? r.blocks : cur.layout.blocks;
 }
 
 function findLoc(id) {
-  const top = cur.layout.blocks;
+  const top = activeBlocks();
   for (let i = 0; i < top.length; i++) {
     if (top[i].id === id) return { list: top, index: i, parent: null };
     if (top[i].type === "box") {
@@ -211,9 +282,9 @@ function addBlock(type) {
     const sel = loc.list[loc.index];
     if (sel.type === "box") sel.children.push(b);
     else if (loc.parent) loc.list.splice(loc.index + 1, 0, b);
-    else cur.layout.blocks.push(b);
+    else activeBlocks().push(b);
   } else {
-    cur.layout.blocks.push(b);
+    activeBlocks().push(b);
   }
   selId = b.id;
   markDirty();
@@ -241,51 +312,82 @@ function removeBlock(id) {
   renderAll();
 }
 
-function countComponents() {
+function addReply() {
+  const r = { id: uid(), name: "Reply " + (cur.layout.replies.length + 1), blocks: [] };
+  const box = newBlock("box");
+  box.children.push({ id: uid(), type: "text", content: "Write the private reply here." });
+  r.blocks.push(box);
+  cur.layout.replies.push(r);
+  tab = r.id;
+  selId = null;
+  markDirty();
+  renderAll();
+}
+
+function countComponents(blocks) {
   let n = 0;
   const one = (b) => {
     n += 1;
     if (b.type === "box") b.children.forEach(one);
     if (b.type === "button_row") n += b.buttons.length;
   };
-  cur.layout.blocks.forEach(one);
+  blocks.forEach(one);
   return n;
 }
 
-function countChars() {
+function countChars(blocks) {
   let n = 0;
   const one = (b) => {
     if (b.type === "text") n += b.content.length;
     if (b.type === "box") b.children.forEach(one);
   };
-  cur.layout.blocks.forEach(one);
+  blocks.forEach(one);
   return n;
 }
 
-function findProblems() {
-  const p = [];
+function hasRoleButtons() {
+  let found = false;
+  const one = (b) => {
+    if (b.type === "box") b.children.forEach(one);
+    if (b.type === "button_row" && b.buttons.some((x) => x.action.type === "role")) found = true;
+  };
+  cur.layout.blocks.forEach(one);
+  cur.layout.replies.forEach((r) => r.blocks.forEach(one));
+  return found;
+}
+
+function problemsFor(blocks, prefix, p) {
   const check = (b) => {
-    if (b.type === "text" && !b.content.trim()) p.push("A text part is empty");
+    if (b.type === "text" && !b.content.trim()) p.push(prefix + "has an empty text part");
     if (b.type === "images") {
       const u = b.urls.filter((x) => x.trim());
-      if (!u.length) p.push("An image part has no link");
-      if (u.some((x) => !x.trim().startsWith("https://"))) p.push("Image links must start with https://");
-      if (u.length > 10) p.push("Max 10 images per part");
+      if (!u.length) p.push(prefix + "has an image part with no link");
+      if (u.some((x) => !x.trim().startsWith("https://"))) p.push(prefix + "has an image link not starting with https://");
+      if (u.length > 10) p.push(prefix + "has more than 10 images in one part");
     }
     if (b.type === "button_row") {
-      if (!b.buttons.length) p.push("A button row is empty");
-      if (b.buttons.length > 5) p.push("Max 5 buttons per row");
+      if (!b.buttons.length) p.push(prefix + "has an empty button row");
+      if (b.buttons.length > 5) p.push(prefix + "has more than 5 buttons in a row");
       b.buttons.forEach((x) => {
-        if (!x.label.trim()) p.push("A button has no label");
-        if (!x.url.trim().startsWith("https://")) p.push("Button links must start with https://");
+        const a = x.action;
+        if (!x.label.trim()) p.push(prefix + "has a button with no label");
+        if (a.type === "link" && !a.url.trim().startsWith("https://")) p.push(prefix + "has a button link not starting with https://");
+        if (a.type === "reply" && !cur.layout.replies.some((r) => r.id === a.reply_id)) p.push(prefix + "has a button with no reply chosen");
+        if (a.type === "role" && !a.role_id) p.push(prefix + "has a role button with no role chosen");
       });
     }
     if (b.type === "box") b.children.forEach(check);
   };
-  cur.layout.blocks.forEach(check);
-  if (!cur.layout.blocks.length) p.push("Message is empty");
-  if (countComponents() > 40) p.push("Over 40 components");
-  if (countChars() > 4000) p.push("Over 4000 text characters");
+  blocks.forEach(check);
+  if (!blocks.length) p.push(prefix + "is empty");
+  if (countComponents(blocks) > 40) p.push(prefix + "has over 40 components");
+  if (countChars(blocks) > 4000) p.push(prefix + "has over 4000 text characters");
+}
+
+function findProblems() {
+  const p = [];
+  problemsFor(cur.layout.blocks, "Main message ", p);
+  cur.layout.replies.forEach((r) => problemsFor(r.blocks, 'Reply "' + r.name + '" ', p));
   return Array.from(new Set(p));
 }
 
@@ -310,7 +412,10 @@ function renderBlock(b) {
     return '<div class="pdiv ' + (b.line ? "line " : "") + (b.spacing === "large" ? "large" : "") + '"></div>';
   }
   if (b.type === "button_row") {
-    return '<div class="pbtns">' + b.buttons.map((x) => '<span class="pbtn">' + inline(x.label) + " &#8599;</span>").join("") + "</div>";
+    return '<div class="pbtns">' + b.buttons.map((x) => {
+      const link = x.action.type === "link";
+      return '<span class="pbtn ' + (link ? "" : esc(x.style || "grey")) + '">' + inline(x.label) + (link ? " &#8599;" : "") + "</span>";
+    }).join("") + "</div>";
   }
   if (b.type === "box") {
     const c = /^#[0-9a-f]{6}$/i.test(b.accent) ? b.accent : "#5865F2";
@@ -332,11 +437,22 @@ function treeRows(list, child) {
   }).join("");
 }
 
-function renderTree() { $("tree").innerHTML = treeRows(cur.layout.blocks, false); }
-function renderPreview() { $("preview").innerHTML = cur.layout.blocks.map(renderBlock).join(""); }
+function renderTabs() {
+  const all = [{ id: "main", name: "Main message" }].concat(cur.layout.replies.map((r) => ({ id: r.id, name: r.name })));
+  $("tabs").innerHTML = all.map((t) =>
+    '<button class="small' + (t.id === tab ? " primary" : "") + '" data-tab="' + t.id + '">' + esc(t.name) + "</button>"
+  ).join("") + '<button class="small" data-tab="__new">+ Reply</button>';
+}
+
+function renderTree() { $("tree").innerHTML = treeRows(activeBlocks(), false); }
+
+function renderPreview() {
+  $("previewNote").textContent = activeReply() ? "Private reply: only the person who clicked sees this." : "";
+  $("preview").innerHTML = activeBlocks().map(renderBlock).join("");
+}
 
 function renderStatus() {
-  const n = countComponents();
+  const n = countComponents(activeBlocks());
   const probs = findProblems();
   const ce = $("counter");
   ce.textContent = n + "/40 components";
@@ -347,11 +463,49 @@ function renderStatus() {
   $("saveBtn").textContent = dirty ? "Save *" : "Saved";
 }
 
+function buttonEditor(x, i) {
+  const a = x.action;
+  let extra = "";
+  if (a.type === "link") {
+    extra = '<label>Link (https)</label><input data-f="burl" data-i="' + i + '" value="' + esc(a.url) + '">';
+  }
+  if (a.type === "reply") {
+    if (cur.layout.replies.length) {
+      const list = [["", "Choose..."]].concat(cur.layout.replies.map((r) => [r.id, r.name]));
+      extra = '<label>Reply to show</label><select data-f="breply" data-i="' + i + '">' + opts(list, a.reply_id) + "</select>";
+    } else {
+      extra = '<p class="muted">Make a reply first with the "+ Reply" tab above the tree.</p>';
+    }
+  }
+  if (a.type === "role") {
+    const list = [["", "Choose..."]].concat(roles.map((r) => [r.id, r.name + (r.assignable ? "" : " (bot can't manage)")]));
+    extra = '<label>What it does</label><select data-f="bmode" data-i="' + i + '">' +
+      opts([["toggle", "Toggle (add or remove)"], ["add", "Add the role"], ["remove", "Remove the role"]], a.mode) + "</select>" +
+      '<label>Role</label><select data-f="brole" data-i="' + i + '">' + opts(list, a.role_id) + "</select>";
+  }
+  const colour = a.type === "link" ? "" :
+    '<label>Colour</label><select data-f="bstyle" data-i="' + i + '">' +
+    opts([["grey", "Grey"], ["blue", "Blue"], ["green", "Green"], ["red", "Red"]], x.style) + "</select>";
+  return '<div class="bcard"><label style="margin-top:0">Button ' + (i + 1) + " label</label>" +
+    '<input data-f="blabel" data-i="' + i + '" value="' + esc(x.label) + '">' +
+    '<label>When clicked</label><select data-f="baction" data-i="' + i + '">' +
+    opts([["link", "Open a link"], ["reply", "Show a private reply"], ["role", "Give or remove a role"]], a.type) + "</select>" +
+    extra + colour +
+    '<button class="small danger" data-act2="delbtn" data-i="' + i + '" style="margin-top:8px">Remove button</button></div>';
+}
+
 function renderSettings() {
   const el = $("settings");
   const loc = selId ? findLoc(selId) : null;
   if (!loc) {
-    el.innerHTML = '<p class="muted">Select a part in the tree to edit it.</p>';
+    const r = activeReply();
+    if (r) {
+      el.innerHTML = '<label>Reply name</label><input data-f="rname" value="' + esc(r.name) + '">' +
+        '<p class="muted">Only the person who clicks the button sees this reply.</p>' +
+        '<button class="small danger" data-act2="delreply">Delete this reply</button>';
+    } else {
+      el.innerHTML = '<p class="muted">Select a part in the tree to edit it.</p>';
+    }
     return;
   }
   const b = loc.list[loc.index];
@@ -363,35 +517,35 @@ function renderSettings() {
     h = '<label>Image links (https, one per line, max 10)</label><textarea data-f="urls">' + esc(b.urls.join("\n")) + "</textarea>";
   }
   if (b.type === "divider") {
-    h = '<label>Spacing</label><select data-f="spacing">' +
-      '<option value="small"' + (b.spacing === "small" ? " selected" : "") + ">Small</option>" +
-      '<option value="large"' + (b.spacing === "large" ? " selected" : "") + ">Large</option></select>" +
-      '<label>Line</label><select data-f="line">' +
-      '<option value="1"' + (b.line ? " selected" : "") + ">Show line</option>" +
-      '<option value="0"' + (!b.line ? " selected" : "") + ">No line</option></select>";
+    h = '<label>Spacing</label><select data-f="spacing">' + opts([["small", "Small"], ["large", "Large"]], b.spacing) + "</select>" +
+      '<label>Line</label><select data-f="line">' + opts([["1", "Show line"], ["0", "No line"]], b.line ? "1" : "0") + "</select>";
   }
   if (b.type === "box") {
     h = '<label>Accent colour</label><input type="color" data-f="accent" value="' + esc(b.accent) + '" style="height:44px;padding:2px">';
   }
   if (b.type === "button_row") {
-    h = b.buttons.map((x, i) =>
-      '<div style="border:1px solid var(--line);border-radius:6px;padding:8px;margin-bottom:8px">' +
-      '<label style="margin-top:0">Button ' + (i + 1) + " label</label>" +
-      '<input data-f="blabel" data-i="' + i + '" value="' + esc(x.label) + '">' +
-      "<label>Link (https)</label>" +
-      '<input data-f="burl" data-i="' + i + '" value="' + esc(x.url) + '">' +
-      '<button class="small danger" data-act2="delbtn" data-i="' + i + '" style="margin-top:8px">Remove button</button></div>'
-    ).join("") + '<button class="small" data-act2="addbtn">+ Add button</button>';
+    h = b.buttons.map(buttonEditor).join("") + '<button class="small" data-act2="addbtn">+ Add button</button>';
   }
   el.innerHTML = h;
 }
 
 function renderAll() {
+  if (!activeReply() && tab !== "main") tab = "main";
+  renderTabs();
   renderTree();
   renderPreview();
   renderSettings();
   renderStatus();
 }
+
+$("tabs").addEventListener("click", (e) => {
+  const t = e.target.dataset.tab;
+  if (!t) return;
+  if (t === "__new") { addReply(); return; }
+  tab = t;
+  selId = null;
+  renderAll();
+});
 
 $("tree").addEventListener("click", (e) => {
   const node = e.target.closest(".node");
@@ -410,31 +564,61 @@ $("tree").addEventListener("click", (e) => {
 
 $("settings").addEventListener("input", (e) => {
   const f = e.target.dataset.f;
+  const v = e.target.value;
   if (!f) return;
+  if (f === "rname") {
+    const r = activeReply();
+    if (r) r.name = v;
+    markDirty();
+    renderTabs();
+    renderStatus();
+    return;
+  }
   const loc = findLoc(selId);
   if (!loc) return;
   const b = loc.list[loc.index];
   const i = Number(e.target.dataset.i);
-  if (f === "content") b.content = e.target.value;
-  if (f === "urls") b.urls = e.target.value.split("\n");
-  if (f === "spacing") b.spacing = e.target.value;
-  if (f === "line") b.line = e.target.value === "1";
-  if (f === "accent") b.accent = e.target.value;
-  if (f === "blabel") b.buttons[i].label = e.target.value;
-  if (f === "burl") b.buttons[i].url = e.target.value;
+  let again = false;
+  if (f === "content") b.content = v;
+  if (f === "urls") b.urls = v.split("\n");
+  if (f === "spacing") b.spacing = v;
+  if (f === "line") b.line = v === "1";
+  if (f === "accent") b.accent = v;
+  if (f === "blabel") b.buttons[i].label = v;
+  if (f === "bstyle") b.buttons[i].style = v;
+  if (f === "burl") b.buttons[i].action.url = v;
+  if (f === "breply") b.buttons[i].action.reply_id = v;
+  if (f === "bmode") b.buttons[i].action.mode = v;
+  if (f === "brole") b.buttons[i].action.role_id = v;
+  if (f === "baction") {
+    if (v === "link") b.buttons[i].action = { type: "link", url: "https://" };
+    if (v === "reply") b.buttons[i].action = { type: "reply", reply_id: "" };
+    if (v === "role") b.buttons[i].action = { type: "role", mode: "toggle", role_id: "" };
+    again = true;
+  }
   markDirty();
   renderTree();
   renderPreview();
   renderStatus();
+  if (again) renderSettings();
 });
 
 $("settings").addEventListener("click", (e) => {
   const act = e.target.dataset.act2;
   if (!act) return;
+  if (act === "delreply") {
+    if (!confirm("Delete this reply?")) return;
+    cur.layout.replies = cur.layout.replies.filter((r) => r.id !== tab);
+    tab = "main";
+    selId = null;
+    markDirty();
+    renderAll();
+    return;
+  }
   const loc = findLoc(selId);
   if (!loc) return;
   const b = loc.list[loc.index];
-  if (act === "addbtn") b.buttons.push({ id: uid(), label: "Button", url: "https://" });
+  if (act === "addbtn") b.buttons.push(newButton());
   if (act === "delbtn") b.buttons.splice(Number(e.target.dataset.i), 1);
   markDirty();
   renderAll();
@@ -445,6 +629,26 @@ document.querySelectorAll("[data-add]").forEach((btn) => {
 });
 
 $("nameInput").addEventListener("input", () => { markDirty(); renderStatus(); });
+
+$("guildSel").onchange = async () => {
+  cur.layout.guild_id = $("guildSel").value;
+  markDirty();
+  await loadRoles();
+  renderSettings();
+  renderStatus();
+};
+
+async function loadGuilds() {
+  if (guilds.length) return;
+  try { guilds = await api("/guilds"); } catch (e) { guilds = []; }
+}
+
+async function loadRoles() {
+  roles = [];
+  const gid = cur.layout.guild_id;
+  if (!gid) return;
+  try { roles = await api("/guilds/" + gid + "/roles"); } catch (e) { roles = []; }
+}
 
 async function save() {
   cur.name = $("nameInput").value.trim() || "Untitled message";
@@ -462,12 +666,17 @@ async function save() {
 }
 $("saveBtn").onclick = save;
 
-function openBuilder(msg) {
-  if (!msg.layout || !Array.isArray(msg.layout.blocks)) msg.layout = { blocks: [] };
+async function openBuilder(msg) {
+  msg.layout = normalize(msg.layout || {});
   cur = msg;
   selId = null;
+  tab = "main";
   dirty = false;
+  await loadGuilds();
+  if (!cur.layout.guild_id && guilds.length) cur.layout.guild_id = guilds[0].id;
+  $("guildSel").innerHTML = opts(guilds.map((g) => [g.id, g.name]), cur.layout.guild_id);
   $("nameInput").value = cur.name;
+  await loadRoles();
   show("viewBuilder");
   renderAll();
 }
@@ -496,7 +705,7 @@ $("list").addEventListener("click", async (e) => {
   const openId = e.target.dataset.open;
   const delId = e.target.dataset.del;
   try {
-    if (openId) openBuilder(await api("/messages/" + openId));
+    if (openId) await openBuilder(await api("/messages/" + openId));
     if (delId && confirm("Delete this message?")) {
       await api("/messages/" + delId, { method: "DELETE" });
       openLibrary();
@@ -509,7 +718,7 @@ $("list").addEventListener("click", async (e) => {
 $("newBtn").onclick = () => {
   const box = newBlock("box");
   box.children.push({ id: uid(), type: "text", content: "# Hello there\nStart writing your message." });
-  openBuilder({ id: null, name: "Untitled message", layout: { blocks: [box] } });
+  openBuilder({ id: null, name: "Untitled message", layout: { blocks: [box], replies: [] } });
 };
 
 $("backBtn").onclick = () => {
@@ -519,6 +728,85 @@ $("backBtn").onclick = () => {
 
 $("loginBtn").onclick = () => { location.href = API_URL + "/auth/login"; };
 $("logoutBtn").onclick = () => { clearToken(); show("viewLogin"); $("loginMsg").textContent = "Logged out."; };
+
+/* ---------- Send window ---------- */
+const sg = $("sendGuild");
+const sc = $("sendChannel");
+const ss = $("sendStatus");
+const postBtn = $("sendPost");
+const updBtn = $("sendUpdate");
+let fresh = null;
+
+function setStatus(t) { ss.textContent = t; }
+
+function refreshSendButtons() {
+  updBtn.disabled = !(fresh && fresh.posted_message_id);
+}
+
+async function loadChannels(gid, wanted) {
+  sc.innerHTML = "<option>Loading...</option>";
+  try {
+    const chans = await api("/guilds/" + gid + "/channels");
+    if (!chans.length) {
+      sc.innerHTML = "<option value=''>No channel the bot can write in</option>";
+      return;
+    }
+    sc.innerHTML = chans.map((c) =>
+      '<option value="' + c.id + '">#' + esc(c.name) + (c.category ? " (" + esc(c.category) + ")" : "") + "</option>"
+    ).join("");
+    if (wanted && chans.some((c) => c.id === wanted)) sc.value = wanted;
+  } catch (e) {
+    if (e.message !== "login") setStatus(e.message);
+  }
+}
+
+sg.onchange = () => loadChannels(sg.value, null);
+
+$("sendBtn").onclick = async () => {
+  const probs = findProblems();
+  if (probs.length) { alert("Fix this first: " + probs[0]); return; }
+  await save();
+  if (dirty || !cur.id) return;
+  try {
+    fresh = await api("/messages/" + cur.id);
+    await loadGuilds();
+    if (!guilds.length) { alert("The bot isn't in any server."); return; }
+    sg.innerHTML = opts(guilds.map((g) => [g.id, g.name]), "");
+    const wantGuild = fresh.guild_id || cur.layout.guild_id;
+    if (wantGuild && guilds.some((g) => g.id === wantGuild)) sg.value = wantGuild;
+    setStatus(fresh.posted_message_id ? "Already posted once. You can update it or post a new copy." : "Not posted yet.");
+    refreshSendButtons();
+    $("sendOverlay").classList.remove("hidden");
+    await loadChannels(sg.value, fresh.channel_id);
+  } catch (e) {
+    if (e.message !== "login") alert(e.message);
+  }
+};
+
+async function send(path, withTarget) {
+  if (withTarget && hasRoleButtons() && cur.layout.guild_id && sg.value !== cur.layout.guild_id) {
+    setStatus("Role buttons use roles from another server. Change the server at the top of the builder to match.");
+    return;
+  }
+  setStatus("Sending...");
+  postBtn.disabled = true;
+  updBtn.disabled = true;
+  try {
+    const o = { method: "POST" };
+    if (withTarget) o.body = JSON.stringify({ guild_id: sg.value, channel_id: sc.value });
+    fresh = await api("/messages/" + cur.id + path, o);
+    setStatus("Done! Check Discord.");
+  } catch (e) {
+    if (e.message !== "login") setStatus("Failed: " + e.message);
+  }
+  postBtn.disabled = false;
+  refreshSendButtons();
+}
+
+postBtn.onclick = () => send("/post", true);
+updBtn.onclick = () => send("/update", false);
+$("sendClose").onclick = () => { $("sendOverlay").classList.add("hidden"); };
+$("sendOverlay").onclick = (e) => { if (e.target === $("sendOverlay")) $("sendOverlay").classList.add("hidden"); };
 
 async function start() {
   if (!loadToken()) { show("viewLogin"); return; }
@@ -534,6 +822,5 @@ async function start() {
 }
 start();
 </script>
-<script src="send.js"></script>
 </body>
 </html>
