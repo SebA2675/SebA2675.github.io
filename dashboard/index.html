@@ -58,6 +58,12 @@ label{display:block;font-size:12px;color:var(--muted);margin:10px 0 4px;text-tra
 .pbtn.green{background:#248046}
 .pbtn.red{background:#da373c}
 .psel{display:flex;justify-content:space-between;background:#1e1f22;border:1px solid #3f4147;border-radius:6px;padding:8px 10px;margin:6px 0;color:#b5bac1;font-size:14px}
+.pform{background:#2b2d31;border-radius:10px;padding:16px;margin:6px 0}
+.pform h2{margin:0 0 10px;font-size:20px}
+.pform .q{font-size:12px;font-weight:700;text-transform:uppercase;color:#b5bac1;margin:12px 0 4px}
+.pform .fake{background:#1e1f22;border-radius:4px;padding:10px;color:#80848e;font-size:14px;min-height:38px}
+.pform .fake.tall{min-height:90px}
+.pform .foot{display:flex;justify-content:flex-end;margin-top:14px}
 .emoji{width:22px;height:22px;vertical-align:-5px}
 .overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);display:grid;place-items:center;z-index:50;padding:12px}
 .modal{background:#2b2d31;border-radius:12px;padding:18px;width:min(420px,100%);max-height:90vh;overflow:auto}
@@ -88,7 +94,7 @@ label{display:block;font-size:12px;color:var(--muted);margin:10px 0 4px;text-tra
   <div class="top">
     <button id="backBtn">&larr; Back</button>
     <input id="nameInput" style="flex:1;min-width:140px;max-width:260px" placeholder="Message name">
-    <select id="guildSel" style="width:auto;max-width:200px" title="Server used for roles"></select>
+    <select id="guildSel" style="width:auto;max-width:200px" title="Server used for roles and channels"></select>
     <span id="counter" class="badge ok"></span>
     <span id="problems" class="badge ok"></span>
     <button class="primary" id="saveBtn">Saved</button>
@@ -97,16 +103,21 @@ label{display:block;font-size:12px;color:var(--muted);margin:10px 0 4px;text-tra
   <div class="builder">
     <div class="col">
       <div id="tabs"></div>
-      <b>Message tree</b>
+      <b id="treeTitle">Message tree</b>
       <div id="tree" style="margin-top:8px"></div>
-      <div class="muted" style="margin-top:8px">Add a part (goes inside a selected Box):</div>
-      <div class="palette">
-        <button class="small" data-add="text">Text</button>
-        <button class="small" data-add="images">Images</button>
-        <button class="small" data-add="divider">Divider</button>
-        <button class="small" data-add="box">Box</button>
-        <button class="small" data-add="button_row">Buttons</button>
-        <button class="small" data-add="dropdown">Dropdown</button>
+      <div id="blockPalette">
+        <div class="muted" style="margin-top:8px">Add a part (goes inside a selected Box):</div>
+        <div class="palette">
+          <button class="small" data-add="text">Text</button>
+          <button class="small" data-add="images">Images</button>
+          <button class="small" data-add="divider">Divider</button>
+          <button class="small" data-add="box">Box</button>
+          <button class="small" data-add="button_row">Buttons</button>
+          <button class="small" data-add="dropdown">Dropdown</button>
+        </div>
+      </div>
+      <div id="fieldPalette" class="hidden">
+        <div class="palette"><button class="small" id="addFieldBtn">+ Question</button></div>
       </div>
     </div>
     <div class="col">
@@ -185,6 +196,7 @@ let tab = "main";
 let dirty = false;
 let guilds = [];
 let roles = [];
+let chans = [];
 const uid = () => Math.random().toString(36).slice(2, 8);
 const NAMES = { text: "Text", images: "Images", divider: "Divider", box: "Box", button_row: "Buttons", dropdown: "Dropdown" };
 
@@ -225,6 +237,10 @@ function newOption() {
   return { id: uid(), label: "Option", description: "", action: { type: "reply", reply_id: "" } };
 }
 
+function newField() {
+  return { id: uid(), label: "Your answer", style: "short", placeholder: "", required: true };
+}
+
 function newBlock(type) {
   const id = uid();
   if (type === "text") return { id, type, content: "Write your text here" };
@@ -238,6 +254,7 @@ function newBlock(type) {
 function normalize(layout) {
   if (!Array.isArray(layout.blocks)) layout.blocks = [];
   if (!Array.isArray(layout.replies)) layout.replies = [];
+  if (!Array.isArray(layout.forms)) layout.forms = [];
   const fix = (b) => {
     if (b.type === "box") b.children.forEach(fix);
     if (b.type === "button_row") {
@@ -260,12 +277,20 @@ function normalize(layout) {
     if (!Array.isArray(r.blocks)) r.blocks = [];
     r.blocks.forEach(fix);
   });
+  layout.forms.forEach((f) => {
+    if (!Array.isArray(f.fields)) f.fields = [];
+  });
   return layout;
 }
 
 function activeReply() {
   if (tab === "main") return null;
   return cur.layout.replies.find((r) => r.id === tab) || null;
+}
+
+function activeForm() {
+  if (tab === "main") return null;
+  return cur.layout.forms.find((f) => f.id === tab) || null;
 }
 
 function activeBlocks() {
@@ -338,6 +363,54 @@ function addReply() {
   renderAll();
 }
 
+function addForm() {
+  const f = {
+    id: uid(),
+    name: "Form " + (cur.layout.forms.length + 1),
+    title: "Application",
+    channel_id: "",
+    thanks: "Thanks! Your response was sent.",
+    fields: [newField()],
+  };
+  cur.layout.forms.push(f);
+  tab = f.id;
+  selId = null;
+  markDirty();
+  renderAll();
+}
+
+function addField() {
+  const f = activeForm();
+  if (!f || f.fields.length >= 5) return;
+  const q = newField();
+  f.fields.push(q);
+  selId = q.id;
+  markDirty();
+  renderAll();
+}
+
+function moveField(id, dir) {
+  const f = activeForm();
+  if (!f) return;
+  const i = f.fields.findIndex((x) => x.id === id);
+  const j = i + dir;
+  if (i < 0 || j < 0 || j >= f.fields.length) return;
+  const tmp = f.fields[i];
+  f.fields[i] = f.fields[j];
+  f.fields[j] = tmp;
+  markDirty();
+  renderAll();
+}
+
+function removeField(id) {
+  const f = activeForm();
+  if (!f) return;
+  f.fields = f.fields.filter((x) => x.id !== id);
+  if (selId === id) selId = null;
+  markDirty();
+  renderAll();
+}
+
 function countComponents(blocks) {
   let n = 0;
   const one = (b) => {
@@ -374,6 +447,12 @@ function hasRoleActions() {
 
 function problemsFor(blocks, prefix, p) {
   const replyExists = (id) => cur.layout.replies.some((r) => r.id === id);
+  const formExists = (id) => cur.layout.forms.some((f) => f.id === id);
+  const checkAction = (a, who) => {
+    if (a.type === "reply" && !replyExists(a.reply_id)) p.push(prefix + "has " + who + " with no reply chosen");
+    if (a.type === "form" && !formExists(a.form_id)) p.push(prefix + "has " + who + " with no form chosen");
+    if (a.type === "role" && !a.role_id) p.push(prefix + "has " + who + " with no role chosen");
+  };
   const check = (b) => {
     if (b.type === "text" && !b.content.trim()) p.push(prefix + "has an empty text part");
     if (b.type === "images") {
@@ -386,21 +465,17 @@ function problemsFor(blocks, prefix, p) {
       if (!b.buttons.length) p.push(prefix + "has an empty button row");
       if (b.buttons.length > 5) p.push(prefix + "has more than 5 buttons in a row");
       b.buttons.forEach((x) => {
-        const a = x.action;
         if (!x.label.trim()) p.push(prefix + "has a button with no label");
-        if (a.type === "link" && !a.url.trim().startsWith("https://")) p.push(prefix + "has a button link not starting with https://");
-        if (a.type === "reply" && !replyExists(a.reply_id)) p.push(prefix + "has a button with no reply chosen");
-        if (a.type === "role" && !a.role_id) p.push(prefix + "has a role button with no role chosen");
+        if (x.action.type === "link" && !x.action.url.trim().startsWith("https://")) p.push(prefix + "has a button link not starting with https://");
+        checkAction(x.action, "a button");
       });
     }
     if (b.type === "dropdown") {
       if (!b.options.length) p.push(prefix + "has a dropdown with no options");
       if (b.options.length > 25) p.push(prefix + "has a dropdown with more than 25 options");
       b.options.forEach((o) => {
-        const a = o.action;
         if (!o.label.trim()) p.push(prefix + "has a dropdown option with no label");
-        if (a.type === "reply" && !replyExists(a.reply_id)) p.push(prefix + "has a dropdown option with no reply chosen");
-        if (a.type === "role" && !a.role_id) p.push(prefix + "has a dropdown option with no role chosen");
+        checkAction(o.action, "a dropdown option");
       });
     }
     if (b.type === "box") b.children.forEach(check);
@@ -415,6 +490,14 @@ function findProblems() {
   const p = [];
   problemsFor(cur.layout.blocks, "Main message ", p);
   cur.layout.replies.forEach((r) => problemsFor(r.blocks, 'Reply "' + r.name + '" ', p));
+  cur.layout.forms.forEach((f) => {
+    const pre = 'Form "' + f.name + '" ';
+    if (!f.title.trim()) p.push(pre + "has no title");
+    if (!f.fields.length) p.push(pre + "has no questions");
+    if (f.fields.length > 5) p.push(pre + "has more than 5 questions");
+    if (f.fields.some((x) => !x.label.trim())) p.push(pre + "has a question with no label");
+    if (!f.channel_id) p.push(pre + "has no channel chosen for the answers");
+  });
   return Array.from(new Set(p));
 }
 
@@ -456,6 +539,14 @@ function renderBlock(b) {
   return "";
 }
 
+function renderFormPreview(f) {
+  return '<div class="pform"><h2>' + esc(f.title || "Form") + "</h2>" +
+    f.fields.map((x) =>
+      '<div class="q">' + esc(x.label) + (x.required ? ' <span style="color:#f23f43">*</span>' : "") + "</div>" +
+      '<div class="fake' + (x.style === "paragraph" ? " tall" : "") + '">' + esc(x.placeholder || "") + "</div>"
+    ).join("") + '<div class="foot"><span class="pbtn blue">Submit</span></div></div>';
+}
+
 function treeRows(list, child) {
   return list.map((b) => {
     let html = '<div class="node' + (child ? " child" : "") + (b.id === selId ? " sel" : "") + '" data-id="' + b.id + '">' +
@@ -468,26 +559,57 @@ function treeRows(list, child) {
   }).join("");
 }
 
-function renderTabs() {
-  const all = [{ id: "main", name: "Main message" }].concat(cur.layout.replies.map((r) => ({ id: r.id, name: r.name })));
-  $("tabs").innerHTML = all.map((t) =>
-    '<button class="small' + (t.id === tab ? " primary" : "") + '" data-tab="' + t.id + '">' + esc(t.name) + "</button>"
-  ).join("") + '<button class="small" data-tab="__new">+ Reply</button>';
+function fieldRows(f) {
+  return f.fields.map((x) =>
+    '<div class="node' + (x.id === selId ? " sel" : "") + '" data-id="' + x.id + '">' +
+    '<span class="lbl"><b>Question</b> ' + esc(x.label) + "</span>" +
+    '<button class="small" data-act="up">&#9650;</button>' +
+    '<button class="small" data-act="down">&#9660;</button>' +
+    '<button class="small danger" data-act="del">&#10005;</button></div>'
+  ).join("");
 }
 
-function renderTree() { $("tree").innerHTML = treeRows(activeBlocks(), false); }
+function renderTabs() {
+  const all = [{ id: "main", name: "Main message" }]
+    .concat(cur.layout.replies.map((r) => ({ id: r.id, name: r.name })))
+    .concat(cur.layout.forms.map((f) => ({ id: f.id, name: "Form: " + f.name })));
+  $("tabs").innerHTML = all.map((t) =>
+    '<button class="small' + (t.id === tab ? " primary" : "") + '" data-tab="' + t.id + '">' + esc(t.name) + "</button>"
+  ).join("") + '<button class="small" data-tab="__new">+ Reply</button><button class="small" data-tab="__newform">+ Form</button>';
+}
+
+function renderTree() {
+  const f = activeForm();
+  $("treeTitle").textContent = f ? "Questions (max 5)" : "Message tree";
+  $("blockPalette").classList.toggle("hidden", !!f);
+  $("fieldPalette").classList.toggle("hidden", !f);
+  $("tree").innerHTML = f ? fieldRows(f) : treeRows(activeBlocks(), false);
+}
 
 function renderPreview() {
+  const f = activeForm();
+  if (f) {
+    const c = chans.find((x) => x.id === f.channel_id);
+    $("previewNote").textContent = "Pop-up form. Answers go to " + (c ? "#" + c.name : "(choose a channel in settings)") + ".";
+    $("preview").innerHTML = renderFormPreview(f);
+    return;
+  }
   $("previewNote").textContent = activeReply() ? "Private reply: only the person who clicked sees this." : "";
   $("preview").innerHTML = activeBlocks().map(renderBlock).join("");
 }
 
 function renderStatus() {
-  const n = countComponents(activeBlocks());
-  const probs = findProblems();
+  const f = activeForm();
   const ce = $("counter");
-  ce.textContent = n + "/40 components";
-  ce.className = "badge " + (n > 40 ? "bad" : "ok");
+  if (f) {
+    ce.textContent = f.fields.length + "/5 questions";
+    ce.className = "badge " + (f.fields.length > 5 ? "bad" : "ok");
+  } else {
+    const n = countComponents(activeBlocks());
+    ce.textContent = n + "/40 components";
+    ce.className = "badge " + (n > 40 ? "bad" : "ok");
+  }
+  const probs = findProblems();
   const pe = $("problems");
   pe.textContent = probs.length ? probs[0] + (probs.length > 1 ? " (+" + (probs.length - 1) + ")" : "") : "Ready to post";
   pe.className = "badge " + (probs.length ? "bad" : "ok");
@@ -498,64 +620,74 @@ function roleList() {
   return [["", "Choose..."]].concat(roles.map((r) => [r.id, r.name + (r.assignable ? "" : " (bot can't manage)")]));
 }
 
-function buttonEditor(x, i) {
-  const a = x.action;
-  let extra = "";
+function actionExtra(a, p, i) {
   if (a.type === "link") {
-    extra = '<label>Link (https)</label><input data-f="burl" data-i="' + i + '" value="' + esc(a.url) + '">';
+    return '<label>Link (https)</label><input data-f="burl" data-i="' + i + '" value="' + esc(a.url) + '">';
   }
   if (a.type === "reply") {
-    if (cur.layout.replies.length) {
-      const list = [["", "Choose..."]].concat(cur.layout.replies.map((r) => [r.id, r.name]));
-      extra = '<label>Reply to show</label><select data-f="breply" data-i="' + i + '">' + opts(list, a.reply_id) + "</select>";
-    } else {
-      extra = '<p class="muted">Make a reply first with the "+ Reply" tab above the tree.</p>';
-    }
+    if (!cur.layout.replies.length) return '<p class="muted">Make a reply first with the "+ Reply" tab above the tree.</p>';
+    const list = [["", "Choose..."]].concat(cur.layout.replies.map((r) => [r.id, r.name]));
+    return '<label>Reply to show</label><select data-f="' + p + 'reply" data-i="' + i + '">' + opts(list, a.reply_id) + "</select>";
+  }
+  if (a.type === "form") {
+    if (!cur.layout.forms.length) return '<p class="muted">Make a form first with the "+ Form" tab above the tree.</p>';
+    const list = [["", "Choose..."]].concat(cur.layout.forms.map((f) => [f.id, f.name]));
+    return '<label>Form to open</label><select data-f="' + p + 'form" data-i="' + i + '">' + opts(list, a.form_id) + "</select>";
   }
   if (a.type === "role") {
-    extra = '<label>What it does</label><select data-f="bmode" data-i="' + i + '">' +
+    return '<label>What it does</label><select data-f="' + p + 'mode" data-i="' + i + '">' +
       opts([["toggle", "Toggle (add or remove)"], ["add", "Add the role"], ["remove", "Remove the role"]], a.mode) + "</select>" +
-      '<label>Role</label><select data-f="brole" data-i="' + i + '">' + opts(roleList(), a.role_id) + "</select>";
+      '<label>Role</label><select data-f="' + p + 'role" data-i="' + i + '">' + opts(roleList(), a.role_id) + "</select>";
   }
-  const colour = a.type === "link" ? "" :
+  return "";
+}
+
+function buttonEditor(x, i) {
+  const colour = x.action.type === "link" ? "" :
     '<label>Colour</label><select data-f="bstyle" data-i="' + i + '">' +
     opts([["grey", "Grey"], ["blue", "Blue"], ["green", "Green"], ["red", "Red"]], x.style) + "</select>";
   return '<div class="bcard"><label style="margin-top:0">Button ' + (i + 1) + " label</label>" +
     '<input data-f="blabel" data-i="' + i + '" value="' + esc(x.label) + '">' +
     '<label>When clicked</label><select data-f="baction" data-i="' + i + '">' +
-    opts([["link", "Open a link"], ["reply", "Show a private reply"], ["role", "Give or remove a role"]], a.type) + "</select>" +
-    extra + colour +
+    opts([["link", "Open a link"], ["reply", "Show a private reply"], ["form", "Open a pop-up form"], ["role", "Give or remove a role"]], x.action.type) + "</select>" +
+    actionExtra(x.action, "b", i) + colour +
     '<button class="small danger" data-act2="delbtn" data-i="' + i + '" style="margin-top:8px">Remove button</button></div>';
 }
 
 function optionEditor(o, i) {
-  const a = o.action;
-  let extra = "";
-  if (a.type === "reply") {
-    if (cur.layout.replies.length) {
-      const list = [["", "Choose..."]].concat(cur.layout.replies.map((r) => [r.id, r.name]));
-      extra = '<label>Reply to show</label><select data-f="oreply" data-i="' + i + '">' + opts(list, a.reply_id) + "</select>";
-    } else {
-      extra = '<p class="muted">Make a reply first with the "+ Reply" tab above the tree.</p>';
-    }
-  }
-  if (a.type === "role") {
-    extra = '<label>What it does</label><select data-f="omode" data-i="' + i + '">' +
-      opts([["toggle", "Toggle (add or remove)"], ["add", "Add the role"], ["remove", "Remove the role"]], a.mode) + "</select>" +
-      '<label>Role</label><select data-f="orole" data-i="' + i + '">' + opts(roleList(), a.role_id) + "</select>";
-  }
   return '<div class="bcard"><label style="margin-top:0">Option ' + (i + 1) + " label</label>" +
     '<input data-f="olabel" data-i="' + i + '" value="' + esc(o.label) + '">' +
     "<label>Small description (optional)</label>" +
     '<input data-f="odesc" data-i="' + i + '" value="' + esc(o.description || "") + '">' +
     '<label>When chosen</label><select data-f="oaction" data-i="' + i + '">' +
-    opts([["reply", "Show a private reply"], ["role", "Give or remove a role"]], a.type) + "</select>" +
-    extra +
+    opts([["reply", "Show a private reply"], ["form", "Open a pop-up form"], ["role", "Give or remove a role"]], o.action.type) + "</select>" +
+    actionExtra(o.action, "o", i) +
     '<button class="small danger" data-act2="delopt" data-i="' + i + '" style="margin-top:8px">Remove option</button></div>';
+}
+
+function renderFormSettings(f) {
+  const el = $("settings");
+  const q = f.fields.find((x) => x.id === selId);
+  if (q) {
+    el.innerHTML = '<label>Question label (max 45 characters)</label><input maxlength="45" data-f="qlabel" value="' + esc(q.label) + '">' +
+      '<label>Answer size</label><select data-f="qstyle">' + opts([["short", "Short (one line)"], ["paragraph", "Paragraph"]], q.style) + "</select>" +
+      '<label>Hint text (optional)</label><input maxlength="100" data-f="qph" value="' + esc(q.placeholder || "") + '">' +
+      '<label>Required</label><select data-f="qreq">' + opts([["1", "Yes"], ["0", "No"]], q.required ? "1" : "0") + "</select>";
+    return;
+  }
+  const list = [["", "Choose..."]].concat(chans.map((c) => [c.id, "#" + c.name]));
+  el.innerHTML = '<label>Form name (for you)</label><input data-f="fname" value="' + esc(f.name) + '">' +
+    '<label>Pop-up title (max 45 characters)</label><input maxlength="45" data-f="ftitle" value="' + esc(f.title) + '">' +
+    '<label>Send answers to channel</label><select data-f="fchan">' + opts(list, f.channel_id) + "</select>" +
+    '<label>Thank-you message (shown privately)</label><textarea data-f="fthanks">' + esc(f.thanks || "") + "</textarea>" +
+    '<p class="muted">Select a question in the tree to edit it.</p>' +
+    '<button class="small danger" data-act2="delform">Delete this form</button>';
 }
 
 function renderSettings() {
   const el = $("settings");
+  const form = activeForm();
+  if (form) { renderFormSettings(form); return; }
   const loc = selId ? findLoc(selId) : null;
   if (!loc) {
     const r = activeReply();
@@ -594,7 +726,7 @@ function renderSettings() {
 }
 
 function renderAll() {
-  if (!activeReply() && tab !== "main") tab = "main";
+  if (tab !== "main" && !activeReply() && !activeForm()) tab = "main";
   renderTabs();
   renderTree();
   renderPreview();
@@ -606,6 +738,7 @@ $("tabs").addEventListener("click", (e) => {
   const t = e.target.dataset.tab;
   if (!t) return;
   if (t === "__new") { addReply(); return; }
+  if (t === "__newform") { addForm(); return; }
   tab = t;
   selId = null;
   renderAll();
@@ -616,6 +749,13 @@ $("tree").addEventListener("click", (e) => {
   if (!node) return;
   const id = node.dataset.id;
   const act = e.target.dataset.act;
+  if (activeForm()) {
+    if (act === "up") moveField(id, -1);
+    else if (act === "down") moveField(id, 1);
+    else if (act === "del") removeField(id);
+    else { selId = id; renderTree(); renderSettings(); }
+    return;
+  }
   if (act === "up") moveBlock(id, -1);
   else if (act === "down") moveBlock(id, 1);
   else if (act === "del") removeBlock(id);
@@ -626,10 +766,13 @@ $("tree").addEventListener("click", (e) => {
   }
 });
 
+$("addFieldBtn").onclick = addField;
+
 $("settings").addEventListener("input", (e) => {
   const f = e.target.dataset.f;
   const v = e.target.value;
   if (!f) return;
+
   if (f === "rname") {
     const r = activeReply();
     if (r) r.name = v;
@@ -638,6 +781,28 @@ $("settings").addEventListener("input", (e) => {
     renderStatus();
     return;
   }
+
+  const form = activeForm();
+  if (form) {
+    if (f === "fname") form.name = v;
+    if (f === "ftitle") form.title = v;
+    if (f === "fchan") form.channel_id = v;
+    if (f === "fthanks") form.thanks = v;
+    const q = form.fields.find((x) => x.id === selId);
+    if (q) {
+      if (f === "qlabel") q.label = v;
+      if (f === "qstyle") q.style = v;
+      if (f === "qph") q.placeholder = v;
+      if (f === "qreq") q.required = v === "1";
+    }
+    markDirty();
+    if (f === "fname") renderTabs();
+    renderTree();
+    renderPreview();
+    renderStatus();
+    return;
+  }
+
   const loc = findLoc(selId);
   if (!loc) return;
   const b = loc.list[loc.index];
@@ -652,11 +817,13 @@ $("settings").addEventListener("input", (e) => {
   if (f === "bstyle") b.buttons[i].style = v;
   if (f === "burl") b.buttons[i].action.url = v;
   if (f === "breply") b.buttons[i].action.reply_id = v;
+  if (f === "bform") b.buttons[i].action.form_id = v;
   if (f === "bmode") b.buttons[i].action.mode = v;
   if (f === "brole") b.buttons[i].action.role_id = v;
   if (f === "baction") {
     if (v === "link") b.buttons[i].action = { type: "link", url: "https://" };
     if (v === "reply") b.buttons[i].action = { type: "reply", reply_id: "" };
+    if (v === "form") b.buttons[i].action = { type: "form", form_id: "" };
     if (v === "role") b.buttons[i].action = { type: "role", mode: "toggle", role_id: "" };
     again = true;
   }
@@ -664,10 +831,12 @@ $("settings").addEventListener("input", (e) => {
   if (f === "olabel") b.options[i].label = v;
   if (f === "odesc") b.options[i].description = v;
   if (f === "oreply") b.options[i].action.reply_id = v;
+  if (f === "oform") b.options[i].action.form_id = v;
   if (f === "omode") b.options[i].action.mode = v;
   if (f === "orole") b.options[i].action.role_id = v;
   if (f === "oaction") {
     if (v === "reply") b.options[i].action = { type: "reply", reply_id: "" };
+    if (v === "form") b.options[i].action = { type: "form", form_id: "" };
     if (v === "role") b.options[i].action = { type: "role", mode: "toggle", role_id: "" };
     again = true;
   }
@@ -684,6 +853,15 @@ $("settings").addEventListener("click", (e) => {
   if (act === "delreply") {
     if (!confirm("Delete this reply?")) return;
     cur.layout.replies = cur.layout.replies.filter((r) => r.id !== tab);
+    tab = "main";
+    selId = null;
+    markDirty();
+    renderAll();
+    return;
+  }
+  if (act === "delform") {
+    if (!confirm("Delete this form?")) return;
+    cur.layout.forms = cur.layout.forms.filter((f) => f.id !== tab);
     tab = "main";
     selId = null;
     markDirty();
@@ -710,9 +888,8 @@ $("nameInput").addEventListener("input", () => { markDirty(); renderStatus(); })
 $("guildSel").onchange = async () => {
   cur.layout.guild_id = $("guildSel").value;
   markDirty();
-  await loadRoles();
-  renderSettings();
-  renderStatus();
+  await loadGuildData();
+  renderAll();
 };
 
 async function loadGuilds() {
@@ -720,11 +897,13 @@ async function loadGuilds() {
   try { guilds = await api("/guilds"); } catch (e) { guilds = []; }
 }
 
-async function loadRoles() {
+async function loadGuildData() {
   roles = [];
+  chans = [];
   const gid = cur.layout.guild_id;
   if (!gid) return;
   try { roles = await api("/guilds/" + gid + "/roles"); } catch (e) { roles = []; }
+  try { chans = await api("/guilds/" + gid + "/channels"); } catch (e) { chans = []; }
 }
 
 async function save() {
@@ -753,7 +932,7 @@ async function openBuilder(msg) {
   if (!cur.layout.guild_id && guilds.length) cur.layout.guild_id = guilds[0].id;
   $("guildSel").innerHTML = opts(guilds.map((g) => [g.id, g.name]), cur.layout.guild_id);
   $("nameInput").value = cur.name;
-  await loadRoles();
+  await loadGuildData();
   show("viewBuilder");
   renderAll();
 }
@@ -795,7 +974,7 @@ $("list").addEventListener("click", async (e) => {
 $("newBtn").onclick = () => {
   const box = newBlock("box");
   box.children.push({ id: uid(), type: "text", content: "# Hello there\nStart writing your message." });
-  openBuilder({ id: null, name: "Untitled message", layout: { blocks: [box], replies: [] } });
+  openBuilder({ id: null, name: "Untitled message", layout: { blocks: [box], replies: [], forms: [] } });
 };
 
 $("backBtn").onclick = () => {
@@ -820,24 +999,24 @@ function refreshSendButtons() {
   updBtn.disabled = !(fresh && fresh.posted_message_id);
 }
 
-async function loadChannels(gid, wanted) {
+async function loadSendChannels(gid, wanted) {
   sc.innerHTML = "<option>Loading...</option>";
   try {
-    const chans = await api("/guilds/" + gid + "/channels");
-    if (!chans.length) {
+    const list = await api("/guilds/" + gid + "/channels");
+    if (!list.length) {
       sc.innerHTML = "<option value=''>No channel the bot can write in</option>";
       return;
     }
-    sc.innerHTML = chans.map((c) =>
+    sc.innerHTML = list.map((c) =>
       '<option value="' + c.id + '">#' + esc(c.name) + (c.category ? " (" + esc(c.category) + ")" : "") + "</option>"
     ).join("");
-    if (wanted && chans.some((c) => c.id === wanted)) sc.value = wanted;
+    if (wanted && list.some((c) => c.id === wanted)) sc.value = wanted;
   } catch (e) {
     if (e.message !== "login") setStatus(e.message);
   }
 }
 
-sg.onchange = () => loadChannels(sg.value, null);
+sg.onchange = () => loadSendChannels(sg.value, null);
 
 $("sendBtn").onclick = async () => {
   const probs = findProblems();
@@ -854,15 +1033,16 @@ $("sendBtn").onclick = async () => {
     setStatus(fresh.posted_message_id ? "Already posted once. You can update it or post a new copy." : "Not posted yet.");
     refreshSendButtons();
     $("sendOverlay").classList.remove("hidden");
-    await loadChannels(sg.value, fresh.channel_id);
+    await loadSendChannels(sg.value, fresh.channel_id);
   } catch (e) {
     if (e.message !== "login") alert(e.message);
   }
 };
 
 async function send(path, withTarget) {
-  if (withTarget && hasRoleActions() && cur.layout.guild_id && sg.value !== cur.layout.guild_id) {
-    setStatus("Role actions use roles from another server. Change the server at the top of the builder to match.");
+  const needsGuild = hasRoleActions() || cur.layout.forms.length > 0;
+  if (withTarget && needsGuild && cur.layout.guild_id && sg.value !== cur.layout.guild_id) {
+    setStatus("Roles and form channels come from another server. Change the server at the top of the builder to match.");
     return;
   }
   setStatus("Sending...");
