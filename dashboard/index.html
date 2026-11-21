@@ -233,6 +233,7 @@ label{display:block;font-size:12px;color:var(--muted);margin:10px 0 4px;text-tra
 <div id="viewBuilder" class="hidden">
   <div class="top">
     <button id="backBtn" class="tb" title="Back"><svg class="ic"><use href="#i-back"></use></svg><span class="t">Back</span></button>
+    <button id="treeBtn" class="tb treeToggle" title="Show or hide the parts tree"><svg class="ic"><use href="#i-tree"></use></svg><span class="t">Parts</span></button>
     <input id="nameInput" style="flex:1;min-width:140px;max-width:240px" placeholder="Message name">
     <select id="guildSel" style="width:auto;max-width:180px" title="Server for this message"></select>
     <button id="undoBtn" class="tb" title="Undo"><svg class="ic"><use href="#i-undo"></use></svg><span class="t">Undo</span></button>
@@ -537,6 +538,14 @@ document.querySelector(".botbar").addEventListener("click", (e) => {
   if (!d.pane) return;
   setPane(d.pane === pane && d.pane !== "preview" ? "preview" : d.pane);
 });
+
+let treeOpen = false;
+function applyTree() {
+  $("builderEl").dataset.tree = treeOpen ? "open" : "closed";
+  $("treeBtn").classList.toggle("on", treeOpen);
+  positionFloatBar();
+}
+$("treeBtn").onclick = () => { treeOpen = !treeOpen; applyTree(); };
 
 function applyPv() {
   $("discordBox").classList.toggle("light", pv === "light");
