@@ -80,8 +80,11 @@ label{display:block;font-size:12px;color:var(--muted);margin:10px 0 4px;text-tra
 .eg img{width:32px;height:32px;display:block}
 .overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);display:grid;place-items:center;z-index:50;padding:12px}
 .modal{background:#2b2d31;border-radius:12px;padding:18px;width:min(420px,100%);max-height:90vh;overflow:auto}
+.modal h3{margin:12px 0 6px}
 .btnrow{display:flex;gap:8px;flex-wrap:wrap}
 .bcard{border:1px solid var(--line);border-radius:6px;padding:8px;margin-bottom:8px}
+.mrow{display:flex;align-items:center;gap:8px;background:var(--panel2);padding:8px 10px;border-radius:6px;margin-bottom:6px}
+.mrow .grow{flex:1;min-width:0}
 </style>
 </head>
 <body>
@@ -99,6 +102,7 @@ label{display:block;font-size:12px;color:var(--muted);margin:10px 0 4px;text-tra
   <div class="top">
     <h1>My messages</h1>
     <button class="primary" id="newBtn">+ New message</button>
+    <button id="toolsBtn">Server tools</button>
     <button id="adminBtn" class="hidden">Servers</button>
     <button id="logoutBtn">Log out</button>
   </div>
@@ -131,6 +135,8 @@ label{display:block;font-size:12px;color:var(--muted);margin:10px 0 4px;text-tra
     <select id="guildSel" style="width:auto;max-width:180px" title="Server for this message"></select>
     <button id="undoBtn" title="Undo">Undo</button>
     <button id="redoBtn" title="Redo">Redo</button>
+    <button id="tplBtn" title="Save this design as a template">Template</button>
+    <button id="histBtn" title="Older versions">History</button>
     <span id="counter" class="badge ok"></span>
     <span id="problems" class="badge ok"></span>
     <button class="primary" id="saveBtn">Saved</button>
@@ -196,6 +202,31 @@ label{display:block;font-size:12px;color:var(--muted);margin:10px 0 4px;text-tra
   </div>
 </div>
 
+<div id="toolsOverlay" class="overlay hidden">
+  <div class="modal" style="width:min(520px,100%)">
+    <h2 style="margin:0 0 6px">Server tools</h2>
+    <label>Server</label><select id="toolsGuild"></select>
+    <div class="btnrow" style="margin-top:10px">
+      <button id="toolsBackup">Download backup</button>
+      <button id="toolsImport">Import file...</button>
+      <input type="file" id="importFile" accept=".json,application/json" class="hidden">
+    </div>
+    <p id="toolsStatus" class="muted" style="min-height:20px"></p>
+    <h3>Templates</h3>
+    <div id="toolsTemplates"></div>
+    <div class="btnrow" style="margin-top:10px"><button id="toolsClose">Close</button></div>
+  </div>
+</div>
+
+<div id="histOverlay" class="overlay hidden">
+  <div class="modal" style="width:min(520px,100%)">
+    <h2 style="margin:0 0 6px">Version history</h2>
+    <p class="muted">A snapshot is saved each time you post or update this message (the last 20 are kept).</p>
+    <div id="histList"></div>
+    <div class="btnrow" style="margin-top:10px"><button id="histClose">Close</button></div>
+  </div>
+</div>
+
 <script>
 const API_URL = "https://h5nngnplb6.apps.bot-hosting.cloud".replace(/\/+$/, "");
 const $ = (id) => document.getElementById(id);
@@ -241,6 +272,18 @@ async function api(path, opts = {}) {
     throw new Error(m);
   }
   return res.json();
+}
+
+function downloadJson(name, obj) {
+  const blob = new Blob([JSON.stringify(obj, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = String(name).replace(/[^\w\-]+/g, "_").slice(0, 60) + ".json";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 let cur = null;
@@ -1378,6 +1421,7 @@ async function openLibrary() {
       (m.posted_message_id ? "Posted" : "Draft") + " &middot; " + new Date(m.updated_at * 1000).toLocaleString() +
       '</div></div><button class="primary small" data-open="' + m.id + '">Open</button>' +
       '<button class="small" data-copy="' + m.id + '">Copy</button>' +
+      '<button class="small" data-export="' + m.id + '">Export</button>' +
       '<button class="danger small" data-del="' + m.id + '">Delete</button></div>'
     ).join("");
   } catch (e) {
@@ -1388,6 +1432,7 @@ async function openLibrary() {
 $("list").addEventListener("click", async (e) => {
   const openId = e.target.dataset.open;
   const copyId = e.target.dataset.copy;
+  const exportId = e.target.dataset.export;
   const delId = e.target.dataset.del;
   try {
     if (openId) await openBuilder(await api("/messages/" + openId));
@@ -1398,6 +1443,10 @@ $("list").addEventListener("click", async (e) => {
         body: JSON.stringify({ name: (m.name + " (copy)").slice(0, 100), layout: m.layout }),
       });
       openLibrary();
+    }
+    if (exportId) {
+      const data = await api("/messages/" + exportId + "/export");
+      downloadJson(data.name || "message", data);
     }
     if (delId && confirm("Delete this message from the dashboard? (A posted Discord message is not removed.)")) {
       await api("/messages/" + delId, { method: "DELETE" });
@@ -1428,6 +1477,145 @@ $("logoutBtn").onclick = () => {
   show("viewLogin");
   $("loginMsg").textContent = "Logged out.";
 };
+
+/* ---------- Server tools: backup, import, templates ---------- */
+function toolsStatus(t) { $("toolsStatus").textContent = t; }
+
+async function loadToolsTemplates() {
+  const gid = $("toolsGuild").value;
+  if (!gid) { $("toolsTemplates").innerHTML = ""; return; }
+  $("toolsTemplates").innerHTML = '<p class="muted">Loading...</p>';
+  try {
+    const list = await api("/guilds/" + gid + "/templates");
+    $("toolsTemplates").innerHTML = list.length
+      ? list.map((t) =>
+        '<div class="mrow"><div class="grow"><b>' + esc(t.name) + '</b><div class="muted">' +
+        new Date(t.created_at * 1000).toLocaleDateString() + '</div></div>' +
+        '<button class="primary small" data-use="' + t.id + '">Use</button>' +
+        '<button class="danger small" data-rmtpl="' + t.id + '">Delete</button></div>').join("")
+      : '<p class="muted">No templates yet. Open a message and tap "Template" to save one.</p>';
+  } catch (e) {
+    if (e.message !== "login") $("toolsTemplates").innerHTML = '<p class="muted">Could not load: ' + esc(e.message) + "</p>";
+  }
+}
+
+$("toolsBtn").onclick = async () => {
+  await loadGuilds();
+  if (!guilds.length) { alert("No server available."); return; }
+  $("toolsGuild").innerHTML = opts(guilds.map((g) => [g.id, g.name]), "");
+  toolsStatus("");
+  $("toolsOverlay").classList.remove("hidden");
+  loadToolsTemplates();
+};
+
+$("toolsGuild").onchange = () => { toolsStatus(""); loadToolsTemplates(); };
+$("toolsClose").onclick = () => { $("toolsOverlay").classList.add("hidden"); };
+$("toolsOverlay").onclick = (e) => { if (e.target === $("toolsOverlay")) $("toolsOverlay").classList.add("hidden"); };
+
+$("toolsBackup").onclick = async () => {
+  const gid = $("toolsGuild").value;
+  toolsStatus("Preparing backup...");
+  try {
+    const data = await api("/guilds/" + gid + "/backup");
+    downloadJson("backup-" + guildName(gid), data);
+    toolsStatus("Downloaded: " + data.messages.length + " message(s), " + data.templates.length + " template(s).");
+  } catch (e) {
+    if (e.message !== "login") toolsStatus("Failed: " + e.message);
+  }
+};
+
+$("toolsImport").onclick = () => { $("importFile").click(); };
+
+$("importFile").addEventListener("change", async () => {
+  const file = $("importFile").files[0];
+  $("importFile").value = "";
+  if (!file) return;
+  const gid = $("toolsGuild").value;
+  toolsStatus("Importing...");
+  try {
+    const text = await file.text();
+    let data;
+    try { data = JSON.parse(text); } catch (err) { toolsStatus("That file isn't valid JSON."); return; }
+    const r = await api("/guilds/" + gid + "/import", { method: "POST", body: JSON.stringify({ data }) });
+    toolsStatus("Imported " + r.messages + " message(s) and " + r.templates + " template(s)." +
+      (r.stripped ? " The file came from another server, so roles and form channels were cleared. Choose them again." : ""));
+    loadToolsTemplates();
+  } catch (e) {
+    if (e.message !== "login") toolsStatus("Failed: " + e.message);
+  }
+});
+
+$("toolsTemplates").addEventListener("click", async (e) => {
+  const useId = e.target.dataset.use;
+  const rmId = e.target.dataset.rmtpl;
+  try {
+    if (useId) {
+      const t = await api("/templates/" + useId);
+      $("toolsOverlay").classList.add("hidden");
+      await openBuilder({ id: null, name: t.name, guild_id: t.guild_id, layout: t.layout });
+    }
+    if (rmId && confirm("Delete this template?")) {
+      await api("/templates/" + rmId, { method: "DELETE" });
+      loadToolsTemplates();
+    }
+  } catch (err) {
+    if (err.message !== "login") toolsStatus("Failed: " + err.message);
+  }
+});
+
+/* ---------- Save as template, version history ---------- */
+$("tplBtn").onclick = async () => {
+  const name = prompt("Template name:", cur.name || "Untitled message");
+  if (!name || !name.trim()) return;
+  try {
+    await api("/guilds/" + cur.layout.guild_id + "/templates", {
+      method: "POST",
+      body: JSON.stringify({ name: name.trim(), layout: cur.layout }),
+    });
+    alert("Template saved for " + guildName(cur.layout.guild_id) + ".");
+  } catch (e) {
+    if (e.message !== "login") alert("Could not save the template: " + e.message);
+  }
+};
+
+$("histBtn").onclick = async () => {
+  if (!cur.id) { alert("Save the message first."); return; }
+  $("histList").innerHTML = '<p class="muted">Loading...</p>';
+  $("histOverlay").classList.remove("hidden");
+  try {
+    const list = await api("/messages/" + cur.id + "/versions");
+    $("histList").innerHTML = list.length
+      ? list.map((v) =>
+        '<div class="mrow"><div class="grow"><b>' + new Date(v.created_at * 1000).toLocaleString() +
+        '</b><div class="muted">' + esc(v.name || "") + '</div></div>' +
+        '<button class="primary small" data-restore="' + v.id + '">Restore</button></div>').join("")
+      : '<p class="muted">No versions yet. A snapshot is saved the next time you post or update this message.</p>';
+  } catch (e) {
+    if (e.message !== "login") $("histList").innerHTML = '<p class="muted">Could not load: ' + esc(e.message) + "</p>";
+  }
+};
+
+$("histList").addEventListener("click", async (e) => {
+  const vid = e.target.dataset.restore;
+  if (!vid) return;
+  if (!confirm("Replace the current design with this version? You can still use Undo afterwards.")) return;
+  try {
+    const v = await api("/messages/" + cur.id + "/versions/" + vid);
+    const keepGuild = cur.layout.guild_id;
+    cur.layout = normalize(v.layout);
+    cur.layout.guild_id = keepGuild;
+    selId = null;
+    tab = "main";
+    markDirty();
+    renderAll();
+    $("histOverlay").classList.add("hidden");
+  } catch (err) {
+    if (err.message !== "login") alert(err.message);
+  }
+});
+
+$("histClose").onclick = () => { $("histOverlay").classList.add("hidden"); };
+$("histOverlay").onclick = (e) => { if (e.target === $("histOverlay")) $("histOverlay").classList.add("hidden"); };
 
 /* ---------- Admin page (owner only) ---------- */
 async function openAdmin() {
