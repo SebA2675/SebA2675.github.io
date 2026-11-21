@@ -29,10 +29,13 @@ label{display:block;font-size:12px;color:var(--muted);margin:10px 0 4px;text-tra
 @media(max-width:900px){.builder{grid-template-columns:1fr}}
 .col{background:var(--panel);border-radius:8px;padding:10px}
 #tabs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
-.node{display:flex;align-items:center;gap:6px;padding:6px;border-radius:6px;border:1px solid transparent;cursor:pointer;background:var(--panel2);margin-bottom:4px}
+.node{display:flex;align-items:center;gap:4px;padding:6px;border-radius:6px;border:1px solid transparent;cursor:pointer;background:var(--panel2);margin-bottom:4px}
 .node.sel{border-color:var(--accent)}
 .node.child{margin-left:18px}
 .node .lbl{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px}
+.node.drop-before{box-shadow:0 -3px 0 var(--accent)}
+.node.drop-after{box-shadow:0 3px 0 var(--accent)}
+.node.drop-into{outline:2px dashed var(--accent)}
 .palette{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
 .badge{padding:4px 8px;border-radius:12px;font-size:13px}
 .badge.ok{background:rgba(35,165,89,.2);color:#57f287}
@@ -102,8 +105,10 @@ label{display:block;font-size:12px;color:var(--muted);margin:10px 0 4px;text-tra
 <div id="viewBuilder" class="hidden">
   <div class="top">
     <button id="backBtn">&larr; Back</button>
-    <input id="nameInput" style="flex:1;min-width:140px;max-width:260px" placeholder="Message name">
-    <select id="guildSel" style="width:auto;max-width:200px" title="Server used for roles and channels"></select>
+    <input id="nameInput" style="flex:1;min-width:140px;max-width:240px" placeholder="Message name">
+    <select id="guildSel" style="width:auto;max-width:180px" title="Server used for roles and channels"></select>
+    <button id="undoBtn" title="Undo">Undo</button>
+    <button id="redoBtn" title="Redo">Redo</button>
     <span id="counter" class="badge ok"></span>
     <span id="problems" class="badge ok"></span>
     <button class="primary" id="saveBtn">Saved</button>
@@ -113,6 +118,7 @@ label{display:block;font-size:12px;color:var(--muted);margin:10px 0 4px;text-tra
     <div class="col">
       <div id="tabs"></div>
       <b id="treeTitle">Message tree</b>
+      <div class="muted">Drag rows to reorder, or use the arrows.</div>
       <div id="tree" style="margin-top:8px"></div>
       <div id="blockPalette">
         <div class="muted" style="margin-top:8px">Add a part (goes inside a selected Box):</div>
@@ -153,6 +159,7 @@ label{display:block;font-size:12px;color:var(--muted);margin:10px 0 4px;text-tra
     <div class="btnrow">
       <button class="primary" id="sendPost">Post as new</button>
       <button id="sendUpdate">Update posted message</button>
+      <button class="danger" id="sendDelete">Delete from Discord</button>
       <button id="sendClose">Close</button>
     </div>
   </div>
@@ -170,6 +177,7 @@ label{display:block;font-size:12px;color:var(--muted);margin:10px 0 4px;text-tra
 <script>
 const API_URL = "https://h5nngnplb6.apps.bot-hosting.cloud".replace(/\/+$/, "");
 const $ = (id) => document.getElementById(id);
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 function saveToken(t) { try { localStorage.setItem("token", t); } catch (e) {} }
 function loadToken() { try { return localStorage.getItem("token"); } catch (e) { return null; } }
@@ -213,16 +221,30 @@ let cur = null;
 let selId = null;
 let tab = "main";
 let dirty = false;
+let editCount = 0;
+let saving = false;
+let autosaveTimer = null;
 let guilds = [];
 let roles = [];
 let chans = [];
 let emojiData = null;
 let emojiCb = null;
+let dragId = null;
+let undoStack = [];
+let redoStack = [];
+let lastState = "";
+let burst = false;
+let burstTimer = null;
+let restoring = false;
 const uid = () => Math.random().toString(36).slice(2, 8);
 const NAMES = {
   text: "Text", section: "Text + side", images: "Images", divider: "Divider",
   box: "Box", button_row: "Buttons", dropdown: "Dropdown",
 };
+
+window.addEventListener("beforeunload", (e) => {
+  if (dirty) { e.preventDefault(); e.returnValue = ""; }
+});
 
 function esc(s) {
   return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
@@ -255,6 +277,76 @@ function md(text) {
     if (line.startsWith("- ")) return "<p>&bull; " + inline(line.slice(2)) + "</p>";
     return "<p>" + (inline(line) || "&nbsp;") + "</p>";
   }).join("");
+}
+
+/* ---------- History (undo / redo) and autosave ---------- */
+function resetHistory() {
+  undoStack = [];
+  redoStack = [];
+  lastState = JSON.stringify(cur.layout);
+  burst = false;
+  updateUndoButtons();
+}
+
+function updateUndoButtons() {
+  $("undoBtn").disabled = !undoStack.length;
+  $("redoBtn").disabled = !redoStack.length;
+}
+
+function markDirty() {
+  dirty = true;
+  editCount += 1;
+  if (!restoring) {
+    const now = JSON.stringify(cur.layout);
+    if (now !== lastState) {
+      if (!burst) {
+        undoStack.push(lastState);
+        if (undoStack.length > 60) undoStack.shift();
+        redoStack = [];
+      }
+      burst = true;
+      clearTimeout(burstTimer);
+      burstTimer = setTimeout(() => { burst = false; }, 700);
+      lastState = now;
+    }
+  }
+  scheduleAutosave();
+  updateUndoButtons();
+}
+
+function restore(state) {
+  restoring = true;
+  cur.layout = normalize(JSON.parse(state));
+  lastState = state;
+  burst = false;
+  selId = null;
+  if (tab !== "main" && !activeReply() && !activeForm()) tab = "main";
+  if (cur.layout.guild_id) $("guildSel").value = cur.layout.guild_id;
+  markDirty();
+  restoring = false;
+  updateUndoButtons();
+  renderAll();
+}
+
+function undo() {
+  if (!undoStack.length) return;
+  redoStack.push(lastState);
+  restore(undoStack.pop());
+}
+
+function redo() {
+  if (!redoStack.length) return;
+  undoStack.push(lastState);
+  restore(redoStack.pop());
+}
+
+$("undoBtn").onclick = undo;
+$("redoBtn").onclick = redo;
+
+function scheduleAutosave() {
+  clearTimeout(autosaveTimer);
+  if (!cur || !cur.id) return;
+  autosaveTimer = setTimeout(() => { if (dirty) save(true); }, 3000);
 }
 
 /* ---------- Emoji picker ---------- */
@@ -385,6 +477,17 @@ function normalize(layout) {
   return layout;
 }
 
+function reid(x) {
+  if (Array.isArray(x)) { x.forEach(reid); return; }
+  if (x && typeof x === "object") {
+    Object.keys(x).forEach((k) => {
+      if (k === "emoji") return;
+      if (k === "id" && typeof x[k] === "string") x[k] = uid();
+      else reid(x[k]);
+    });
+  }
+}
+
 function activeReply() {
   if (tab === "main") return null;
   return cur.layout.replies.find((r) => r.id === tab) || null;
@@ -413,8 +516,6 @@ function findLoc(id) {
   }
   return null;
 }
-
-function markDirty() { dirty = true; }
 
 function addBlock(type) {
   const b = newBlock(type);
@@ -449,6 +550,34 @@ function removeBlock(id) {
   if (!loc) return;
   loc.list.splice(loc.index, 1);
   if (selId === id) selId = null;
+  markDirty();
+  renderAll();
+}
+
+function dupBlock(id) {
+  const loc = findLoc(id);
+  if (!loc) return;
+  const copy = JSON.parse(JSON.stringify(loc.list[loc.index]));
+  reid(copy);
+  loc.list.splice(loc.index + 1, 0, copy);
+  selId = copy.id;
+  markDirty();
+  renderAll();
+}
+
+function dropBlock(srcId, targetId, where) {
+  if (srcId === targetId) return;
+  const src = findLoc(srcId);
+  const tgt = findLoc(targetId);
+  if (!src || !tgt) return;
+  const moving = src.list[src.index];
+  const target = tgt.list[tgt.index];
+  if (moving.type === "box" && (tgt.parent || where === "into")) return;
+  src.list.splice(src.index, 1);
+  const t = findLoc(targetId);
+  if (!t) return;
+  if (where === "into" && target.type === "box") target.children.push(moving);
+  else t.list.splice(t.index + (where === "after" ? 1 : 0), 0, moving);
   markDirty();
   renderAll();
 }
@@ -509,6 +638,32 @@ function removeField(id) {
   if (!f) return;
   f.fields = f.fields.filter((x) => x.id !== id);
   if (selId === id) selId = null;
+  markDirty();
+  renderAll();
+}
+
+function dupField(id) {
+  const f = activeForm();
+  if (!f || f.fields.length >= 5) return;
+  const i = f.fields.findIndex((x) => x.id === id);
+  if (i < 0) return;
+  const copy = JSON.parse(JSON.stringify(f.fields[i]));
+  copy.id = uid();
+  f.fields.splice(i + 1, 0, copy);
+  selId = copy.id;
+  markDirty();
+  renderAll();
+}
+
+function dropField(srcId, targetId, where) {
+  const f = activeForm();
+  if (!f || srcId === targetId) return;
+  const i = f.fields.findIndex((x) => x.id === srcId);
+  if (i < 0) return;
+  const moving = f.fields.splice(i, 1)[0];
+  const j = f.fields.findIndex((x) => x.id === targetId);
+  if (j < 0) { f.fields.splice(i, 0, moving); return; }
+  f.fields.splice(j + (where === "after" ? 1 : 0), 0, moving);
   markDirty();
   renderAll();
 }
@@ -676,13 +831,18 @@ function renderFormPreview(f) {
     ).join("") + '<div class="foot"><span class="pbtn blue">Submit</span></div></div>';
 }
 
+function rowButtons() {
+  return '<button class="small" data-act="up">&#9650;</button>' +
+    '<button class="small" data-act="down">&#9660;</button>' +
+    '<button class="small" data-act="dup" title="Duplicate">x2</button>' +
+    '<button class="small danger" data-act="del">&#10005;</button>';
+}
+
 function treeRows(list, child) {
   return list.map((b) => {
-    let html = '<div class="node' + (child ? " child" : "") + (b.id === selId ? " sel" : "") + '" data-id="' + b.id + '">' +
-      '<span class="lbl"><b>' + NAMES[b.type] + "</b> " + esc(label(b)) + "</span>" +
-      '<button class="small" data-act="up">&#9650;</button>' +
-      '<button class="small" data-act="down">&#9660;</button>' +
-      '<button class="small danger" data-act="del">&#10005;</button></div>';
+    let html = '<div class="node' + (child ? " child" : "") + (b.id === selId ? " sel" : "") +
+      '" draggable="true" data-id="' + b.id + '">' +
+      '<span class="lbl"><b>' + NAMES[b.type] + "</b> " + esc(label(b)) + "</span>" + rowButtons() + "</div>";
     if (b.type === "box") html += treeRows(b.children, true);
     return html;
   }).join("");
@@ -690,11 +850,8 @@ function treeRows(list, child) {
 
 function fieldRows(f) {
   return f.fields.map((x) =>
-    '<div class="node' + (x.id === selId ? " sel" : "") + '" data-id="' + x.id + '">' +
-    '<span class="lbl"><b>Question</b> ' + esc(x.label) + "</span>" +
-    '<button class="small" data-act="up">&#9650;</button>' +
-    '<button class="small" data-act="down">&#9660;</button>' +
-    '<button class="small danger" data-act="del">&#10005;</button></div>'
+    '<div class="node' + (x.id === selId ? " sel" : "") + '" draggable="true" data-id="' + x.id + '">' +
+    '<span class="lbl"><b>Question</b> ' + esc(x.label) + "</span>" + rowButtons() + "</div>"
   ).join("");
 }
 
@@ -894,12 +1051,14 @@ $("tree").addEventListener("click", (e) => {
   if (activeForm()) {
     if (act === "up") moveField(id, -1);
     else if (act === "down") moveField(id, 1);
+    else if (act === "dup") dupField(id);
     else if (act === "del") removeField(id);
     else { selId = id; renderTree(); renderSettings(); }
     return;
   }
   if (act === "up") moveBlock(id, -1);
   else if (act === "down") moveBlock(id, 1);
+  else if (act === "dup") dupBlock(id);
   else if (act === "del") removeBlock(id);
   else {
     selId = id;
@@ -907,6 +1066,59 @@ $("tree").addEventListener("click", (e) => {
     renderSettings();
   }
 });
+
+/* ---------- Drag and drop in the tree ---------- */
+function clearDropMarks() {
+  document.querySelectorAll(".node.drop-before,.node.drop-after,.node.drop-into").forEach((n) => {
+    n.classList.remove("drop-before", "drop-after", "drop-into");
+  });
+}
+
+function dropZone(e, node) {
+  let movingIsBox = false;
+  let targetIsBox = false;
+  if (!activeForm()) {
+    const m = findLoc(dragId);
+    const t = findLoc(node.dataset.id);
+    movingIsBox = !!m && m.list[m.index].type === "box";
+    targetIsBox = !!t && t.list[t.index].type === "box";
+  }
+  const r = node.getBoundingClientRect();
+  const y = (e.clientY - r.top) / r.height;
+  if (targetIsBox && !movingIsBox) return y < 0.25 ? "before" : y > 0.75 ? "after" : "into";
+  return y < 0.5 ? "before" : "after";
+}
+
+$("tree").addEventListener("dragstart", (e) => {
+  const node = e.target.closest(".node");
+  if (!node) return;
+  dragId = node.dataset.id;
+  e.dataTransfer.effectAllowed = "move";
+  try { e.dataTransfer.setData("text/plain", dragId); } catch (err) {}
+});
+
+$("tree").addEventListener("dragover", (e) => {
+  const node = e.target.closest(".node");
+  if (!node || !dragId) return;
+  e.preventDefault();
+  clearDropMarks();
+  if (node.dataset.id === dragId) return;
+  node.classList.add("drop-" + dropZone(e, node));
+});
+
+$("tree").addEventListener("drop", (e) => {
+  const node = e.target.closest(".node");
+  if (!node || !dragId) return;
+  e.preventDefault();
+  const where = dropZone(e, node);
+  const src = dragId;
+  dragId = null;
+  clearDropMarks();
+  if (activeForm()) dropField(src, node.dataset.id, where === "into" ? "after" : where);
+  else dropBlock(src, node.dataset.id, where);
+});
+
+$("tree").addEventListener("dragend", () => { dragId = null; clearDropMarks(); });
 
 $("addFieldBtn").onclick = addField;
 
@@ -1075,21 +1287,27 @@ async function loadGuildData() {
   try { chans = await api("/guilds/" + gid + "/channels"); } catch (e) { chans = []; }
 }
 
-async function save() {
+async function save(silent) {
+  while (saving) await sleep(100);
+  saving = true;
+  clearTimeout(autosaveTimer);
   cur.name = $("nameInput").value.trim() || "Untitled message";
+  const version = editCount;
   try {
     const body = JSON.stringify({ name: cur.name, layout: cur.layout });
     const saved = cur.id
       ? await api("/messages/" + cur.id, { method: "PUT", body })
       : await api("/messages", { method: "POST", body });
     cur.id = saved.id;
-    dirty = false;
+    if (editCount === version) dirty = false;
+    else scheduleAutosave();
     renderStatus();
   } catch (e) {
-    if (e.message !== "login") alert("Could not save: " + e.message);
+    if (e.message !== "login" && !silent) alert("Could not save: " + e.message);
   }
+  saving = false;
 }
-$("saveBtn").onclick = save;
+$("saveBtn").onclick = () => save(false);
 
 async function openBuilder(msg) {
   msg.layout = normalize(msg.layout || {});
@@ -1097,8 +1315,13 @@ async function openBuilder(msg) {
   selId = null;
   tab = "main";
   dirty = false;
+  clearTimeout(autosaveTimer);
+  resetHistory();
   await loadGuilds();
-  if (!cur.layout.guild_id && guilds.length) cur.layout.guild_id = guilds[0].id;
+  if (!cur.layout.guild_id && guilds.length) {
+    cur.layout.guild_id = guilds[0].id;
+    lastState = JSON.stringify(cur.layout);
+  }
   $("guildSel").innerHTML = opts(guilds.map((g) => [g.id, g.name]), cur.layout.guild_id);
   $("nameInput").value = cur.name;
   await loadGuildData();
@@ -1107,6 +1330,7 @@ async function openBuilder(msg) {
 }
 
 async function openLibrary() {
+  clearTimeout(autosaveTimer);
   show("viewLibrary");
   $("list").innerHTML = '<p class="muted">Loading...</p>';
   try {
@@ -1119,6 +1343,7 @@ async function openLibrary() {
       '<div class="row"><div class="grow"><b>' + esc(m.name) + '</b><div class="muted">' +
       (m.posted_message_id ? "Posted" : "Draft") + " &middot; " + new Date(m.updated_at * 1000).toLocaleString() +
       '</div></div><button class="primary small" data-open="' + m.id + '">Open</button>' +
+      '<button class="small" data-copy="' + m.id + '">Copy</button>' +
       '<button class="danger small" data-del="' + m.id + '">Delete</button></div>'
     ).join("");
   } catch (e) {
@@ -1128,10 +1353,19 @@ async function openLibrary() {
 
 $("list").addEventListener("click", async (e) => {
   const openId = e.target.dataset.open;
+  const copyId = e.target.dataset.copy;
   const delId = e.target.dataset.del;
   try {
     if (openId) await openBuilder(await api("/messages/" + openId));
-    if (delId && confirm("Delete this message?")) {
+    if (copyId) {
+      const m = await api("/messages/" + copyId);
+      await api("/messages", {
+        method: "POST",
+        body: JSON.stringify({ name: (m.name + " (copy)").slice(0, 100), layout: m.layout }),
+      });
+      openLibrary();
+    }
+    if (delId && confirm("Delete this message from the dashboard? (A posted Discord message is not removed.)")) {
       await api("/messages/" + delId, { method: "DELETE" });
       openLibrary();
     }
@@ -1148,6 +1382,7 @@ $("newBtn").onclick = () => {
 
 $("backBtn").onclick = () => {
   if (dirty && !confirm("Discard unsaved changes?")) return;
+  dirty = false;
   openLibrary();
 };
 
@@ -1160,12 +1395,15 @@ const sc = $("sendChannel");
 const ss = $("sendStatus");
 const postBtn = $("sendPost");
 const updBtn = $("sendUpdate");
+const delBtn = $("sendDelete");
 let fresh = null;
 
 function setStatus(t) { ss.textContent = t; }
 
 function refreshSendButtons() {
-  updBtn.disabled = !(fresh && fresh.posted_message_id);
+  const posted = !!(fresh && fresh.posted_message_id);
+  updBtn.disabled = !posted;
+  delBtn.disabled = !posted;
 }
 
 async function loadSendChannels(gid, wanted) {
@@ -1190,7 +1428,7 @@ sg.onchange = () => loadSendChannels(sg.value, null);
 $("sendBtn").onclick = async () => {
   const probs = findProblems();
   if (probs.length) { alert("Fix this first: " + probs[0]); return; }
-  await save();
+  await save(false);
   if (dirty || !cur.id) return;
   try {
     fresh = await api("/messages/" + cur.id);
@@ -1217,6 +1455,7 @@ async function send(path, withTarget) {
   setStatus("Sending...");
   postBtn.disabled = true;
   updBtn.disabled = true;
+  delBtn.disabled = true;
   try {
     const o = { method: "POST" };
     if (withTarget) o.body = JSON.stringify({ guild_id: sg.value, channel_id: sc.value });
@@ -1231,6 +1470,19 @@ async function send(path, withTarget) {
 
 postBtn.onclick = () => send("/post", true);
 updBtn.onclick = () => send("/update", false);
+
+delBtn.onclick = async () => {
+  if (!confirm("Delete the posted message from Discord? Your saved design stays in the dashboard.")) return;
+  setStatus("Deleting...");
+  try {
+    fresh = await api("/messages/" + cur.id + "/posted", { method: "DELETE" });
+    setStatus("Deleted from Discord. You can post it again.");
+  } catch (e) {
+    if (e.message !== "login") setStatus("Failed: " + e.message);
+  }
+  refreshSendButtons();
+};
+
 $("sendClose").onclick = () => { $("sendOverlay").classList.add("hidden"); };
 $("sendOverlay").onclick = (e) => { if (e.target === $("sendOverlay")) $("sendOverlay").classList.add("hidden"); };
 
