@@ -724,6 +724,10 @@ function formatTextField(field, format) {
   el.focus();
 }
 
+function formatText(format) {
+  formatTextField(document.querySelector('[data-f="content"]'), format);
+}
+
 function emojiRow(x, kind, i) {
   const shown = x.emoji
     ? '<img class="emoji" src="' + emojiUrl(x.emoji) + '" alt=""> <span class="muted">:' + esc(x.emoji.name) + ":</span>"
@@ -1709,6 +1713,7 @@ $("settings").addEventListener("click", (e) => {
   const d = btnData(e);
   const act = d.act2;
   if (!act) return;
+  if (act === "fmt") { formatText(d.fmt); return; }
   if (act === "delreply") {
     if (!confirm("Delete this reply?")) return;
     cur.layout.replies = cur.layout.replies.filter((r) => r.id !== tab);
@@ -1739,10 +1744,6 @@ $("settings").addEventListener("click", (e) => {
     });
     return;
   }
-  if (act === "fmt") {
-    formatTextField(document.querySelector('[data-f="content"]'), d.fmt);
-    return;
-  }
   if (act === "bemoji") {
     pickEmoji((em) => { btns[i].emoji = em; markDirty(); renderAll(); });
     return;
@@ -1760,6 +1761,10 @@ $("settings").addEventListener("click", (e) => {
   if (act === "delopt") b.options.splice(i, 1);
   markDirty();
   renderAll();
+});
+
+$("settings").addEventListener("mousedown", (e) => {
+  if (e.target.closest("[data-fmt]")) e.preventDefault();
 });
 
 document.querySelectorAll("[data-add]").forEach((btn) => {
