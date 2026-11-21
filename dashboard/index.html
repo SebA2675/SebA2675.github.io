@@ -1212,7 +1212,19 @@ function renderPreview() {
   positionFloatBar();
 }
 
+function updateCharCount() {
+  const counter = $("charCount");
+  if (!counter) return;
+  const loc = selId ? findLoc(selId) : null;
+  if (!loc) return;
+  const b = loc.list[loc.index];
+  if (b.type !== "text" && b.type !== "section") return;
+  counter.textContent = b.content.length + " / 4000";
+  counter.style.color = b.content.length > 4000 ? "var(--bad)" : "";
+}
+
 function renderStatus() {
+  updateCharCount();
   const f = activeForm();
   const ce = $("counter");
   if (f) {
@@ -1325,6 +1337,7 @@ function crumbs() {
 function renderSettings() {
   renderSettingsBody();
   $("settings").insertAdjacentHTML("afterbegin", crumbs());
+  updateCharCount();
 }
 
 $("settings").addEventListener("click", (e) => {
