@@ -58,7 +58,7 @@ label{display:block;font-size:12px;color:var(--muted);margin:10px 0 4px;text-tra
 #preview [data-bid][data-problem="1"]{position:relative}
 #preview [data-bid][data-problem="1"]::after{content:"";position:absolute;top:-4px;right:-4px;width:9px;height:9px;border-radius:50%;background:#e5383b;border:2px solid var(--d-bg)}
 #problems.bad{cursor:pointer}
-.plist{position:absolute;top:100%;right:12px;z-index:40;width:min(380px,calc(100% - 24px));max-height:60vh;overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:6px;box-shadow:0 8px 22px rgba(43,34,24,.3)}
+.plist{position:fixed;top:60px;right:12px;z-index:70;width:min(380px,calc(100% - 24px));max-height:60vh;overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:6px;box-shadow:0 8px 22px rgba(43,34,24,.3)}
 .plist button{width:100%;justify-content:flex-start;white-space:normal;text-align:left;margin-bottom:4px}
 .col{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:12px}
 #tabs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
@@ -1212,6 +1212,10 @@ function countChars(blocks) {
 }
 
 /* ---------- Problems (clickable list, red dots) ---------- */
+function okUrl(u) {
+  u = String(u || "").trim();
+  return u.startsWith("https://") && u.length > 8;
+}
 let probKey = "";
 let probList = [];
 let bad = new Set();
