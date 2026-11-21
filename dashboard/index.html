@@ -137,6 +137,7 @@ label{display:block;font-size:12px;color:var(--muted);margin:10px 0 4px;text-tra
     <button id="redoBtn" title="Redo">Redo</button>
     <button id="tplBtn" title="Save this design as a template">Template</button>
     <button id="histBtn" title="Older versions">History</button>
+    <button id="schedBtn" title="Post or update at a set time">Schedule</button>
     <span id="counter" class="badge ok"></span>
     <span id="problems" class="badge ok"></span>
     <button class="primary" id="saveBtn">Saved</button>
@@ -224,6 +225,39 @@ label{display:block;font-size:12px;color:var(--muted);margin:10px 0 4px;text-tra
     <p class="muted">A snapshot is saved each time you post or update this message (the last 20 are kept).</p>
     <div id="histList"></div>
     <div class="btnrow" style="margin-top:10px"><button id="histClose">Close</button></div>
+  </div>
+</div>
+
+<div id="schedOverlay" class="overlay hidden">
+  <div class="modal" style="width:min(520px,100%)">
+    <h2 style="margin:0 0 6px">Schedule</h2>
+    <p class="muted" id="schedTz"></p>
+    <div id="schedList"></div>
+    <h3>Add a schedule</h3>
+    <label>What to do</label>
+    <select id="schedAction">
+      <option value="post">Post as a new message</option>
+      <option value="update">Update the posted message</option>
+    </select>
+    <div id="schedChanWrap"><label>Channel</label><select id="schedChannel"></select></div>
+    <label>Date</label><input type="date" id="schedDate">
+    <label>Time</label><input type="time" id="schedTime">
+    <label>Repeat</label>
+    <select id="schedRepeat">
+      <option value="once">Once</option>
+      <option value="daily">Every day</option>
+      <option value="weekly">Every week</option>
+    </select>
+    <div id="schedReplaceWrap">
+      <label style="text-transform:none;display:flex;gap:8px;align-items:center">
+        <input type="checkbox" id="schedReplace" style="width:auto"> Delete the previous post first
+      </label>
+    </div>
+    <p id="schedStatus" class="muted" style="min-height:20px"></p>
+    <div class="btnrow">
+      <button class="primary" id="schedAdd">Add schedule</button>
+      <button id="schedClose">Close</button>
+    </div>
   </div>
 </div>
 
@@ -1448,7 +1482,7 @@ $("list").addEventListener("click", async (e) => {
       const data = await api("/messages/" + exportId + "/export");
       downloadJson(data.name || "message", data);
     }
-    if (delId && confirm("Delete this message from the dashboard? (A posted Discord message is not removed.)")) {
+    if (delId && confirm("Delete this message from the dashboard? Its schedules are deleted too. (A posted Discord message is not removed.)")) {
       await api("/messages/" + delId, { method: "DELETE" });
       openLibrary();
     }
@@ -1616,6 +1650,112 @@ $("histList").addEventListener("click", async (e) => {
 
 $("histClose").onclick = () => { $("histOverlay").classList.add("hidden"); };
 $("histOverlay").onclick = (e) => { if (e.target === $("histOverlay")) $("histOverlay").classList.add("hidden"); };
+
+/* ---------- Scheduling ---------- */
+const tzName = (() => {
+  try { return Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC"; } catch (e) { return "UTC"; }
+})();
+const pad2 = (n) => String(n).padStart(2, "0");
+
+function schedStatus(t) { $("schedStatus").textContent = t; }
+
+function channelName(id) {
+  const c = chans.find((x) => x.id === String(id));
+  return c ? c.name : "unknown-channel";
+}
+
+function scheduleRow(s) {
+  const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  let when = "once on " + s.run_date;
+  if (s.repeat === "daily") when = "every day";
+  if (s.repeat === "weekly") when = "every " + days[new Date(s.run_date + "T12:00:00").getDay()];
+  const what = s.action === "post"
+    ? "Post to #" + channelName(s.channel_id) + (s.replace_previous ? " (replaces the previous post)" : "")
+    : "Update the posted message";
+  const next = s.active ? "Next: " + new Date(s.next_run * 1000).toLocaleString() : "Finished";
+  const last = s.last_status ? " | Last: " + s.last_status : "";
+  return '<div class="mrow"><div class="grow"><b>' + esc(what) + '</b>' +
+    '<div class="muted">' + esc(when + " at " + s.run_time + " (" + s.tz + ")") + '</div>' +
+    '<div class="muted">' + esc(next + last) + '</div></div>' +
+    '<button class="danger small" data-sdel="' + s.id + '">Delete</button></div>';
+}
+
+async function loadSchedules() {
+  $("schedList").innerHTML = '<p class="muted">Loading...</p>';
+  try {
+    const list = await api("/messages/" + cur.id + "/schedules");
+    $("schedList").innerHTML = list.length
+      ? list.map(scheduleRow).join("")
+      : '<p class="muted">Nothing scheduled for this message yet.</p>';
+  } catch (e) {
+    if (e.message !== "login") $("schedList").innerHTML = '<p class="muted">Could not load: ' + esc(e.message) + "</p>";
+  }
+}
+
+function syncSchedForm() {
+  const post = $("schedAction").value === "post";
+  $("schedChanWrap").classList.toggle("hidden", !post);
+  $("schedReplaceWrap").classList.toggle("hidden", !post);
+}
+
+$("schedAction").onchange = syncSchedForm;
+
+$("schedBtn").onclick = async () => {
+  const probs = findProblems();
+  if (probs.length) { alert("Fix this first: " + probs[0]); return; }
+  await save(false);
+  if (dirty || !cur.id) return;
+  $("schedTz").textContent = "Times use your browser's time zone: " + tzName + ".";
+  const t = new Date(Date.now() + 3600000);
+  $("schedDate").value = t.getFullYear() + "-" + pad2(t.getMonth() + 1) + "-" + pad2(t.getDate());
+  $("schedTime").value = pad2(t.getHours()) + ":00";
+  $("schedChannel").innerHTML = chans.length
+    ? chans.map((c) => '<option value="' + c.id + '">#' + esc(c.name) + "</option>").join("")
+    : "<option value=''>No channel the bot can write in</option>";
+  if (cur.channel_id && chans.some((c) => c.id === cur.channel_id)) $("schedChannel").value = cur.channel_id;
+  syncSchedForm();
+  schedStatus("");
+  $("schedOverlay").classList.remove("hidden");
+  loadSchedules();
+};
+
+$("schedAdd").onclick = async () => {
+  const action = $("schedAction").value;
+  const body = {
+    action,
+    channel_id: action === "post" ? $("schedChannel").value : "",
+    run_date: $("schedDate").value,
+    run_time: $("schedTime").value,
+    tz: tzName,
+    repeat: $("schedRepeat").value,
+    replace_previous: action === "post" && $("schedReplace").checked,
+  };
+  if (!body.run_date || !body.run_time) { schedStatus("Choose a date and a time."); return; }
+  if (action === "post" && !body.channel_id) { schedStatus("Choose a channel."); return; }
+  schedStatus("Adding...");
+  try {
+    await api("/messages/" + cur.id + "/schedules", { method: "POST", body: JSON.stringify(body) });
+    schedStatus("Schedule added.");
+    await loadSchedules();
+  } catch (e) {
+    if (e.message !== "login") schedStatus("Failed: " + e.message);
+  }
+};
+
+$("schedList").addEventListener("click", async (e) => {
+  const id = e.target.dataset.sdel;
+  if (!id) return;
+  if (!confirm("Delete this schedule?")) return;
+  try {
+    await api("/schedules/" + id, { method: "DELETE" });
+    await loadSchedules();
+  } catch (err) {
+    if (err.message !== "login") schedStatus("Failed: " + err.message);
+  }
+});
+
+$("schedClose").onclick = () => { $("schedOverlay").classList.add("hidden"); };
+$("schedOverlay").onclick = (e) => { if (e.target === $("schedOverlay")) $("schedOverlay").classList.add("hidden"); };
 
 /* ---------- Admin page (owner only) ---------- */
 async function openAdmin() {
