@@ -1748,6 +1748,8 @@ async function openBuilder(msg) {
   await loadGuildData();
   show("viewBuilder");
   setPane("preview");
+  treeOpen = false;
+  applyTree();
   applyPv();
   renderAll();
 }
