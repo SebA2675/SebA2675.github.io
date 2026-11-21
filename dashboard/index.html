@@ -1356,7 +1356,8 @@ function renderSettingsBody() {
   }
   if (b.type === "section") {
     h = '<button class="small" data-act2="emojitext">' + ic("smile") + "Insert emoji</button>" +
-      '<label>Text (left side)</label><textarea data-f="content">' + esc(b.content) + "</textarea>" +
+      "<label>Text (left side)</label>" + fmtBar() +
+      '<textarea data-f="content">' + esc(b.content) + '</textarea><div id="charCount" class="muted" style="margin-top:4px"></div>' +
       '<label>Right side</label><select data-f="side">' + opts([["button", "Button"], ["thumbnail", "Small image"]], b.side) + "</select>" +
       (b.side === "thumbnail"
         ? '<label>Image link (https)</label><input data-f="image" value="' + esc(b.image) + '">'
@@ -1382,6 +1383,13 @@ function renderSettingsBody() {
       '<button class="small" data-act2="addopt">' + ic("plus") + "Add option</button>";
   }
   el.innerHTML = h;
+  if (b.type === "text" || b.type === "section") {
+    const counter = $("charCount");
+    if (counter) {
+      counter.textContent = b.content.length + " / 4000";
+      counter.style.color = b.content.length > 4000 ? "var(--bad)" : "";
+    }
+  }
 }
 
 function renderAll() {
