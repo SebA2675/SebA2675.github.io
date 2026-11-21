@@ -22,6 +22,7 @@ label{display:block;font-size:12px;color:var(--muted);margin:10px 0 4px;text-tra
 .top{display:flex;align-items:center;gap:8px;padding:10px 14px;background:var(--panel);border-bottom:1px solid var(--line);flex-wrap:wrap}
 .top h1{font-size:18px;margin:0;flex:1;min-width:120px}
 .wrap{max-width:900px;margin:0 auto;padding:16px}
+.wrap h3{margin:18px 0 8px}
 .row{display:flex;align-items:center;gap:8px;background:var(--panel);padding:12px;border-radius:8px;margin-bottom:8px}
 .row .grow{flex:1;min-width:0}
 .muted{color:var(--muted);font-size:13px}
@@ -90,6 +91,7 @@ label{display:block;font-size:12px;color:var(--muted);margin:10px 0 4px;text-tra
     <h1>Embed Dashboard</h1>
     <p id="loginMsg" class="muted">Not logged in.</p>
     <button class="primary" id="loginBtn">Log in with Discord</button>
+    <p class="muted" style="margin-top:16px">Signing in only checks your Discord ID and your server permissions. Nothing about you is stored.</p>
   </div>
 </div>
 
@@ -97,16 +99,36 @@ label{display:block;font-size:12px;color:var(--muted);margin:10px 0 4px;text-tra
   <div class="top">
     <h1>My messages</h1>
     <button class="primary" id="newBtn">+ New message</button>
+    <button id="adminBtn" class="hidden">Servers</button>
     <button id="logoutBtn">Log out</button>
   </div>
   <div class="wrap"><div id="list"></div></div>
+</div>
+
+<div id="viewAdmin" class="hidden">
+  <div class="top">
+    <button id="adminBack">&larr; Back</button>
+    <h1>Approved servers</h1>
+  </div>
+  <div class="wrap">
+    <p class="muted">The bot stays only in servers on this list and leaves any other server it is added to. Administrators of an approved server can use this dashboard for that server's messages only.</p>
+    <h3>Approved</h3>
+    <div id="adminAllowed"></div>
+    <h3>Approve a server by ID</h3>
+    <div class="btnrow">
+      <input id="adminGuildId" placeholder="Server ID (numbers only)" style="max-width:280px">
+      <button class="primary" id="adminAddBtn">Approve</button>
+    </div>
+    <h3>Tried to add the bot</h3>
+    <div id="adminPending"></div>
+  </div>
 </div>
 
 <div id="viewBuilder" class="hidden">
   <div class="top">
     <button id="backBtn">&larr; Back</button>
     <input id="nameInput" style="flex:1;min-width:140px;max-width:240px" placeholder="Message name">
-    <select id="guildSel" style="width:auto;max-width:180px" title="Server used for roles and channels"></select>
+    <select id="guildSel" style="width:auto;max-width:180px" title="Server for this message"></select>
     <button id="undoBtn" title="Undo">Undo</button>
     <button id="redoBtn" title="Redo">Redo</button>
     <span id="counter" class="badge ok"></span>
@@ -183,13 +205,17 @@ function saveToken(t) { try { localStorage.setItem("token", t); } catch (e) {} }
 function loadToken() { try { return localStorage.getItem("token"); } catch (e) { return null; } }
 function clearToken() { try { localStorage.removeItem("token"); } catch (e) {} }
 
+let loginError = "";
 if (location.hash.startsWith("#token=")) {
   saveToken(location.hash.slice(7));
+  history.replaceState(null, "", location.pathname);
+} else if (location.hash.startsWith("#error=")) {
+  loginError = "You need to be an Administrator of a server where this bot is installed.";
   history.replaceState(null, "", location.pathname);
 }
 
 function show(name) {
-  for (const v of ["viewLogin", "viewLibrary", "viewBuilder"]) {
+  for (const v of ["viewLogin", "viewLibrary", "viewBuilder", "viewAdmin"]) {
     $(v).classList.toggle("hidden", v !== name);
   }
 }
@@ -218,6 +244,7 @@ async function api(path, opts = {}) {
 }
 
 let cur = null;
+let isOwner = false;
 let selId = null;
 let tab = "main";
 let dirty = false;
@@ -254,6 +281,11 @@ function opts(list, selected) {
   return list.map((o) =>
     '<option value="' + esc(o[0]) + '"' + (o[0] === selected ? " selected" : "") + ">" + esc(o[1]) + "</option>"
   ).join("");
+}
+
+function guildName(id) {
+  const g = guilds.find((x) => x.id === String(id));
+  return g ? g.name : "Unknown server";
 }
 
 function emojiUrl(e) {
@@ -367,7 +399,7 @@ function drawEmojiList() {
         '" title=":' + esc(e.name) + ':"><img loading="lazy" src="' + emojiUrl(e) + '" alt=""></button>'
       ).join("") + "</div>";
   });
-  $("emojiList").innerHTML = html || '<p class="muted">No custom emojis found. The bot must be in a server that has some.</p>';
+  $("emojiList").innerHTML = html || '<p class="muted">No custom emojis found in your servers.</p>';
 }
 
 async function pickEmoji(cb) {
@@ -689,19 +721,6 @@ function countChars(blocks) {
   };
   blocks.forEach(one);
   return n;
-}
-
-function hasRoleActions() {
-  let found = false;
-  const one = (b) => {
-    if (b.type === "box") b.children.forEach(one);
-    if (b.type === "button_row" && b.buttons.some((x) => x.action.type === "role")) found = true;
-    if (b.type === "section" && b.side === "button" && b.button.action.type === "role") found = true;
-    if (b.type === "dropdown" && b.options.some((o) => o.action.type === "role")) found = true;
-  };
-  cur.layout.blocks.forEach(one);
-  cur.layout.replies.forEach((r) => r.blocks.forEach(one));
-  return found;
 }
 
 function problemsFor(blocks, prefix, p) {
@@ -1267,7 +1286,15 @@ document.querySelectorAll("[data-add]").forEach((btn) => {
 $("nameInput").addEventListener("input", () => { markDirty(); renderStatus(); });
 
 $("guildSel").onchange = async () => {
-  cur.layout.guild_id = $("guildSel").value;
+  const next = $("guildSel").value;
+  if (cur.posted_message_id && cur.guild_id && next !== cur.guild_id) {
+    if (!confirm("Changing the server unlinks this message from the one already posted in Discord. Continue?")) {
+      $("guildSel").value = cur.layout.guild_id;
+      return;
+    }
+    cur.posted_message_id = null;
+  }
+  cur.layout.guild_id = next;
   markDirty();
   await loadGuildData();
   renderAll();
@@ -1299,6 +1326,9 @@ async function save(silent) {
       ? await api("/messages/" + cur.id, { method: "PUT", body })
       : await api("/messages", { method: "POST", body });
     cur.id = saved.id;
+    cur.guild_id = saved.guild_id;
+    cur.posted_message_id = saved.posted_message_id;
+    cur.channel_id = saved.channel_id;
     if (editCount === version) dirty = false;
     else scheduleAutosave();
     renderStatus();
@@ -1311,17 +1341,19 @@ $("saveBtn").onclick = () => save(false);
 
 async function openBuilder(msg) {
   msg.layout = normalize(msg.layout || {});
+  await loadGuilds();
+  if (!guilds.length) {
+    alert("No server available. The bot must be in a server where you are an Administrator.");
+    return;
+  }
+  if (msg.guild_id) msg.layout.guild_id = msg.guild_id;
+  if (!guilds.some((g) => g.id === msg.layout.guild_id)) msg.layout.guild_id = guilds[0].id;
   cur = msg;
   selId = null;
   tab = "main";
   dirty = false;
   clearTimeout(autosaveTimer);
   resetHistory();
-  await loadGuilds();
-  if (!cur.layout.guild_id && guilds.length) {
-    cur.layout.guild_id = guilds[0].id;
-    lastState = JSON.stringify(cur.layout);
-  }
   $("guildSel").innerHTML = opts(guilds.map((g) => [g.id, g.name]), cur.layout.guild_id);
   $("nameInput").value = cur.name;
   await loadGuildData();
@@ -1334,6 +1366,7 @@ async function openLibrary() {
   show("viewLibrary");
   $("list").innerHTML = '<p class="muted">Loading...</p>';
   try {
+    await loadGuilds();
     const items = await api("/messages");
     if (!items.length) {
       $("list").innerHTML = '<p class="muted">No messages yet. Tap "+ New message".</p>';
@@ -1341,6 +1374,7 @@ async function openLibrary() {
     }
     $("list").innerHTML = items.map((m) =>
       '<div class="row"><div class="grow"><b>' + esc(m.name) + '</b><div class="muted">' +
+      esc(m.guild_id ? guildName(m.guild_id) : "No server") + " &middot; " +
       (m.posted_message_id ? "Posted" : "Draft") + " &middot; " + new Date(m.updated_at * 1000).toLocaleString() +
       '</div></div><button class="primary small" data-open="' + m.id + '">Open</button>' +
       '<button class="small" data-copy="' + m.id + '">Copy</button>' +
@@ -1387,7 +1421,86 @@ $("backBtn").onclick = () => {
 };
 
 $("loginBtn").onclick = () => { location.href = API_URL + "/auth/login"; };
-$("logoutBtn").onclick = () => { clearToken(); show("viewLogin"); $("loginMsg").textContent = "Logged out."; };
+$("logoutBtn").onclick = () => {
+  clearToken();
+  emojiData = null;
+  guilds = [];
+  show("viewLogin");
+  $("loginMsg").textContent = "Logged out.";
+};
+
+/* ---------- Admin page (owner only) ---------- */
+async function openAdmin() {
+  show("viewAdmin");
+  $("adminAllowed").innerHTML = '<p class="muted">Loading...</p>';
+  $("adminPending").innerHTML = "";
+  try {
+    const d = await api("/admin/servers");
+    $("adminAllowed").innerHTML = d.allowed.length
+      ? d.allowed.map((g) =>
+        '<div class="row"><div class="grow"><b>' + esc(g.name || "(unknown)") + '</b><div class="muted">' + esc(g.id) +
+        (g.joined ? "" : " &middot; the bot is not in this server") + '</div></div>' +
+        '<button class="danger small" data-rm="' + esc(g.id) + '">Remove</button></div>').join("")
+      : '<p class="muted">None yet.</p>';
+    $("adminPending").innerHTML = d.pending.length
+      ? d.pending.map((p) =>
+        '<div class="row"><div class="grow"><b>' + esc(p.name || "(unknown)") + '</b><div class="muted">' + esc(p.guild_id) +
+        " &middot; " + new Date(p.seen_at * 1000).toLocaleString() + '</div></div>' +
+        '<button class="primary small" data-ok="' + esc(p.guild_id) + '" data-name="' + esc(p.name || "") + '">Approve</button>' +
+        '<button class="small" data-dismiss="' + esc(p.guild_id) + '">Dismiss</button></div>').join("")
+      : '<p class="muted">None.</p>';
+  } catch (e) {
+    if (e.message !== "login") $("adminAllowed").innerHTML = '<p class="muted">Could not load: ' + esc(e.message) + "</p>";
+  }
+}
+
+$("adminBtn").onclick = openAdmin;
+$("adminBack").onclick = () => openLibrary();
+
+$("adminAddBtn").onclick = async () => {
+  const id = $("adminGuildId").value.trim();
+  if (!/^\d+$/.test(id)) { alert("A server ID is only numbers."); return; }
+  try {
+    await api("/admin/allow", { method: "POST", body: JSON.stringify({ guild_id: id, name: "" }) });
+    $("adminGuildId").value = "";
+    guilds = [];
+    openAdmin();
+  } catch (e) {
+    if (e.message !== "login") alert(e.message);
+  }
+};
+
+$("adminAllowed").addEventListener("click", async (e) => {
+  const id = e.target.dataset.rm;
+  if (!id) return;
+  if (!confirm("Remove this server? The bot will leave it right away and its administrators lose access.")) return;
+  try {
+    await api("/admin/allow/" + id, { method: "DELETE" });
+    guilds = [];
+    openAdmin();
+  } catch (err) {
+    if (err.message !== "login") alert(err.message);
+  }
+});
+
+$("adminPending").addEventListener("click", async (e) => {
+  const ok = e.target.dataset.ok;
+  const dismiss = e.target.dataset.dismiss;
+  try {
+    if (ok) {
+      await api("/admin/allow", { method: "POST", body: JSON.stringify({ guild_id: ok, name: e.target.dataset.name || "" }) });
+      alert("Approved. Ask them to add the bot to their server again.");
+      guilds = [];
+      openAdmin();
+    }
+    if (dismiss) {
+      await api("/admin/pending/" + dismiss, { method: "DELETE" });
+      openAdmin();
+    }
+  } catch (err) {
+    if (err.message !== "login") alert(err.message);
+  }
+});
 
 /* ---------- Send window ---------- */
 const sg = $("sendGuild");
@@ -1423,8 +1536,6 @@ async function loadSendChannels(gid, wanted) {
   }
 }
 
-sg.onchange = () => loadSendChannels(sg.value, null);
-
 $("sendBtn").onclick = async () => {
   const probs = findProblems();
   if (probs.length) { alert("Fix this first: " + probs[0]); return; }
@@ -1432,26 +1543,19 @@ $("sendBtn").onclick = async () => {
   if (dirty || !cur.id) return;
   try {
     fresh = await api("/messages/" + cur.id);
-    await loadGuilds();
-    if (!guilds.length) { alert("The bot isn't in any server."); return; }
-    sg.innerHTML = opts(guilds.map((g) => [g.id, g.name]), "");
-    const wantGuild = fresh.guild_id || cur.layout.guild_id;
-    if (wantGuild && guilds.some((g) => g.id === wantGuild)) sg.value = wantGuild;
+    const gid = fresh.guild_id || cur.layout.guild_id;
+    sg.innerHTML = opts([[gid, guildName(gid)]], gid);
+    sg.disabled = true;
     setStatus(fresh.posted_message_id ? "Already posted once. You can update it or post a new copy." : "Not posted yet.");
     refreshSendButtons();
     $("sendOverlay").classList.remove("hidden");
-    await loadSendChannels(sg.value, fresh.channel_id);
+    await loadSendChannels(gid, fresh.channel_id);
   } catch (e) {
     if (e.message !== "login") alert(e.message);
   }
 };
 
 async function send(path, withTarget) {
-  const needsGuild = hasRoleActions() || cur.layout.forms.length > 0;
-  if (withTarget && needsGuild && cur.layout.guild_id && sg.value !== cur.layout.guild_id) {
-    setStatus("Roles and form channels come from another server. Change the server at the top of the builder to match.");
-    return;
-  }
   setStatus("Sending...");
   postBtn.disabled = true;
   updBtn.disabled = true;
@@ -1460,6 +1564,8 @@ async function send(path, withTarget) {
     const o = { method: "POST" };
     if (withTarget) o.body = JSON.stringify({ guild_id: sg.value, channel_id: sc.value });
     fresh = await api("/messages/" + cur.id + path, o);
+    cur.posted_message_id = fresh.posted_message_id;
+    cur.channel_id = fresh.channel_id;
     setStatus("Done! Check Discord.");
   } catch (e) {
     if (e.message !== "login") setStatus("Failed: " + e.message);
@@ -1476,6 +1582,7 @@ delBtn.onclick = async () => {
   setStatus("Deleting...");
   try {
     fresh = await api("/messages/" + cur.id + "/posted", { method: "DELETE" });
+    cur.posted_message_id = null;
     setStatus("Deleted from Discord. You can post it again.");
   } catch (e) {
     if (e.message !== "login") setStatus("Failed: " + e.message);
@@ -1487,15 +1594,20 @@ $("sendClose").onclick = () => { $("sendOverlay").classList.add("hidden"); };
 $("sendOverlay").onclick = (e) => { if (e.target === $("sendOverlay")) $("sendOverlay").classList.add("hidden"); };
 
 async function start() {
-  if (!loadToken()) { show("viewLogin"); return; }
+  if (!loadToken()) {
+    show("viewLogin");
+    if (loginError) $("loginMsg").textContent = loginError;
+    return;
+  }
   try {
-    await api("/me");
+    const me = await api("/me");
+    isOwner = !!me.is_owner;
+    $("adminBtn").classList.toggle("hidden", !isOwner);
     openLibrary();
   } catch (e) {
-    if (e.message !== "login") {
-      show("viewLogin");
-      $("loginMsg").textContent = "Could not reach the bot. Is it online?";
-    }
+    if (e.message === "login") return;
+    show("viewLogin");
+    $("loginMsg").textContent = e instanceof TypeError ? "Could not reach the bot. Is it online?" : e.message;
   }
 }
 start();
