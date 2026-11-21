@@ -49,6 +49,8 @@ label{display:block;font-size:12px;color:var(--muted);margin:10px 0 4px;text-tra
 .crumbs span[data-crumb]{cursor:pointer}
 .crumbs span[data-crumb]:hover{text-decoration:underline}
 .crumbs b{color:var(--text)}
+.treeEdge{position:fixed;top:50%;left:0;transform:translateY(-50%);z-index:28;width:18px;height:56px;padding:0;justify-content:center;border-radius:0 10px 10px 0;border-left:0;font-size:20px;line-height:1;box-shadow:2px 0 8px rgba(43,34,24,.15)}
+.builder[data-tree="open"] ~ .treeEdge{left:300px}
 .col{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:12px}
 #tabs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
 .node{display:flex;align-items:center;gap:4px;padding:6px;border-radius:10px;border:1px solid var(--line);cursor:pointer;background:#fffdf7;margin-bottom:5px}
@@ -135,6 +137,7 @@ label{display:block;font-size:12px;color:var(--muted);margin:10px 0 4px;text-tra
 
 /* ----- Phone layout ----- */
 @media(max-width:900px){
+  .treeEdge{display:none}
   .builder{display:block;padding:10px 10px 90px}
   .builder:not([data-tree="open"]) .pane-tree{display:block}
   .treeToggle{display:none}
@@ -295,6 +298,7 @@ label{display:block;font-size:12px;color:var(--muted);margin:10px 0 4px;text-tra
       <div id="settings" style="margin-top:6px"></div>
     </div>
   </div>
+  <button id="treeEdge" class="treeEdge" title="Show or hide the parts tree">›</button>
   <div class="botbar">
     <button data-pane="tree"><svg class="ic"><use href="#i-tree"></use></svg>Parts</button>
     <button data-pane="preview" class="on"><svg class="ic"><use href="#i-eye"></use></svg>Preview</button>
@@ -543,9 +547,11 @@ let treeOpen = false;
 function applyTree() {
   $("builderEl").dataset.tree = treeOpen ? "open" : "closed";
   $("treeBtn").classList.toggle("on", treeOpen);
+  $("treeEdge").textContent = treeOpen ? "‹" : "›";
   positionFloatBar();
 }
 $("treeBtn").onclick = () => { treeOpen = !treeOpen; applyTree(); };
+$("treeEdge").onclick = () => { treeOpen = !treeOpen; applyTree(); };
 
 function applyPv() {
   $("discordBox").classList.toggle("light", pv === "light");
