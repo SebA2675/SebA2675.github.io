@@ -28,6 +28,9 @@ input,textarea,select{width:100%;background:#fffdf7;color:var(--text);border:1px
 input:focus,textarea:focus,select:focus{outline:2px solid rgba(43,34,24,.25);outline-offset:1px}
 input[type=checkbox]{width:auto}
 textarea{min-height:90px;resize:vertical}
+.fmtbar{display:flex;flex-wrap:wrap;gap:4px;margin:4px 0}
+.fmtbar button{padding:4px 8px;min-width:32px;justify-content:center}
+.fmtbar button[data-fmt]{font-family:ui-monospace,SFMono-Regular,Consolas,monospace}
 label{display:block;font-size:12px;color:var(--muted);margin:10px 0 4px;text-transform:uppercase;letter-spacing:.03em}
 .hidden{display:none!important}
 .center{min-height:100vh;display:grid;place-items:center;padding:12px}
@@ -689,6 +692,38 @@ function insertIntoField(selector, text) {
   el.dispatchEvent(new Event("input", { bubbles: true }));
 }
 
+function fmtBar() {
+  return '<div class="fmtbar" role="toolbar" aria-label="Text formatting">' +
+    '<button type="button" class="small" data-act2="fmt" data-fmt="bold" title="Bold"><b>B</b></button>' +
+    '<button type="button" class="small" data-act2="fmt" data-fmt="italic" title="Italic"><i>I</i></button>' +
+    '<button type="button" class="small" data-act2="fmt" data-fmt="underline" title="Underline"><u>U</u></button>' +
+    '<button type="button" class="small" data-act2="fmt" data-fmt="strike" title="Strikethrough"><s>S</s></button>' +
+    '<button type="button" class="small" data-act2="fmt" data-fmt="code" title="Inline code"><code>&lt;&gt;</code></button>' +
+    '<button type="button" class="small" data-act2="fmt" data-fmt="spoiler" title="Spoiler">||</button>' +
+    '</div>';
+}
+
+function formatTextField(field, format) {
+  const el = field;
+  if (!el) return;
+  const start = el.selectionStart ?? el.value.length;
+  const end = el.selectionEnd ?? start;
+  const selected = el.value.slice(start, end);
+  const marks = {
+    bold: ["**", "**"],
+    italic: ["*", "*"],
+    underline: ["__", "__"],
+    strike: ["~~", "~~"],
+    code: ["`", "`"],
+    spoiler: ["||", "||"]
+  };
+  const pair = marks[format];
+  if (!pair) return;
+  el.setRangeText(pair[0] + selected + pair[1], start, end, "select");
+  el.dispatchEvent(new Event("input", { bubbles: true }));
+  el.focus();
+}
+
 function emojiRow(x, kind, i) {
   const shown = x.emoji
     ? '<img class="emoji" src="' + emojiUrl(x.emoji) + '" alt=""> <span class="muted">:' + esc(x.emoji.name) + ":</span>"
@@ -1315,7 +1350,9 @@ function renderSettingsBody() {
   let h = "";
   if (b.type === "text") {
     h = '<button class="small" data-act2="emojitext">' + ic("smile") + "Insert emoji</button>" +
-      '<label>Text (supports Discord markdown and custom emoji)</label><textarea data-f="content">' + esc(b.content) + "</textarea>";
+      "<label>Text (supports Discord markdown and custom emoji)</label>" + fmtBar() +
+      '<textarea data-f="content">' + esc(b.content) + '</textarea><div id="charCount" class="muted" style="margin-top:4px">' +
+      b.content.length + " / 4000</div>";
   }
   if (b.type === "section") {
     h = '<button class="small" data-act2="emojitext">' + ic("smile") + "Insert emoji</button>" +
@@ -1612,7 +1649,14 @@ $("settings").addEventListener("input", (e) => {
   const i = Number(e.target.dataset.i);
   const btns = b.type === "dropdown" ? [] : buttonsOf(b);
   let again = false;
-  if (f === "content") b.content = v;
+  if (f === "content") {
+    b.content = v;
+    const counter = $("charCount");
+    if (counter) {
+      counter.textContent = v.length + " / 4000";
+      counter.style.color = v.length > 4000 ? "var(--bad)" : "";
+    }
+  }
   if (f === "urls") b.urls = v.split("\n");
   if (f === "spacing") b.spacing = v;
   if (f === "line") b.line = v === "1";
@@ -1685,6 +1729,10 @@ $("settings").addEventListener("click", (e) => {
     pickEmoji((em) => {
       insertIntoField('[data-f="content"]', "<" + (em.animated ? "a" : "") + ":" + em.name + ":" + em.id + ">");
     });
+    return;
+  }
+  if (act === "fmt") {
+    formatTextField(document.querySelector('[data-f="content"]'), d.fmt);
     return;
   }
   if (act === "bemoji") {
