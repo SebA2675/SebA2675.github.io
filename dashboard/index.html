@@ -115,6 +115,12 @@ label{display:block;font-size:12px;color:var(--muted);margin:10px 0 4px;text-tra
 .pform .foot{display:flex;justify-content:flex-end;margin-top:14px}
 .emoji{width:22px;height:22px;vertical-align:-5px}
 
+/* ----- Click a part in the preview to select it ----- */
+#preview [data-bid]{cursor:pointer}
+#preview [data-bid]:hover{outline:2px solid rgba(217,98,43,.4);outline-offset:2px;border-radius:6px}
+#preview [data-bid][data-sel="1"]{outline:2px solid #d9622b;outline-offset:2px;border-radius:6px}
+#preview .pdiv{min-height:12px}
+
 /* ----- Phone layout ----- */
 @media(max-width:900px){
   .builder{display:block;padding:10px 10px 90px}
@@ -1019,8 +1025,13 @@ function renderBtn(x) {
     esc(x.label) + (link ? " &#8599;" : "") + "</span>";
 }
 
+function bAttr(b) {
+  return ' data-bid="' + b.id + '"' + (b.id === selId ? ' data-sel="1"' : "");
+}
+
 function renderBlock(b) {
-  if (b.type === "text") return '<div class="ptext">' + md(b.content) + "</div>";
+  const a = bAttr(b);
+  if (b.type === "text") return '<div class="ptext"' + a + ">" + md(b.content) + "</div>";
   if (b.type === "section") {
     let side;
     if (b.side === "thumbnail") {
@@ -1030,28 +1041,28 @@ function renderBlock(b) {
     } else {
       side = renderBtn(b.button);
     }
-    return '<div class="psec"><div class="psec-text ptext">' + md(b.content) + '</div><div class="psec-side">' + side + "</div></div>";
+    return '<div class="psec"' + a + '><div class="psec-text ptext">' + md(b.content) + '</div><div class="psec-side">' + side + "</div></div>";
   }
   if (b.type === "images") {
     const u = b.urls.filter((x) => x.trim().startsWith("https://"));
-    if (!u.length) return '<div class="dm">[image]</div>';
+    if (!u.length) return '<div class="dm"' + a + ">[image]</div>";
     const cols = u.length === 1 ? 1 : 2;
-    return '<div class="pimgs" style="grid-template-columns:repeat(' + cols + ',1fr)">' +
+    return '<div class="pimgs"' + a + ' style="grid-template-columns:repeat(' + cols + ',1fr)">' +
       u.map((x) => '<img src="' + esc(x.trim()) + '" alt="">').join("") + "</div>";
   }
   if (b.type === "divider") {
-    return '<div class="pdiv ' + (b.line ? "line " : "") + (b.spacing === "large" ? "large" : "") + '"></div>';
+    return '<div class="pdiv ' + (b.line ? "line " : "") + (b.spacing === "large" ? "large" : "") + '"' + a + "></div>";
   }
   if (b.type === "button_row") {
-    return '<div class="pbtns">' + b.buttons.map(renderBtn).join("") + "</div>";
+    return '<div class="pbtns"' + a + ">" + b.buttons.map(renderBtn).join("") + "</div>";
   }
   if (b.type === "dropdown") {
-    return '<div class="psel"><span>' + esc(b.placeholder || "Choose an option...") + "</span><span>&#9662;</span></div>";
+    return '<div class="psel"' + a + "><span>" + esc(b.placeholder || "Choose an option...") + "</span><span>&#9662;</span></div>";
   }
   if (b.type === "box") {
     const c = /^#[0-9a-f]{6}$/i.test(b.accent) ? b.accent : "#5865F2";
     const inner = b.children.length ? b.children.map(renderBlock).join("") : '<div class="dm">Empty box</div>';
-    return '<div class="pbox" style="border-left-color:' + c + '">' + inner + "</div>";
+    return '<div class="pbox"' + a + ' style="border-left-color:' + c + '">' + inner + "</div>";
   }
   return "";
 }
@@ -1364,6 +1375,23 @@ $("tree").addEventListener("drop", (e) => {
 });
 
 $("tree").addEventListener("dragend", () => { dragId = null; clearDropMarks(); });
+
+/* ---------- Click a part in the preview to select it ---------- */
+$("preview").addEventListener("click", (e) => {
+  if (activeForm()) return;
+  e.preventDefault();
+  const el = e.target.closest("[data-bid]");
+  const next = el ? el.dataset.bid : null;
+  if (next !== selId) {
+    selId = next;
+    renderTree();
+    renderPreview();
+    renderSettings();
+    const row = selId ? document.querySelector('#tree [data-id="' + selId + '"]') : null;
+    if (row) row.scrollIntoView({ block: "nearest" });
+  }
+  if (selId && isMobile()) setPane("settings");
+});
 
 $("addFieldBtn").onclick = addField;
 
