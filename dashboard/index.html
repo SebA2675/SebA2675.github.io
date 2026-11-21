@@ -54,6 +54,13 @@ label{display:block;font-size:12px;color:var(--muted);margin:10px 0 4px;text-tra
 .crumbs b{color:var(--text)}
 .treeEdge{position:fixed;top:50%;left:0;transform:translateY(-50%);z-index:28;width:18px;height:56px;padding:0;justify-content:center;border-radius:0 10px 10px 0;border-left:0;font-size:20px;line-height:1;box-shadow:2px 0 8px rgba(43,34,24,.15)}
 .builder[data-tree="open"] ~ .treeEdge{left:312px}
+.dotred{width:8px;height:8px;border-radius:50%;background:#e5383b;display:inline-block;flex:none}
+#preview [data-bid][data-problem="1"]{position:relative}
+#preview [data-bid][data-problem="1"]::after{content:"";position:absolute;top:-4px;right:-4px;width:9px;height:9px;border-radius:50%;background:#e5383b;border:2px solid var(--d-bg)}
+#problems{cursor:default}
+#problems.bad{cursor:pointer}
+.plist{position:absolute;top:100%;right:12px;z-index:40;width:min(380px,calc(100% - 24px));max-height:60vh;overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:6px;box-shadow:0 8px 22px rgba(43,34,24,.3)}
+.plist button{width:100%;justify-content:flex-start;white-space:normal;text-align:left;margin-bottom:4px}
 .col{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:12px}
 #tabs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
 .node{display:flex;align-items:center;gap:4px;padding:6px;border-radius:10px;border:1px solid var(--line);cursor:pointer;background:#fffdf7;margin-bottom:5px}
@@ -249,6 +256,7 @@ label{display:block;font-size:12px;color:var(--muted);margin:10px 0 4px;text-tra
     <button id="schedBtn" class="tb" title="Post or update at a set time"><svg class="ic"><use href="#i-schedule"></use></svg><span class="t">Schedule</span></button>
     <span id="counter" class="badge ok"></span>
     <span id="problems" class="badge ok"></span>
+    <div id="problemList" class="plist hidden"></div>
     <button class="primary" id="saveBtn"></button>
     <button class="primary" id="sendBtn"><svg class="ic"><use href="#i-send"></use></svg>Send</button>
   </div>
@@ -460,6 +468,9 @@ let cur = null;
 let isOwner = false;
 let selId = null;
 let tab = "main";
+let probKey = "";
+let probList = [];
+let bad = new Set();
 let dirty = false;
 let editCount = 0;
 let saving = false;
@@ -1019,70 +1030,124 @@ function countChars(blocks) {
   return n;
 }
 
-function problemsFor(blocks, prefix, p) {
+function problemsFor(blocks, prefix, p, tabId) {
   const replyExists = (id) => cur.layout.replies.some((r) => r.id === id);
   const formExists = (id) => cur.layout.forms.some((f) => f.id === id);
-  const checkAction = (a, who) => {
-    if (a.type === "reply" && !replyExists(a.reply_id)) p.push(prefix + "has " + who + " with no reply chosen");
-    if (a.type === "form" && !formExists(a.form_id)) p.push(prefix + "has " + who + " with no form chosen");
-    if (a.type === "role" && !a.role_id) p.push(prefix + "has " + who + " with no role chosen");
+  const add = (msg, id) => p.push({ msg: prefix + msg, blockId: id || null, tab: tabId, level: "error" });
+  const checkAction = (a, who, id) => {
+    if (a.type === "reply" && !replyExists(a.reply_id)) add("has " + who + " with no reply chosen", id);
+    if (a.type === "form" && !formExists(a.form_id)) add("has " + who + " with no form chosen", id);
+    if (a.type === "role" && !a.role_id) add("has " + who + " with no role chosen", id);
   };
-  const checkButton = (x, who) => {
-    if (!x.label.trim() && !x.emoji) p.push(prefix + "has " + who + " with no label or emoji");
-    if (x.action.type === "link" && !x.action.url.trim().startsWith("https://")) p.push(prefix + "has " + who + " with a link not starting with https://");
-    checkAction(x.action, who);
+  const checkButton = (x, who, id) => {
+    if (!x.label.trim() && !x.emoji) add("has " + who + " with no label or emoji", id);
+    if (x.action.type === "link" && !x.action.url.trim().startsWith("https://")) add("has " + who + " with a link not starting with https://", id);
+    checkAction(x.action, who, id);
   };
   const check = (b) => {
-    if (b.type === "text" && !b.content.trim()) p.push(prefix + "has an empty text part");
+    if (b.type === "text" && !b.content.trim()) add("has an empty text part", b.id);
     if (b.type === "section") {
-      if (!b.content.trim()) p.push(prefix + "has a Text + side part with no text");
+      if (!b.content.trim()) add("has a Text + side part with no text", b.id);
       if (b.side === "thumbnail") {
-        if (!b.image.trim().startsWith("https://")) p.push(prefix + "has a thumbnail link not starting with https://");
+        if (!b.image.trim().startsWith("https://")) add("has a thumbnail link not starting with https://", b.id);
       } else {
-        checkButton(b.button, "a side button");
+        checkButton(b.button, "a side button", b.id);
       }
     }
     if (b.type === "images") {
       const u = b.urls.filter((x) => x.trim());
-      if (!u.length) p.push(prefix + "has an image part with no link");
-      if (u.some((x) => !x.trim().startsWith("https://"))) p.push(prefix + "has an image link not starting with https://");
-      if (u.length > 10) p.push(prefix + "has more than 10 images in one part");
+      if (!u.length) add("has an image part with no link", b.id);
+      if (u.some((x) => !x.trim().startsWith("https://"))) add("has an image link not starting with https://", b.id);
+      if (u.length > 10) add("has more than 10 images in one part", b.id);
     }
     if (b.type === "button_row") {
-      if (!b.buttons.length) p.push(prefix + "has an empty button row");
-      if (b.buttons.length > 5) p.push(prefix + "has more than 5 buttons in a row");
-      b.buttons.forEach((x) => checkButton(x, "a button"));
+      if (!b.buttons.length) add("has an empty button row", b.id);
+      if (b.buttons.length > 5) add("has more than 5 buttons in a row", b.id);
+      b.buttons.forEach((x) => checkButton(x, "a button", b.id));
     }
     if (b.type === "dropdown") {
-      if (!b.options.length) p.push(prefix + "has a dropdown with no options");
-      if (b.options.length > 25) p.push(prefix + "has a dropdown with more than 25 options");
+      if (!b.options.length) add("has a dropdown with no options", b.id);
+      if (b.options.length > 25) add("has a dropdown with more than 25 options", b.id);
       b.options.forEach((o) => {
-        if (!o.label.trim()) p.push(prefix + "has a dropdown option with no label");
-        checkAction(o.action, "a dropdown option");
+        if (!o.label.trim()) add("has a dropdown option with no label", b.id);
+        checkAction(o.action, "a dropdown option", b.id);
       });
     }
     if (b.type === "box") b.children.forEach(check);
   };
   blocks.forEach(check);
-  if (!blocks.length) p.push(prefix + "is empty");
-  if (countComponents(blocks) > 40) p.push(prefix + "has over 40 components");
-  if (countChars(blocks) > 4000) p.push(prefix + "has over 4000 text characters");
+  if (!blocks.length) add("is empty");
+  if (countComponents(blocks) > 40) add("has over 40 components");
+  if (countChars(blocks) > 4000) add("has over 4000 text characters");
 }
 
 function findProblems() {
   const p = [];
-  problemsFor(cur.layout.blocks, "Main message ", p);
-  cur.layout.replies.forEach((r) => problemsFor(r.blocks, 'Reply "' + r.name + '" ', p));
+  problemsFor(cur.layout.blocks, "Main message ", p, "main");
+  cur.layout.replies.forEach((r) => problemsFor(r.blocks, 'Reply "' + r.name + '" ', p, r.id));
   cur.layout.forms.forEach((f) => {
-    const pre = 'Form "' + f.name + '" ';
-    if (!f.title.trim()) p.push(pre + "has no title");
-    if (!f.fields.length) p.push(pre + "has no questions");
-    if (f.fields.length > 5) p.push(pre + "has more than 5 questions");
-    if (f.fields.some((x) => !x.label.trim())) p.push(pre + "has a question with no label");
-    if (!f.channel_id) p.push(pre + "has no channel chosen for the answers");
+    const add = (msg, id) => p.push({ msg: 'Form "' + f.name + '" ' + msg, blockId: id || null, tab: f.id, level: "error" });
+    if (!f.title.trim()) add("has no title");
+    if (!f.fields.length) add("has no questions");
+    if (f.fields.length > 5) add("has more than 5 questions");
+    const bare = f.fields.find((x) => !x.label.trim());
+    if (bare) add("has a question with no label", bare.id);
+    if (!f.channel_id) add("has no channel chosen for the answers");
   });
-  return Array.from(new Set(p));
+  const seen = new Set();
+  return p.filter((x) => {
+    const k = x.tab + "|" + x.blockId + "|" + x.msg;
+    if (seen.has(k)) return false;
+    seen.add(k);
+    return true;
+  });
 }
+
+function problems() {
+  const k = JSON.stringify(cur.layout);
+  if (k !== probKey) {
+    probKey = k;
+    probList = findProblems();
+    bad = new Set(probList.filter((x) => x.blockId).map((x) => x.blockId));
+  }
+  return probList;
+}
+
+function jumpToProblem(pr) {
+  tab = pr.tab;
+  selId = pr.blockId;
+  $("problemList").classList.add("hidden");
+  renderAll();
+  const el = selId ? document.querySelector('#preview [data-bid="' + selId + '"]') : null;
+  if (el) el.scrollIntoView({ block: "center", behavior: "smooth" });
+  if (isMobile()) setPane(selId ? "settings" : "preview");
+}
+
+function drawProblemList() {
+  const box = $("problemList");
+  if (box.classList.contains("hidden")) return;
+  const list = problems();
+  box.innerHTML = list.length
+    ? list.map((x, i) => '<button class="small" data-pj="' + i + '"><span class="dotred"></span><span>' + esc(x.msg) + "</span></button>").join("")
+    : '<p class="muted" style="margin:6px">No problems.</p>';
+}
+
+$("problems").onclick = () => {
+  if (!problems().length) return;
+  $("problemList").classList.toggle("hidden");
+  drawProblemList();
+};
+
+$("problemList").addEventListener("click", (e) => {
+  const b = e.target.closest("[data-pj]");
+  if (!b) return;
+  const pr = problems()[Number(b.dataset.pj)];
+  if (pr) jumpToProblem(pr);
+});
+
+document.addEventListener("click", (e) => {
+  if (!e.target.closest("#problemList") && !e.target.closest("#problems")) $("problemList").classList.add("hidden");
+});
 
 function label(b) {
   if (b.type === "text" || b.type === "section") return b.content.split("\n")[0].slice(0, 30) || "(empty)";
@@ -1102,7 +1167,7 @@ function renderBtn(x) {
 }
 
 function bAttr(b) {
-  return ' data-bid="' + b.id + '"' + (b.id === selId ? ' data-sel="1"' : "");
+  return ' data-bid="' + b.id + '"' + (b.id === selId ? ' data-sel="1"' : "") + (bad.has(b.id) ? ' data-problem="1"' : "");
 }
 
 function renderBlock(b) {
@@ -1163,7 +1228,7 @@ function treeRows(list, child) {
   return list.map((b) => {
     let html = '<div class="node' + (child ? " child" : "") + (b.id === selId ? " sel" : "") +
       '" draggable="true" data-id="' + b.id + '">' +
-      '<span class="lbl">' + ic(TYPE_ICON[b.type]) + '<span class="tx"><b>' + NAMES[b.type] + "</b> " + esc(label(b)) + "</span></span>" +
+      '<span class="lbl">' + ic(TYPE_ICON[b.type]) + '<span class="tx"><b>' + NAMES[b.type] + "</b> " + esc(label(b)) + "</span>" + (bad.has(b.id) ? '<span class="dotred"></span>' : "") + "</span>" +
       rowButtons() + "</div>";
     if (b.type === "box") html += treeRows(b.children, true);
     return html;
@@ -1173,7 +1238,7 @@ function treeRows(list, child) {
 function fieldRows(f) {
   return f.fields.map((x) =>
     '<div class="node' + (x.id === selId ? " sel" : "") + '" draggable="true" data-id="' + x.id + '">' +
-    '<span class="lbl">' + ic("question") + '<span class="tx"><b>Question</b> ' + esc(x.label) + "</span></span>" + rowButtons() + "</div>"
+    '<span class="lbl">' + ic("question") + '<span class="tx"><b>Question</b> ' + esc(x.label) + "</span>" + (bad.has(x.id) ? '<span class="dotred"></span>' : "") + "</span>" + rowButtons() + "</div>"
   ).join("");
 }
 
@@ -1182,13 +1247,14 @@ function renderTabs() {
     .concat(cur.layout.replies.map((r) => ({ id: r.id, name: r.name })))
     .concat(cur.layout.forms.map((f) => ({ id: f.id, name: "Form: " + f.name })));
   $("tabs").innerHTML = all.map((t) =>
-    '<button class="small' + (t.id === tab ? " primary" : "") + '" data-tab="' + t.id + '">' + esc(t.name) + "</button>"
+    '<button class="small' + (t.id === tab ? " primary" : "") + '" data-tab="' + t.id + '">' + esc(t.name) + (problems().some((x) => x.tab === t.id) ? '<span class="dotred"></span>' : "") + "</button>"
   ).join("") +
     '<button class="small" data-tab="__new">' + ic("reply") + "Reply</button>" +
     '<button class="small" data-tab="__newform">' + ic("form") + "Form</button>";
 }
 
 function renderTree() {
+  problems();
   const f = activeForm();
   $("treeTitle").textContent = f ? "Questions (max 5)" : "Message tree";
   $("blockPalette").classList.toggle("hidden", !!f);
@@ -1197,6 +1263,7 @@ function renderTree() {
 }
 
 function renderPreview() {
+  problems();
   hideAddMenu();
   const f = activeForm();
   if (f) {
@@ -1235,10 +1302,12 @@ function renderStatus() {
     ce.textContent = n + "/40 components";
     ce.className = "badge " + (n > 40 ? "bad" : "ok");
   }
-  const probs = findProblems();
+  const probs = problems();
   const pe = $("problems");
-  pe.textContent = probs.length ? probs[0] + (probs.length > 1 ? " (+" + (probs.length - 1) + ")" : "") : "Ready to post";
+  pe.textContent = probs.length ? probs[0].msg + (probs.length > 1 ? " (+" + (probs.length - 1) + ")" : "") : "Ready to post";
   pe.className = "badge " + (probs.length ? "bad" : "ok");
+  if (!probs.length) $("problemList").classList.add("hidden");
+  drawProblemList();
   $("saveBtn").innerHTML = ic(dirty ? "save" : "check") + "<span>" + (dirty ? "Save" : "Saved") + "</span>" +
     (dirty ? '<span class="dot"></span>' : "");
 }
@@ -2126,8 +2195,8 @@ function syncSchedForm() {
 $("schedAction").onchange = syncSchedForm;
 
 $("schedBtn").onclick = async () => {
-  const probs = findProblems();
-  if (probs.length) { alert("Fix this first: " + probs[0]); return; }
+  const probs = problems();
+  if (probs.length) { jumpToProblem(probs[0]); alert("Fix this first: " + probs[0].msg); return; }
   await save(false);
   if (dirty || !cur.id) return;
   $("schedTz").textContent = "Times use your browser's time zone: " + tzName + ".";
@@ -2289,8 +2358,8 @@ async function loadSendChannels(gid, wanted) {
 }
 
 $("sendBtn").onclick = async () => {
-  const probs = findProblems();
-  if (probs.length) { alert("Fix this first: " + probs[0]); return; }
+  const probs = problems();
+  if (probs.length) { jumpToProblem(probs[0]); alert("Fix this first: " + probs[0].msg); return; }
   await save(false);
   if (dirty || !cur.id) return;
   try {
