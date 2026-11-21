@@ -53,10 +53,11 @@ label{display:block;font-size:12px;color:var(--muted);margin:10px 0 4px;text-tra
 .pimgs{display:grid;gap:4px;margin:6px 0}
 .pimgs img{width:100%;border-radius:6px;display:block}
 .pbtns{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}
-.pbtn{background:#4e5058;border-radius:4px;padding:6px 12px;font-size:14px}
+.pbtn{background:#4e5058;border-radius:4px;padding:6px 12px;font-size:14px;display:inline-flex;align-items:center;gap:6px}
 .pbtn.blue{background:#5865f2}
 .pbtn.green{background:#248046}
 .pbtn.red{background:#da373c}
+.pbtn .emoji{width:18px;height:18px;vertical-align:middle}
 .psel{display:flex;justify-content:space-between;background:#1e1f22;border:1px solid #3f4147;border-radius:6px;padding:8px 10px;margin:6px 0;color:#b5bac1;font-size:14px}
 .pform{background:#2b2d31;border-radius:10px;padding:16px;margin:6px 0}
 .pform h2{margin:0 0 10px;font-size:20px}
@@ -65,6 +66,9 @@ label{display:block;font-size:12px;color:var(--muted);margin:10px 0 4px;text-tra
 .pform .fake.tall{min-height:90px}
 .pform .foot{display:flex;justify-content:flex-end;margin-top:14px}
 .emoji{width:22px;height:22px;vertical-align:-5px}
+.eg{display:flex;flex-wrap:wrap;gap:4px}
+.eg button{padding:4px;background:#313338}
+.eg img{width:32px;height:32px;display:block}
 .overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);display:grid;place-items:center;z-index:50;padding:12px}
 .modal{background:#2b2d31;border-radius:12px;padding:18px;width:min(420px,100%);max-height:90vh;overflow:auto}
 .btnrow{display:flex;gap:8px;flex-wrap:wrap}
@@ -148,6 +152,15 @@ label{display:block;font-size:12px;color:var(--muted);margin:10px 0 4px;text-tra
   </div>
 </div>
 
+<div id="emojiOverlay" class="overlay hidden">
+  <div class="modal" style="width:min(520px,100%)">
+    <h2 style="margin:0 0 8px">Pick an emoji</h2>
+    <input id="emojiSearch" placeholder="Search by name">
+    <div id="emojiList" style="margin-top:8px"></div>
+    <div class="btnrow" style="margin-top:10px"><button id="emojiClose">Close</button></div>
+  </div>
+</div>
+
 <script>
 const API_URL = "https://h5nngnplb6.apps.bot-hosting.cloud".replace(/\/+$/, "");
 const $ = (id) => document.getElementById(id);
@@ -197,6 +210,8 @@ let dirty = false;
 let guilds = [];
 let roles = [];
 let chans = [];
+let emojiData = null;
+let emojiCb = null;
 const uid = () => Math.random().toString(36).slice(2, 8);
 const NAMES = { text: "Text", images: "Images", divider: "Divider", box: "Box", button_row: "Buttons", dropdown: "Dropdown" };
 
@@ -208,6 +223,10 @@ function opts(list, selected) {
   return list.map((o) =>
     '<option value="' + esc(o[0]) + '"' + (o[0] === selected ? " selected" : "") + ">" + esc(o[1]) + "</option>"
   ).join("");
+}
+
+function emojiUrl(e) {
+  return "https://cdn.discordapp.com/emojis/" + e.id + "." + (e.animated ? "gif" : "png");
 }
 
 function inline(s) {
@@ -229,6 +248,69 @@ function md(text) {
   }).join("");
 }
 
+/* ---------- Emoji picker ---------- */
+async function loadEmojis() {
+  if (emojiData) return;
+  try { emojiData = await api("/emojis"); } catch (e) { emojiData = []; }
+}
+
+function drawEmojiList() {
+  const q = $("emojiSearch").value.trim().toLowerCase();
+  let html = "";
+  (emojiData || []).forEach((g) => {
+    const list = g.emojis.filter((e) => !q || e.name.toLowerCase().includes(q));
+    if (!list.length) return;
+    html += '<div class="muted" style="margin:8px 0 4px">' + esc(g.guild_name) + '</div><div class="eg">' +
+      list.map((e) =>
+        '<button data-eid="' + e.id + '" data-ename="' + esc(e.name) + '" data-eanim="' + (e.animated ? "1" : "0") +
+        '" title=":' + esc(e.name) + ':"><img loading="lazy" src="' + emojiUrl(e) + '" alt=""></button>'
+      ).join("") + "</div>";
+  });
+  $("emojiList").innerHTML = html || '<p class="muted">No custom emojis found. The bot must be in a server that has some.</p>';
+}
+
+async function pickEmoji(cb) {
+  emojiCb = cb;
+  await loadEmojis();
+  $("emojiSearch").value = "";
+  drawEmojiList();
+  $("emojiOverlay").classList.remove("hidden");
+}
+
+$("emojiSearch").oninput = drawEmojiList;
+$("emojiClose").onclick = () => { emojiCb = null; $("emojiOverlay").classList.add("hidden"); };
+$("emojiOverlay").onclick = (e) => {
+  if (e.target === $("emojiOverlay")) { emojiCb = null; $("emojiOverlay").classList.add("hidden"); }
+};
+$("emojiList").addEventListener("click", (e) => {
+  const btn = e.target.closest("button[data-eid]");
+  if (!btn || !emojiCb) return;
+  const picked = { id: btn.dataset.eid, name: btn.dataset.ename, animated: btn.dataset.eanim === "1" };
+  const cb = emojiCb;
+  emojiCb = null;
+  $("emojiOverlay").classList.add("hidden");
+  cb(picked);
+});
+
+function insertIntoField(selector, text) {
+  const el = document.querySelector(selector);
+  if (!el) return;
+  const s = el.selectionStart === undefined ? el.value.length : el.selectionStart;
+  const t = el.selectionEnd === undefined ? s : el.selectionEnd;
+  el.value = el.value.slice(0, s) + text + el.value.slice(t);
+  el.dispatchEvent(new Event("input", { bubbles: true }));
+}
+
+function emojiRow(x, kind, i) {
+  const shown = x.emoji
+    ? '<img class="emoji" src="' + emojiUrl(x.emoji) + '" alt=""> <span class="muted">:' + esc(x.emoji.name) + ":</span>"
+    : '<span class="muted">none</span>';
+  return '<label>Emoji (optional)</label><div class="btnrow" style="align-items:center">' + shown +
+    '<button class="small" data-act2="' + kind + 'emoji" data-i="' + i + '">Pick</button>' +
+    (x.emoji ? '<button class="small" data-act2="' + kind + 'emojiclear" data-i="' + i + '">Clear</button>' : "") + "</div>";
+}
+
+/* ---------- Data helpers ---------- */
 function newButton() {
   return { id: uid(), label: "Button", style: "grey", action: { type: "link", url: "https://" } };
 }
@@ -465,7 +547,7 @@ function problemsFor(blocks, prefix, p) {
       if (!b.buttons.length) p.push(prefix + "has an empty button row");
       if (b.buttons.length > 5) p.push(prefix + "has more than 5 buttons in a row");
       b.buttons.forEach((x) => {
-        if (!x.label.trim()) p.push(prefix + "has a button with no label");
+        if (!x.label.trim() && !x.emoji) p.push(prefix + "has a button with no label or emoji");
         if (x.action.type === "link" && !x.action.url.trim().startsWith("https://")) p.push(prefix + "has a button link not starting with https://");
         checkAction(x.action, "a button");
       });
@@ -505,11 +587,12 @@ function label(b) {
   if (b.type === "text") return b.content.split("\n")[0].slice(0, 30) || "(empty)";
   if (b.type === "images") return b.urls.filter((x) => x.trim()).length + " image(s)";
   if (b.type === "box") return b.children.length + " part(s)";
-  if (b.type === "button_row") return b.buttons.map((x) => x.label).join(", ").slice(0, 30);
+  if (b.type === "button_row") return b.buttons.map((x) => x.label || ":" + (x.emoji ? x.emoji.name : "") + ":").join(", ").slice(0, 30);
   if (b.type === "dropdown") return b.options.length + " option(s)";
   return b.spacing + (b.line ? " line" : "");
 }
 
+/* ---------- Rendering ---------- */
 function renderBlock(b) {
   if (b.type === "text") return '<div class="ptext">' + md(b.content) + "</div>";
   if (b.type === "images") {
@@ -525,7 +608,9 @@ function renderBlock(b) {
   if (b.type === "button_row") {
     return '<div class="pbtns">' + b.buttons.map((x) => {
       const link = x.action.type === "link";
-      return '<span class="pbtn ' + (link ? "" : esc(x.style || "grey")) + '">' + inline(x.label) + (link ? " &#8599;" : "") + "</span>";
+      return '<span class="pbtn ' + (link ? "" : esc(x.style || "grey")) + '">' +
+        (x.emoji ? '<img class="emoji" src="' + emojiUrl(x.emoji) + '" alt="">' : "") +
+        esc(x.label) + (link ? " &#8599;" : "") + "</span>";
     }).join("") + "</div>";
   }
   if (b.type === "dropdown") {
@@ -648,6 +733,7 @@ function buttonEditor(x, i) {
     opts([["grey", "Grey"], ["blue", "Blue"], ["green", "Green"], ["red", "Red"]], x.style) + "</select>";
   return '<div class="bcard"><label style="margin-top:0">Button ' + (i + 1) + " label</label>" +
     '<input data-f="blabel" data-i="' + i + '" value="' + esc(x.label) + '">' +
+    emojiRow(x, "b", i) +
     '<label>When clicked</label><select data-f="baction" data-i="' + i + '">' +
     opts([["link", "Open a link"], ["reply", "Show a private reply"], ["form", "Open a pop-up form"], ["role", "Give or remove a role"]], x.action.type) + "</select>" +
     actionExtra(x.action, "b", i) + colour +
@@ -657,6 +743,7 @@ function buttonEditor(x, i) {
 function optionEditor(o, i) {
   return '<div class="bcard"><label style="margin-top:0">Option ' + (i + 1) + " label</label>" +
     '<input data-f="olabel" data-i="' + i + '" value="' + esc(o.label) + '">' +
+    emojiRow(o, "o", i) +
     "<label>Small description (optional)</label>" +
     '<input data-f="odesc" data-i="' + i + '" value="' + esc(o.description || "") + '">' +
     '<label>When chosen</label><select data-f="oaction" data-i="' + i + '">' +
@@ -703,7 +790,8 @@ function renderSettings() {
   const b = loc.list[loc.index];
   let h = "";
   if (b.type === "text") {
-    h = '<label>Text (supports Discord markdown and custom emoji)</label><textarea data-f="content">' + esc(b.content) + "</textarea>";
+    h = '<button class="small" data-act2="emojitext">&#128512; Insert emoji</button>' +
+      '<label>Text (supports Discord markdown and custom emoji)</label><textarea data-f="content">' + esc(b.content) + "</textarea>";
   }
   if (b.type === "images") {
     h = '<label>Image links (https, one per line, max 10)</label><textarea data-f="urls">' + esc(b.urls.join("\n")) + "</textarea>";
@@ -734,6 +822,7 @@ function renderAll() {
   renderStatus();
 }
 
+/* ---------- Events ---------- */
 $("tabs").addEventListener("click", (e) => {
   const t = e.target.dataset.tab;
   if (!t) return;
@@ -871,10 +960,29 @@ $("settings").addEventListener("click", (e) => {
   const loc = findLoc(selId);
   if (!loc) return;
   const b = loc.list[loc.index];
+  const i = Number(e.target.dataset.i);
+
+  if (act === "emojitext") {
+    pickEmoji((em) => {
+      insertIntoField('[data-f="content"]', "<" + (em.animated ? "a" : "") + ":" + em.name + ":" + em.id + ">");
+    });
+    return;
+  }
+  if (act === "bemoji") {
+    pickEmoji((em) => { b.buttons[i].emoji = em; markDirty(); renderAll(); });
+    return;
+  }
+  if (act === "bemojiclear") { delete b.buttons[i].emoji; }
+  if (act === "oemoji") {
+    pickEmoji((em) => { b.options[i].emoji = em; markDirty(); renderAll(); });
+    return;
+  }
+  if (act === "oemojiclear") { delete b.options[i].emoji; }
+
   if (act === "addbtn") b.buttons.push(newButton());
-  if (act === "delbtn") b.buttons.splice(Number(e.target.dataset.i), 1);
+  if (act === "delbtn") b.buttons.splice(i, 1);
   if (act === "addopt" && b.options.length < 25) b.options.push(newOption());
-  if (act === "delopt") b.options.splice(Number(e.target.dataset.i), 1);
+  if (act === "delopt") b.options.splice(i, 1);
   markDirty();
   renderAll();
 });
