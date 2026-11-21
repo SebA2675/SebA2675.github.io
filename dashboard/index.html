@@ -1328,7 +1328,11 @@ function drawProblemList() {
 
 $("problems").onclick = () => {
   if (!problems().length) return;
-  $("problemList").classList.toggle("hidden");
+  const box = $("problemList");
+  box.classList.toggle("hidden");
+  if (box.classList.contains("hidden")) return;
+  const r = $("problems").getBoundingClientRect();
+  box.style.top = (r.bottom + 6) + "px";
   drawProblemList();
 };
 
