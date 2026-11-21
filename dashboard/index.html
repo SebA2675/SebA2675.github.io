@@ -136,6 +136,8 @@ label{display:block;font-size:12px;color:var(--muted);margin:10px 0 4px;text-tra
 /* ----- Phone layout ----- */
 @media(max-width:900px){
   .builder{display:block;padding:10px 10px 90px}
+  .builder:not([data-tree="open"]) .pane-tree{display:block}
+  .treeToggle{display:none}
   .pane-tree,.pane-settings{position:fixed;left:0;right:0;bottom:calc(62px + env(safe-area-inset-bottom));max-height:72vh;overflow:auto;z-index:25;border-radius:20px 20px 0 0;box-shadow:0 -12px 30px rgba(43,34,24,.28);transform:translateY(120%);visibility:hidden;transition:transform .22s ease}
   .builder[data-pane="tree"] .pane-tree,.builder[data-pane="settings"] .pane-settings{transform:none;visibility:visible}
   .botbar{display:flex}
