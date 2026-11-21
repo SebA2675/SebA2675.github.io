@@ -1231,7 +1231,7 @@ function problemsFor(blocks, prefix, p, tabId) {
   };
   const checkButton = (x, who, id) => {
     if (!x.label.trim() && !x.emoji) add("has " + who + " with no label or emoji", id);
-    if (x.action.type === "link" && !x.action.url.trim().startsWith("https://")) add("has " + who + " with a link not starting with https://", id);
+    if (x.action.type === "link" && !okUrl(x.action.url)) add("has " + who + " with a link not starting with https://", id);
     checkAction(x.action, who, id);
   };
   const check = (b) => {
@@ -1239,7 +1239,7 @@ function problemsFor(blocks, prefix, p, tabId) {
     if (b.type === "section") {
       if (!b.content.trim()) add("has a Text + side part with no text", b.id);
       if (b.side === "thumbnail") {
-        if (!b.image.trim().startsWith("https://")) add("has a thumbnail link not starting with https://", b.id);
+        if (!okUrl(b.image)) add("has a thumbnail link not starting with https://", b.id);
       } else {
         checkButton(b.button, "a side button", b.id);
       }
@@ -1247,7 +1247,7 @@ function problemsFor(blocks, prefix, p, tabId) {
     if (b.type === "images") {
       const u = b.urls.filter((x) => x.trim());
       if (!u.length) add("has an image part with no link", b.id);
-      if (u.some((x) => !x.trim().startsWith("https://"))) add("has an image link not starting with https://", b.id);
+      if (u.some((x) => !okUrl(x))) add("has an image link not starting with https://", b.id);
       if (u.length > 10) add("has more than 10 images in one part", b.id);
     }
     if (b.type === "button_row") {
@@ -1263,7 +1263,10 @@ function problemsFor(blocks, prefix, p, tabId) {
         checkAction(o.action, "a dropdown option", b.id);
       });
     }
-    if (b.type === "box") b.children.forEach(check);
+    if (b.type === "box") {
+      if (!b.children.length) add("has an empty box", b.id);
+      b.children.forEach(check);
+    }
   };
   blocks.forEach(check);
   if (!blocks.length) add("is empty");
