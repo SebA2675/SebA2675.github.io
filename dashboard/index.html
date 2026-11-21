@@ -57,7 +57,6 @@ label{display:block;font-size:12px;color:var(--muted);margin:10px 0 4px;text-tra
 .dotred{width:8px;height:8px;border-radius:50%;background:#e5383b;display:inline-block;flex:none}
 #preview [data-bid][data-problem="1"]{position:relative}
 #preview [data-bid][data-problem="1"]::after{content:"";position:absolute;top:-4px;right:-4px;width:9px;height:9px;border-radius:50%;background:#e5383b;border:2px solid var(--d-bg)}
-#problems{cursor:default}
 #problems.bad{cursor:pointer}
 .plist{position:absolute;top:100%;right:12px;z-index:40;width:min(380px,calc(100% - 24px));max-height:60vh;overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:6px;box-shadow:0 8px 22px rgba(43,34,24,.3)}
 .plist button{width:100%;justify-content:flex-start;white-space:normal;text-align:left;margin-bottom:4px}
@@ -76,7 +75,7 @@ label{display:block;font-size:12px;color:var(--muted);margin:10px 0 4px;text-tra
 .badge.ok{background:var(--okbg);color:var(--ok)}
 .badge.bad{background:var(--badbg);color:var(--bad);white-space:normal}
 .dot{width:7px;height:7px;border-radius:50%;background:#f0b429;display:inline-block}
-.pvhead{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
+.pvhead{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;flex-wrap:wrap}
 .seg{display:inline-flex;gap:4px}
 .seg button.on{background:var(--ink);color:var(--cream);border-color:var(--ink)}
 .bcard{border:1px solid var(--line);background:#fffdf7;border-radius:12px;padding:10px;margin-bottom:8px}
@@ -100,6 +99,9 @@ label{display:block;font-size:12px;color:var(--muted);margin:10px 0 4px;text-tra
 .discord.light{--d-bg:#ffffff;--d-text:#313338;--d-box:#f2f3f5;--d-btn:#e3e5e8;--d-btnt:#060607;--d-input:#e3e5e8;--d-line:#c7ccd1;--d-muted:#5c5e66;--d-link:#006ce7;--d-ph:#e3e5e8}
 .discord .dm{color:var(--d-muted);font-size:13px}
 .discord a.dl{color:var(--d-link)}
+.discord code{background:var(--d-input);padding:1px 5px;border-radius:4px;font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:.9em}
+.discord .spoiler{background:var(--d-input);color:transparent;border-radius:3px;padding:0 2px}
+.discord .spoiler:hover{color:inherit}
 .msghead{display:flex;gap:6px;align-items:center;margin-bottom:8px;font-weight:600}
 .app{background:#5865f2;color:#fff;border-radius:4px;font-size:10px;padding:1px 4px}
 .pbox{background:var(--d-box);border-left:4px solid #5865f2;border-radius:6px;padding:12px;margin:6px 0}
@@ -144,6 +146,15 @@ label{display:block;font-size:12px;color:var(--muted);margin:10px 0 4px;text-tra
 .addmenu{position:absolute;z-index:21;width:230px;display:flex;flex-wrap:wrap;gap:6px;padding:8px;background:var(--panel);border:1px solid var(--line);border-radius:12px;box-shadow:0 8px 22px rgba(0,0,0,.4)}
 .padd{margin:6px 0;padding:6px 10px;border:1px dashed var(--d-line);border-radius:6px;color:var(--d-muted);font-size:13px;cursor:pointer;text-align:center}
 .padd:hover{color:var(--d-text);border-color:var(--d-muted)}
+
+/* ----- Test mode ----- */
+.tpanel{margin-top:10px;border:1px dashed var(--d-line);border-radius:10px;padding:12px}
+.tpanel .topt{padding:8px 10px;border-radius:6px;cursor:pointer;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.tpanel .topt:hover{background:var(--d-input)}
+.tpanel .tdesc{color:var(--d-muted);font-size:12px;width:100%}
+.ttoast{position:fixed;left:50%;bottom:84px;transform:translateX(-50%);z-index:60;background:var(--ink);color:var(--cream);padding:10px 16px;border-radius:10px;box-shadow:0 8px 22px rgba(0,0,0,.35);max-width:min(420px,90vw);font-size:14px}
+.testing .pbtn,.testing .psel{cursor:pointer}
+.testing .pbtn:hover{filter:brightness(1.15)}
 
 /* ----- Phone layout ----- */
 @media(max-width:900px){
@@ -286,6 +297,10 @@ label{display:block;font-size:12px;color:var(--muted);margin:10px 0 4px;text-tra
       <div class="pvhead">
         <b>Preview</b>
         <div class="seg">
+          <button class="small on" data-mode="edit">Edit</button>
+          <button class="small" data-mode="test">Test</button>
+        </div>
+        <div class="seg">
           <button class="small" data-pv="dark"><svg class="ic"><use href="#i-moon"></use></svg>Dark</button>
           <button class="small" data-pv="light"><svg class="ic"><use href="#i-sun"></use></svg>Light</button>
         </div>
@@ -294,6 +309,7 @@ label{display:block;font-size:12px;color:var(--muted);margin:10px 0 4px;text-tra
         <div class="msghead"><span>Griedon Embeds</span><span class="app">APP</span></div>
         <div id="previewNote" class="dm" style="margin-bottom:6px"></div>
         <div id="preview"></div>
+        <div id="testPanel" class="tpanel hidden"></div>
         <div id="floatBar" class="floatbar hidden">
           <button class="small ib" data-fact="parent" title="Select the box around this"><svg class="ic"><use href="#i-box"></use></svg></button>
           <button class="small ib" data-fact="up" title="Move up"><svg class="ic"><use href="#i-up"></use></svg></button>
@@ -399,6 +415,8 @@ label{display:block;font-size:12px;color:var(--muted);margin:10px 0 4px;text-tra
   </div>
 </div>
 
+<div id="testToast" class="ttoast hidden"></div>
+
 <script>
 const API_URL = "https://h5nngnplb6.apps.bot-hosting.cloud".replace(/\/+$/, "");
 const $ = (id) => document.getElementById(id);
@@ -468,9 +486,6 @@ let cur = null;
 let isOwner = false;
 let selId = null;
 let tab = "main";
-let probKey = "";
-let probList = [];
-let bad = new Set();
 let dirty = false;
 let editCount = 0;
 let saving = false;
@@ -489,6 +504,7 @@ let burstTimer = null;
 let restoring = false;
 let pane = "preview";
 let pv = "dark";
+let mode = "edit";
 try { pv = localStorage.getItem("pv") === "light" ? "light" : "dark"; } catch (e) {}
 const uid = () => Math.random().toString(36).slice(2, 8);
 const NAMES = {
@@ -527,7 +543,12 @@ function inline(s) {
   s = esc(s);
   s = s.replace(/&lt;(a?):(\w+):(\d+)&gt;/g, (m, a, n, id) =>
     '<img class="emoji" src="https://cdn.discordapp.com/emojis/' + id + "." + (a ? "gif" : "png") + '" alt=":' + n + ':">');
-  s = s.replace(/\*\*(.+?)\*\*/g, "<b>$1</b>").replace(/\*(.+?)\*/g, "<i>$1</i>");
+  s = s.replace(/`([^`]+?)`/g, "<code>$1</code>");
+  s = s.replace(/\|\|(.+?)\|\|/g, '<span class="spoiler">$1</span>');
+  s = s.replace(/\*\*(.+?)\*\*/g, "<b>$1</b>");
+  s = s.replace(/__(.+?)__/g, "<u>$1</u>");
+  s = s.replace(/\*(.+?)\*/g, "<i>$1</i>");
+  s = s.replace(/~~(.+?)~~/g, "<s>$1</s>");
   s = s.replace(/\[(.+?)\]\((https?:\/\/[^\s)]+)\)/g, '<a class="dl" href="$2" target="_blank" rel="noopener">$1</a>');
   return s;
 }
@@ -537,6 +558,7 @@ function md(text) {
     if (line.startsWith("### ")) return "<h3>" + inline(line.slice(4)) + "</h3>";
     if (line.startsWith("## ")) return "<h2>" + inline(line.slice(3)) + "</h2>";
     if (line.startsWith("# ")) return "<h1>" + inline(line.slice(2)) + "</h1>";
+    if (line.startsWith("-# ")) return '<p class="dm" style="font-size:12px">' + inline(line.slice(3)) + "</p>";
     if (line.startsWith("- ")) return "<p>&bull; " + inline(line.slice(2)) + "</p>";
     return "<p>" + (inline(line) || "&nbsp;") + "</p>";
   }).join("");
@@ -566,6 +588,147 @@ function applyTree() {
 }
 $("treeBtn").onclick = () => { treeOpen = !treeOpen; applyTree(); };
 $("treeEdge").onclick = () => { treeOpen = !treeOpen; applyTree(); };
+
+/* ---------- Edit / Test mode ---------- */
+let testRoles = new Set();
+let toastTimer = null;
+
+function toast(text) {
+  const t = $("testToast");
+  t.textContent = text;
+  t.classList.remove("hidden");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.add("hidden"), 2800);
+}
+
+function testShow(html) {
+  $("testPanel").innerHTML = html;
+  $("testPanel").classList.remove("hidden");
+}
+
+function testClear() {
+  $("testPanel").innerHTML = "";
+  $("testPanel").classList.add("hidden");
+}
+
+function setMode(m) {
+  mode = m;
+  testRoles = new Set();
+  testClear();
+  hideAddMenu();
+  $("testToast").classList.add("hidden");
+  document.querySelectorAll("[data-mode]").forEach((b) => b.classList.toggle("on", b.dataset.mode === mode));
+  $("discordBox").classList.toggle("testing", mode === "test");
+  renderPreview();
+}
+
+document.querySelector(".pvhead").addEventListener("click", (e) => {
+  const m = btnData(e).mode;
+  if (m && m !== mode) setMode(m);
+});
+
+function allBlocks() {
+  const out = [];
+  const walk = (list) => list.forEach((b) => {
+    out.push(b);
+    if (b.type === "box") walk(b.children);
+  });
+  walk(cur.layout.blocks);
+  cur.layout.replies.forEach((r) => walk(r.blocks));
+  return out;
+}
+
+function testFindBtn(id) {
+  for (const b of allBlocks()) {
+    if (b.type === "button_row") {
+      const x = b.buttons.find((y) => y.id === id);
+      if (x) return x;
+    }
+    if (b.type === "section" && b.side === "button" && b.button && b.button.id === id) return b.button;
+  }
+  return null;
+}
+
+function testDropdown(blockId) {
+  const b = allBlocks().find((x) => x.id === blockId);
+  if (!b) return;
+  testShow('<div class="dm" style="margin-bottom:6px">Dropdown options <button class="small" data-tclose="1" style="margin-left:8px">Close</button></div>' +
+    b.options.map((o) =>
+      '<div class="topt" data-opt="' + esc(o.id) + '" data-blk="' + esc(b.id) + '">' +
+      (o.emoji ? '<img class="emoji" src="' + emojiUrl(o.emoji) + '" alt="">' : "") +
+      "<span>" + esc(o.label) + "</span>" +
+      (o.description ? '<span class="tdesc">' + esc(o.description) + "</span>" : "") + "</div>"
+    ).join(""));
+}
+
+function testRun(a) {
+  if (!a) return;
+  if (a.type === "link") {
+    const url = String(a.url || "").trim();
+    if (url.startsWith("https://")) window.open(url, "_blank", "noopener");
+    else toast("This link must start with https://");
+    return;
+  }
+  if (a.type === "reply") {
+    const r = cur.layout.replies.find((x) => x.id === a.reply_id);
+    if (!r) { toast("No reply is chosen for this."); return; }
+    testShow('<div class="dm" style="margin-bottom:6px">Only you can see this <button class="small" data-tclose="1" style="margin-left:8px">Dismiss</button></div>' +
+      r.blocks.map(renderBlock).join(""));
+    return;
+  }
+  if (a.type === "form") {
+    const f = cur.layout.forms.find((x) => x.id === a.form_id);
+    if (!f) { toast("No form is chosen for this."); return; }
+    testShow('<div class="dm" style="margin-bottom:6px">Pop-up form <button class="small" data-tclose="1" style="margin-left:8px">Close</button></div>' +
+      renderFormPreview(f).replace('<span class="pbtn blue">',
+        '<span class="pbtn blue" data-tsubmit="' + esc(f.id) + '" style="cursor:pointer">'));
+    return;
+  }
+  if (a.type === "role") {
+    const role = roles.find((x) => x.id === a.role_id);
+    if (!role) { toast("That role doesn't exist any more."); return; }
+    if (!role.assignable) { toast("I can't manage that role. My role must be above it in Server Settings."); return; }
+    const has = testRoles.has(role.id);
+    let m = a.mode || "toggle";
+    if (m === "toggle") m = has ? "remove" : "add";
+    if (m === "add") {
+      if (has) { toast("You already have the " + role.name + " role."); return; }
+      testRoles.add(role.id);
+      toast("Added the " + role.name + " role.");
+    } else {
+      if (!has) { toast("You don't have the " + role.name + " role."); return; }
+      testRoles.delete(role.id);
+      toast("Removed the " + role.name + " role.");
+    }
+  }
+}
+
+function testClick(e) {
+  e.preventDefault();
+  if (e.target.closest("[data-tclose]")) { testClear(); return; }
+  const sub = e.target.closest("[data-tsubmit]");
+  if (sub) {
+    const f = cur.layout.forms.find((x) => x.id === sub.dataset.tsubmit);
+    const c = f ? chans.find((x) => x.id === f.channel_id) : null;
+    testShow('<div class="dm" style="margin-bottom:6px">Only you can see this <button class="small" data-tclose="1" style="margin-left:8px">Dismiss</button></div>' +
+      "<p>" + esc((f && f.thanks) || "Thanks! Your response was sent.") + "</p>" +
+      '<div class="dm">(Test: answers would be posted in ' + (c ? "#" + esc(c.name) : "the chosen channel") + ".)</div>");
+    return;
+  }
+  const opt = e.target.closest("[data-opt]");
+  if (opt) {
+    const blk = allBlocks().find((x) => x.id === opt.dataset.blk);
+    const o = blk && blk.options.find((y) => y.id === opt.dataset.opt);
+    if (o) testRun(o.action);
+    return;
+  }
+  const bt = e.target.closest("[data-btn]");
+  if (bt) { testRun((testFindBtn(bt.dataset.btn) || {}).action); return; }
+  const dd = e.target.closest("[data-dd]");
+  if (dd) testDropdown(dd.dataset.dd);
+}
+
+$("testPanel").addEventListener("click", testClick);
 
 function applyPv() {
   $("discordBox").classList.toggle("light", pv === "light");
@@ -703,40 +866,58 @@ function insertIntoField(selector, text) {
   el.dispatchEvent(new Event("input", { bubbles: true }));
 }
 
+/* ---------- Text toolbar ---------- */
 function fmtBar() {
+  const b = (k, t, l) => '<button type="button" class="small" data-act2="fmt" data-fmt="' + k + '" title="' + t + '">' + l + "</button>";
   return '<div class="fmtbar" role="toolbar" aria-label="Text formatting">' +
-    '<button type="button" class="small" data-act2="fmt" data-fmt="bold" title="Bold"><b>B</b></button>' +
-    '<button type="button" class="small" data-act2="fmt" data-fmt="italic" title="Italic"><i>I</i></button>' +
-    '<button type="button" class="small" data-act2="fmt" data-fmt="underline" title="Underline"><u>U</u></button>' +
-    '<button type="button" class="small" data-act2="fmt" data-fmt="strike" title="Strikethrough"><s>S</s></button>' +
-    '<button type="button" class="small" data-act2="fmt" data-fmt="code" title="Inline code"><code>&lt;&gt;</code></button>' +
-    '<button type="button" class="small" data-act2="fmt" data-fmt="spoiler" title="Spoiler">||</button>' +
-    '</div>';
+    b("bold", "Bold", "<b>B</b>") +
+    b("italic", "Italic", "<i>I</i>") +
+    b("underline", "Underline", "<u>U</u>") +
+    b("strike", "Strikethrough", "<s>S</s>") +
+    b("code", "Inline code", "&lt;&gt;") +
+    b("spoiler", "Spoiler", "||") +
+    b("h1", "Big heading", "H1") +
+    b("h2", "Heading", "H2") +
+    b("small", "Small text", "-#") +
+    b("link", "Link", "Link") +
+    "</div>";
 }
 
-function formatTextField(field, format) {
-  const el = field;
+function formatText(kind) {
+  const el = document.querySelector('#settings textarea[data-f="content"]');
   if (!el) return;
-  const start = el.selectionStart ?? el.value.length;
-  const end = el.selectionEnd ?? start;
-  const selected = el.value.slice(start, end);
-  const marks = {
-    bold: ["**", "**"],
-    italic: ["*", "*"],
-    underline: ["__", "__"],
-    strike: ["~~", "~~"],
-    code: ["`", "`"],
-    spoiler: ["||", "||"]
+  const v = el.value;
+  const s = el.selectionStart;
+  const t = el.selectionEnd;
+  const wraps = {
+    bold: ["**", "**"], italic: ["*", "*"], underline: ["__", "__"],
+    strike: ["~~", "~~"], code: ["`", "`"], spoiler: ["||", "||"],
   };
-  const pair = marks[format];
-  if (!pair) return;
-  el.setRangeText(pair[0] + selected + pair[1], start, end, "select");
-  el.dispatchEvent(new Event("input", { bubbles: true }));
+  const prefixes = { h1: "# ", h2: "## ", small: "-# " };
+  if (wraps[kind]) {
+    const [a, z] = wraps[kind];
+    const mid = v.slice(s, t) || "text";
+    el.value = v.slice(0, s) + a + mid + z + v.slice(t);
+    el.setSelectionRange(s + a.length, s + a.length + mid.length);
+  } else if (kind === "link") {
+    const mid = v.slice(s, t) || "link";
+    el.value = v.slice(0, s) + "[" + mid + "](https://)" + v.slice(t);
+    const u = s + mid.length + 3;
+    el.setSelectionRange(u, u + 8);
+  } else if (prefixes[kind]) {
+    const start = v.lastIndexOf("\n", s - 1) + 1;
+    let end = v.indexOf("\n", t);
+    if (end < 0) end = v.length;
+    const p = prefixes[kind];
+    const out = v.slice(start, end).split("\n").map((ln) => {
+      const had = ln.startsWith(p);
+      return (had ? "" : p) + ln.replace(/^(#{1,3} |-# )/, "");
+    }).join("\n");
+    el.value = v.slice(0, start) + out + v.slice(end);
+    el.setSelectionRange(start, start + out.length);
+  }
   el.focus();
-}
-
-function formatText(format) {
-  formatTextField(document.querySelector('[data-f="content"]'), format);
+  el.dispatchEvent(new Event("input", { bubbles: true }));
 }
 
 function emojiRow(x, kind, i) {
@@ -1030,6 +1211,11 @@ function countChars(blocks) {
   return n;
 }
 
+/* ---------- Problems (clickable list, red dots) ---------- */
+let probKey = "";
+let probList = [];
+let bad = new Set();
+
 function problemsFor(blocks, prefix, p, tabId) {
   const replyExists = (id) => cur.layout.replies.some((r) => r.id === id);
   const formExists = (id) => cur.layout.forms.some((f) => f.id === id);
@@ -1114,6 +1300,7 @@ function problems() {
 }
 
 function jumpToProblem(pr) {
+  if (mode === "test") setMode("edit");
   tab = pr.tab;
   selId = pr.blockId;
   $("problemList").classList.add("hidden");
@@ -1161,12 +1348,13 @@ function label(b) {
 /* ---------- Rendering ---------- */
 function renderBtn(x) {
   const link = x.action.type === "link";
-  return '<span class="pbtn ' + (link ? "" : esc(x.style || "grey")) + '">' +
+  return '<span class="pbtn ' + (link ? "" : esc(x.style || "grey")) + '" data-btn="' + esc(x.id) + '">' +
     (x.emoji ? '<img class="emoji" src="' + emojiUrl(x.emoji) + '" alt="">' : "") +
     esc(x.label) + (link ? " &#8599;" : "") + "</span>";
 }
 
 function bAttr(b) {
+  if (mode === "test") return "";
   return ' data-bid="' + b.id + '"' + (b.id === selId ? ' data-sel="1"' : "") + (bad.has(b.id) ? ' data-problem="1"' : "");
 }
 
@@ -1198,12 +1386,12 @@ function renderBlock(b) {
     return '<div class="pbtns"' + a + ">" + b.buttons.map(renderBtn).join("") + "</div>";
   }
   if (b.type === "dropdown") {
-    return '<div class="psel"' + a + "><span>" + esc(b.placeholder || "Choose an option...") + "</span><span>&#9662;</span></div>";
+    return '<div class="psel"' + a + ' data-dd="' + b.id + '"><span>' + esc(b.placeholder || "Choose an option...") + "</span><span>&#9662;</span></div>";
   }
   if (b.type === "box") {
     const c = /^#[0-9a-f]{6}$/i.test(b.accent) ? b.accent : "#5865F2";
     const inner = b.children.map(renderBlock).join("") +
-      '<div class="padd" data-addto="' + b.id + '">+ Add inside the box</div>';
+      (mode === "test" ? "" : '<div class="padd" data-addto="' + b.id + '">+ Add inside the box</div>');
     return '<div class="pbox"' + a + ' style="border-left-color:' + c + '">' + inner + "</div>";
   }
   return "";
@@ -1228,7 +1416,8 @@ function treeRows(list, child) {
   return list.map((b) => {
     let html = '<div class="node' + (child ? " child" : "") + (b.id === selId ? " sel" : "") +
       '" draggable="true" data-id="' + b.id + '">' +
-      '<span class="lbl">' + ic(TYPE_ICON[b.type]) + '<span class="tx"><b>' + NAMES[b.type] + "</b> " + esc(label(b)) + "</span>" + (bad.has(b.id) ? '<span class="dotred"></span>' : "") + "</span>" +
+      '<span class="lbl">' + ic(TYPE_ICON[b.type]) + '<span class="tx"><b>' + NAMES[b.type] + "</b> " + esc(label(b)) + "</span>" +
+      (bad.has(b.id) ? '<span class="dotred"></span>' : "") + "</span>" +
       rowButtons() + "</div>";
     if (b.type === "box") html += treeRows(b.children, true);
     return html;
@@ -1238,7 +1427,8 @@ function treeRows(list, child) {
 function fieldRows(f) {
   return f.fields.map((x) =>
     '<div class="node' + (x.id === selId ? " sel" : "") + '" draggable="true" data-id="' + x.id + '">' +
-    '<span class="lbl">' + ic("question") + '<span class="tx"><b>Question</b> ' + esc(x.label) + "</span>" + (bad.has(x.id) ? '<span class="dotred"></span>' : "") + "</span>" + rowButtons() + "</div>"
+    '<span class="lbl">' + ic("question") + '<span class="tx"><b>Question</b> ' + esc(x.label) + "</span>" +
+    (bad.has(x.id) ? '<span class="dotred"></span>' : "") + "</span>" + rowButtons() + "</div>"
   ).join("");
 }
 
@@ -1246,8 +1436,10 @@ function renderTabs() {
   const all = [{ id: "main", name: "Main message" }]
     .concat(cur.layout.replies.map((r) => ({ id: r.id, name: r.name })))
     .concat(cur.layout.forms.map((f) => ({ id: f.id, name: "Form: " + f.name })));
+  const list = problems();
   $("tabs").innerHTML = all.map((t) =>
-    '<button class="small' + (t.id === tab ? " primary" : "") + '" data-tab="' + t.id + '">' + esc(t.name) + (problems().some((x) => x.tab === t.id) ? '<span class="dotred"></span>' : "") + "</button>"
+    '<button class="small' + (t.id === tab ? " primary" : "") + '" data-tab="' + t.id + '">' + esc(t.name) +
+    (list.some((x) => x.tab === t.id) ? '<span class="dotred"></span>' : "") + "</button>"
   ).join("") +
     '<button class="small" data-tab="__new">' + ic("reply") + "Reply</button>" +
     '<button class="small" data-tab="__newform">' + ic("form") + "Form</button>";
@@ -1268,26 +1460,27 @@ function renderPreview() {
   const f = activeForm();
   if (f) {
     const c = chans.find((x) => x.id === f.channel_id);
-    $("previewNote").textContent = "Pop-up form. Answers go to " + (c ? "#" + c.name : "(choose a channel in settings)") + ".";
+    $("previewNote").textContent = "Pop-up form. Answers go to " + (c ? "#" + c.name : "(choose a channel in settings)") + "." +
+      (mode === "test" ? " To test it, click the form's button in the main message." : "");
     $("preview").innerHTML = renderFormPreview(f);
     hideFloatBar();
     return;
   }
-  $("previewNote").textContent = activeReply() ? "Private reply: only the person who clicked sees this." : "";
+  const base = activeReply() ? "Private reply: only the person who clicks sees this." : "";
+  $("previewNote").textContent = mode === "test"
+    ? "Test mode: click buttons and dropdowns. Nothing is sent. Role permissions are checked by Discord for real."
+    : base;
   $("preview").innerHTML = activeBlocks().map(renderBlock).join("") +
-    '<div class="padd" data-addto="main">+ Add</div>';
-  positionFloatBar();
+    (mode === "test" ? "" : '<div class="padd" data-addto="main">+ Add</div>');
+  if (mode === "test") hideFloatBar(); else positionFloatBar();
 }
 
 function updateCharCount() {
-  const counter = $("charCount");
-  if (!counter) return;
-  const loc = selId ? findLoc(selId) : null;
-  if (!loc) return;
-  const b = loc.list[loc.index];
-  if (b.type !== "text" && b.type !== "section") return;
-  counter.textContent = b.content.length + " / 4000";
-  counter.style.color = b.content.length > 4000 ? "var(--bad)" : "";
+  const el = $("charCount");
+  if (!el || !cur || activeForm()) return;
+  const n = countChars(activeBlocks());
+  el.textContent = n + " / 4000 characters in this message";
+  el.style.color = n > 4000 ? "var(--bad)" : "";
 }
 
 function renderStatus() {
@@ -1437,8 +1630,7 @@ function renderSettingsBody() {
   if (b.type === "text") {
     h = '<button class="small" data-act2="emojitext">' + ic("smile") + "Insert emoji</button>" +
       "<label>Text (supports Discord markdown and custom emoji)</label>" + fmtBar() +
-      '<textarea data-f="content">' + esc(b.content) + '</textarea><div id="charCount" class="muted" style="margin-top:4px">' +
-      b.content.length + " / 4000</div>";
+      '<textarea data-f="content">' + esc(b.content) + '</textarea><div id="charCount" class="muted" style="margin-top:4px"></div>';
   }
   if (b.type === "section") {
     h = '<button class="small" data-act2="emojitext">' + ic("smile") + "Insert emoji</button>" +
@@ -1469,13 +1661,6 @@ function renderSettingsBody() {
       '<button class="small" data-act2="addopt">' + ic("plus") + "Add option</button>";
   }
   el.innerHTML = h;
-  if (b.type === "text" || b.type === "section") {
-    const counter = $("charCount");
-    if (counter) {
-      counter.textContent = b.content.length + " / 4000";
-      counter.style.color = b.content.length > 4000 ? "var(--bad)" : "";
-    }
-  }
 }
 
 function renderAll() {
@@ -1495,6 +1680,7 @@ $("tabs").addEventListener("click", (e) => {
   if (t === "__newform") { addForm(); return; }
   tab = t;
   selId = null;
+  testClear();
   renderAll();
 });
 
@@ -1591,7 +1777,7 @@ function hideAddMenu() { $("addMenu").classList.add("hidden"); }
 
 function positionFloatBar() {
   const bar = $("floatBar");
-  const el = selId && !activeForm() ? $("preview").querySelector('[data-bid="' + selId + '"]') : null;
+  const el = selId && !activeForm() && mode !== "test" ? $("preview").querySelector('[data-bid="' + selId + '"]') : null;
   const loc = el ? findLoc(selId) : null;
   if (!el || !loc) { hideFloatBar(); return; }
   bar.querySelector('[data-fact="up"]').disabled = loc.index === 0;
@@ -1653,6 +1839,7 @@ $("preview").addEventListener("mouseleave", () => {
 
 $("preview").addEventListener("click", (e) => {
   if (activeForm()) return;
+  if (mode === "test") { testClick(e); return; }
   e.preventDefault();
   const add = e.target.closest("[data-addto]");
   if (add) { openAddMenu(add, add.dataset.addto); return; }
@@ -1743,14 +1930,7 @@ $("settings").addEventListener("input", (e) => {
   const i = Number(e.target.dataset.i);
   const btns = b.type === "dropdown" ? [] : buttonsOf(b);
   let again = false;
-  if (f === "content") {
-    b.content = v;
-    const counter = $("charCount");
-    if (counter) {
-      counter.textContent = v.length + " / 4000";
-      counter.style.color = v.length > 4000 ? "var(--bad)" : "";
-    }
-  }
+  if (f === "content") b.content = v;
   if (f === "urls") b.urls = v.split("\n");
   if (f === "spacing") b.spacing = v;
   if (f === "line") b.line = v === "1";
@@ -1785,6 +1965,7 @@ $("settings").addEventListener("input", (e) => {
     again = true;
   }
   markDirty();
+  renderTabs();
   renderTree();
   renderPreview();
   renderStatus();
@@ -1922,6 +2103,7 @@ async function openBuilder(msg) {
   selId = null;
   tab = "main";
   dirty = false;
+  probKey = "";
   clearTimeout(autosaveTimer);
   resetHistory();
   $("guildSel").innerHTML = opts(guilds.map((g) => [g.id, g.name]), cur.layout.guild_id);
@@ -1932,6 +2114,7 @@ async function openBuilder(msg) {
   treeOpen = false;
   applyTree();
   applyPv();
+  setMode("edit");
   renderAll();
 }
 
