@@ -1257,7 +1257,39 @@ function renderFormSettings(f) {
     '<button class="small danger" data-act2="delform">' + ic("trash") + "Delete this form</button>";
 }
 
+function crumbs() {
+  const f = activeForm();
+  const r = activeReply();
+  const parts = [{ name: f ? "Form: " + f.name : r ? r.name : "Main message", id: "root" }];
+  if (f) {
+    if (f.fields.some((x) => x.id === selId)) parts.push({ name: "Question" });
+  } else {
+    const loc = selId ? findLoc(selId) : null;
+    if (loc) {
+      if (loc.parent) parts.push({ name: NAMES.box, id: loc.parent.id });
+      parts.push({ name: NAMES[loc.list[loc.index].type] });
+    }
+  }
+  return '<div class="crumbs">' + parts.map((p, i) =>
+    i === parts.length - 1
+      ? "<b>" + esc(p.name) + "</b>"
+      : '<span data-crumb="' + p.id + '">' + esc(p.name) + "</span>"
+  ).join('<span>&rsaquo;</span>') + "</div>";
+}
+
 function renderSettings() {
+  renderSettingsBody();
+  $("settings").insertAdjacentHTML("afterbegin", crumbs());
+}
+
+$("settings").addEventListener("click", (e) => {
+  const c = e.target.closest("[data-crumb]");
+  if (!c) return;
+  selId = c.dataset.crumb === "root" ? null : c.dataset.crumb;
+  renderAll();
+});
+
+function renderSettingsBody() {
   const el = $("settings");
   const form = activeForm();
   if (form) { renderFormSettings(form); return; }
