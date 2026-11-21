@@ -1313,7 +1313,10 @@ function jumpToProblem(pr) {
   $("problemList").classList.add("hidden");
   renderAll();
   const el = selId ? document.querySelector('#preview [data-bid="' + selId + '"]') : null;
-  if (el) el.scrollIntoView({ block: "center", behavior: "smooth" });
+  if (el) {
+    el.scrollIntoView({ block: "center", behavior: "smooth" });
+    el.animate([{ boxShadow: "0 0 0 5px #e5383b" }, { boxShadow: "0 0 0 5px transparent" }], { duration: 1500 });
+  }
   if (isMobile()) setPane(selId ? "settings" : "preview");
 }
 
