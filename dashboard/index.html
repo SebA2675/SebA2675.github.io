@@ -536,7 +536,7 @@ function guildName(id) {
 }
 
 function emojiUrl(e) {
-  return "https://cdn.discordapp.com/emojis/" + e.id + "." + (e.animated ? "gif" : "png");
+  return "https://cdn.discordapp.com/emojis/" + encodeURIComponent(e.id) + "." + (e.animated ? "gif" : "png");
 }
 
 function inline(s) {
@@ -827,7 +827,7 @@ function drawEmojiList() {
     if (!list.length) return;
     html += '<div class="muted" style="margin:8px 0 4px">' + esc(g.guild_name) + '</div><div class="eg">' +
       list.map((e) =>
-        '<button data-eid="' + e.id + '" data-ename="' + esc(e.name) + '" data-eanim="' + (e.animated ? "1" : "0") +
+        '<button data-eid="' + esc(e.id) + '" data-ename="' + esc(e.name) + '" data-eanim="' + (e.animated ? "1" : "0") +
         '" title=":' + esc(e.name) + ':"><img loading="lazy" src="' + emojiUrl(e) + '" alt=""></button>'
       ).join("") + "</div>";
   });
@@ -1369,7 +1369,7 @@ function renderBtn(x) {
 
 function bAttr(b) {
   if (mode === "test") return "";
-  return ' data-bid="' + b.id + '"' + (b.id === selId ? ' data-sel="1"' : "") + (bad.has(b.id) ? ' data-problem="1"' : "");
+  return ' data-bid="' + esc(b.id) + '"' + (b.id === selId ? ' data-sel="1"' : "") + (bad.has(b.id) ? ' data-problem="1"' : "");
 }
 
 function renderBlock(b) {
@@ -1400,12 +1400,12 @@ function renderBlock(b) {
     return '<div class="pbtns"' + a + ">" + b.buttons.map(renderBtn).join("") + "</div>";
   }
   if (b.type === "dropdown") {
-    return '<div class="psel"' + a + ' data-dd="' + b.id + '"><span>' + esc(b.placeholder || "Choose an option...") + "</span><span>&#9662;</span></div>";
+    return '<div class="psel"' + a + ' data-dd="' + esc(b.id) + '"><span>' + esc(b.placeholder || "Choose an option...") + "</span><span>&#9662;</span></div>";
   }
   if (b.type === "box") {
     const c = /^#[0-9a-f]{6}$/i.test(b.accent) ? b.accent : "#5865F2";
     const inner = b.children.map(renderBlock).join("") +
-      (mode === "test" ? "" : '<div class="padd" data-addto="' + b.id + '">+ Add inside the box</div>');
+      (mode === "test" ? "" : '<div class="padd" data-addto="' + esc(b.id) + '">+ Add inside the box</div>');
     return '<div class="pbox"' + a + ' style="border-left-color:' + c + '">' + inner + "</div>";
   }
   return "";
@@ -1429,7 +1429,7 @@ function rowButtons() {
 function treeRows(list, child) {
   return list.map((b) => {
     let html = '<div class="node' + (child ? " child" : "") + (b.id === selId ? " sel" : "") +
-      '" draggable="true" data-id="' + b.id + '">' +
+      '" draggable="true" data-id="' + esc(b.id) + '">' +
       '<span class="lbl">' + ic(TYPE_ICON[b.type]) + '<span class="tx"><b>' + NAMES[b.type] + "</b> " + esc(label(b)) + "</span>" +
       (bad.has(b.id) ? '<span class="dotred"></span>' : "") + "</span>" +
       rowButtons() + "</div>";
@@ -1440,7 +1440,7 @@ function treeRows(list, child) {
 
 function fieldRows(f) {
   return f.fields.map((x) =>
-    '<div class="node' + (x.id === selId ? " sel" : "") + '" draggable="true" data-id="' + x.id + '">' +
+    '<div class="node' + (x.id === selId ? " sel" : "") + '" draggable="true" data-id="' + esc(x.id) + '">' +
     '<span class="lbl">' + ic("question") + '<span class="tx"><b>Question</b> ' + esc(x.label) + "</span>" +
     (bad.has(x.id) ? '<span class="dotred"></span>' : "") + "</span>" + rowButtons() + "</div>"
   ).join("");
@@ -1452,7 +1452,7 @@ function renderTabs() {
     .concat(cur.layout.forms.map((f) => ({ id: f.id, name: "Form: " + f.name })));
   const list = problems();
   $("tabs").innerHTML = all.map((t) =>
-    '<button class="small' + (t.id === tab ? " primary" : "") + '" data-tab="' + t.id + '">' + esc(t.name) +
+    '<button class="small' + (t.id === tab ? " primary" : "") + '" data-tab="' + esc(t.id) + '">' + esc(t.name) +
     (list.some((x) => x.tab === t.id) ? '<span class="dotred"></span>' : "") + "</button>"
   ).join("") +
     '<button class="small" data-tab="__new">' + ic("reply") + "Reply</button>" +
@@ -1606,7 +1606,7 @@ function crumbs() {
   return '<div class="crumbs">' + parts.map((p, i) =>
     i === parts.length - 1
       ? "<b>" + esc(p.name) + "</b>"
-      : '<span data-crumb="' + p.id + '">' + esc(p.name) + "</span>"
+      : '<span data-crumb="' + esc(p.id) + '">' + esc(p.name) + "</span>"
   ).join('<span>&rsaquo;</span>') + "</div>";
 }
 
@@ -1812,7 +1812,7 @@ function openAddMenu(row, target) {
   const menu = $("addMenu");
   const types = target === "main" ? ADD_TYPES : ADD_TYPES.filter((t) => t !== "box");
   menu.innerHTML = types.map((t) =>
-    '<button class="small" data-addtype="' + t + '" data-target="' + target + '">' + ic(TYPE_ICON[t]) + NAMES[t] + "</button>"
+    '<button class="small" data-addtype="' + t + '" data-target="' + esc(target) + '">' + ic(TYPE_ICON[t]) + NAMES[t] + "</button>"
   ).join("");
   menu.classList.remove("hidden");
   const b = $("discordBox").getBoundingClientRect();
