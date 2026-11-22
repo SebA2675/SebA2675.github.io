@@ -969,11 +969,11 @@ function emojiRow(x, kind, i) {
 
 /* ---------- Data helpers ---------- */
 function newButton() {
-  return { id: uid(), label: "Button", style: "grey", action: { type: "link", url: "https://" } };
+  return { id: uid(), label: "Button", style: "grey", action: { type: "link", url: "https://" }, allowed_roles: [], cooldown: 0, once: false };
 }
 
 function newOption() {
-  return { id: uid(), label: "Option", description: "", action: { type: "reply", reply_id: "" } };
+  return { id: uid(), label: "Option", description: "", action: { type: "reply", reply_id: "" }, allowed_roles: [], cooldown: 0, once: false };
 }
 
 function newField() {
@@ -998,6 +998,9 @@ function newBlock(type) {
 function fixButton(x) {
   if (!x.action) x.action = { type: "link", url: x.url || "https://" };
   if (!x.style) x.style = "grey";
+  if (!Array.isArray(x.allowed_roles)) x.allowed_roles = [];
+  if (!Number.isInteger(x.cooldown) || x.cooldown < 0) x.cooldown = 0;
+  if (typeof x.once !== "boolean") x.once = false;
   delete x.url;
 }
 
@@ -1028,6 +1031,9 @@ function normalize(layout) {
       b.options.forEach((o) => {
         if (!o.action) o.action = { type: "reply", reply_id: "" };
         if (o.description === undefined) o.description = "";
+        if (!Array.isArray(o.allowed_roles)) o.allowed_roles = [];
+        if (!Number.isInteger(o.cooldown) || o.cooldown < 0) o.cooldown = 0;
+        if (typeof o.once !== "boolean") o.once = false;
       });
     }
   };
@@ -1858,6 +1864,22 @@ function actionExtra(a, p, i) {
   return "";
 }
 
+function rulesEditor(x, p, i) {
+  const allowed = Array.isArray(x.allowed_roles) ? x.allowed_roles : [];
+  const roleChoices = roles.length
+    ? roles.map((r) =>
+      '<label style="display:flex;align-items:center;gap:6px;margin:4px 0">' +
+      '<input type="checkbox" data-f="' + p + 'roles" data-role="' + esc(r.id) + '" data-i="' + i + '"' +
+      (allowed.includes(r.id) ? " checked" : "") + '> ' + esc(r.name) + "</label>").join("")
+    : '<p class="muted">No roles loaded for this server.</p>';
+  return '<label>Who can use it (optional)</label>' +
+    '<div class="bcard" style="margin:4px 0 8px;padding:8px">' + roleChoices + "</div>" +
+    '<label>Cooldown (seconds)</label>' +
+    '<input type="number" min="0" max="86400" data-f="' + p + 'cooldown" data-i="' + i + '" value="' + Number(x.cooldown || 0) + '">' +
+    '<label style="display:flex;align-items:center;gap:6px;margin-top:8px">' +
+    '<input type="checkbox" data-f="' + p + 'once" data-i="' + i + '"' + (x.once ? " checked" : "") + '> Use once per person</label>';
+}
+
 function buttonEditor(x, i, single) {
   const colour = x.action.type === "link" ? "" :
     '<label>Colour</label><select data-f="bstyle" data-i="' + i + '">' +
@@ -1867,7 +1889,7 @@ function buttonEditor(x, i, single) {
     emojiRow(x, "b", i) +
     '<label>When clicked</label><select data-f="baction" data-i="' + i + '">' +
     opts([["link", "Open a link"], ["reply", "Show a private reply"], ["form", "Open a pop-up form"], ["role", "Give or remove a role"]], x.action.type) + "</select>" +
-    actionExtra(x.action, "b", i) + colour +
+    actionExtra(x.action, "b", i) + colour + rulesEditor(x, "b", i) +
     (single ? "" : '<button class="small danger" data-act2="delbtn" data-i="' + i + '" style="margin-top:8px">' + ic("trash") + "Remove button</button>") +
     "</div>";
 }
@@ -1880,7 +1902,7 @@ function optionEditor(o, i) {
     '<input data-f="odesc" data-i="' + i + '" value="' + esc(o.description || "") + '">' +
     '<label>When chosen</label><select data-f="oaction" data-i="' + i + '">' +
     opts([["reply", "Show a private reply"], ["form", "Open a pop-up form"], ["role", "Give or remove a role"]], o.action.type) + "</select>" +
-    actionExtra(o.action, "o", i) +
+    actionExtra(o.action, "o", i) + rulesEditor(o, "o", i) +
     '<button class="small danger" data-act2="delopt" data-i="' + i + '" style="margin-top:8px">' + ic("trash") + "Remove option</button></div>";
 }
 
@@ -2282,6 +2304,14 @@ $("settings").addEventListener("input", (e) => {
     if (v === "role") btns[i].action = { type: "role", mode: "toggle", role_id: "" };
     again = true;
   }
+  if (f === "broles") {
+    const rid = e.target.dataset.role;
+    const ids = new Set(Array.isArray(btns[i].allowed_roles) ? btns[i].allowed_roles : []);
+    if (e.target.checked) ids.add(rid); else ids.delete(rid);
+    btns[i].allowed_roles = Array.from(ids);
+  }
+  if (f === "bcooldown") btns[i].cooldown = Math.max(0, Math.min(86400, parseInt(v || "0", 10) || 0));
+  if (f === "bonce") btns[i].once = e.target.checked;
   if (f === "dph") b.placeholder = v;
   if (f === "olabel") b.options[i].label = v;
   if (f === "odesc") b.options[i].description = v;
@@ -2295,6 +2325,14 @@ $("settings").addEventListener("input", (e) => {
     if (v === "role") b.options[i].action = { type: "role", mode: "toggle", role_id: "" };
     again = true;
   }
+  if (f === "oroles") {
+    const rid = e.target.dataset.role;
+    const ids = new Set(Array.isArray(b.options[i].allowed_roles) ? b.options[i].allowed_roles : []);
+    if (e.target.checked) ids.add(rid); else ids.delete(rid);
+    b.options[i].allowed_roles = Array.from(ids);
+  }
+  if (f === "ocooldown") b.options[i].cooldown = Math.max(0, Math.min(86400, parseInt(v || "0", 10) || 0));
+  if (f === "oonce") b.options[i].once = e.target.checked;
   markDirty();
   renderTabs();
   renderTree();
