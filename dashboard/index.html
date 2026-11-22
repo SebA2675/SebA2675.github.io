@@ -362,6 +362,8 @@ label{display:block;font-size:12px;color:var(--muted);margin:10px 0 4px;text-tra
     <h2>Send to Discord</h2>
     <label>Server</label><select id="sendGuild"></select>
     <label>Channel</label><select id="sendChannel"></select>
+    <label>Send as</label><select id="sendAs"></select>
+    <p class="muted" style="margin:4px 0 0">Update and Delete always use whatever posted the message.</p>
     <p id="sendStatus" class="muted" style="min-height:20px"></p>
     <div class="btnrow">
       <button class="primary" id="sendPost"><svg class="ic"><use href="#i-send"></use></svg>Post as new</button>
@@ -393,6 +395,14 @@ label{display:block;font-size:12px;color:var(--muted);margin:10px 0 4px;text-tra
     <p id="toolsStatus" class="muted" style="min-height:20px"></p>
     <h3>Templates</h3>
     <div id="toolsTemplates"></div>
+    <h3>Webhook presets</h3>
+    <p class="muted">A preset is a name and picture to post under, like "Server News". You pick one with "Send as" in the Send window.</p>
+    <div id="toolsPersonas"></div>
+    <div class="btnrow" style="margin-top:8px">
+      <input id="personaName" maxlength="80" placeholder="Name, e.g. Server News" style="flex:1;min-width:150px">
+      <input id="personaAvatar" placeholder="Picture link (https, optional)" style="flex:1;min-width:150px">
+      <button class="primary small" id="personaAdd"><svg class="ic"><use href="#i-plus"></use></svg>Add preset</button>
+    </div>
     <div class="btnrow" style="margin-top:10px"><button id="toolsClose"><svg class="ic"><use href="#i-close"></use></svg>Close</button></div>
   </div>
 </div>
@@ -2545,9 +2555,10 @@ $("toolsBtn").onclick = async () => {
   toolsStatus("");
   $("toolsOverlay").classList.remove("hidden");
   loadToolsTemplates();
+  loadToolsPersonas();
 };
 
-$("toolsGuild").onchange = () => { toolsStatus(""); loadToolsTemplates(); };
+$("toolsGuild").onchange = () => { toolsStatus(""); loadToolsTemplates(); loadToolsPersonas(); };
 $("toolsClose").onclick = () => { $("toolsOverlay").classList.add("hidden"); };
 $("toolsOverlay").onclick = (e) => { if (e.target === $("toolsOverlay")) $("toolsOverlay").classList.add("hidden"); };
 
@@ -2596,6 +2607,55 @@ $("toolsTemplates").addEventListener("click", async (e) => {
       await api("/templates/" + d.rmtpl, { method: "DELETE" });
       loadToolsTemplates();
     }
+  } catch (err) {
+    if (err.message !== "login") toolsStatus("Failed: " + err.message);
+  }
+});
+
+/* ---------- Webhook presets ---------- */
+async function loadToolsPersonas() {
+  const gid = $("toolsGuild").value;
+  if (!gid) { $("toolsPersonas").innerHTML = ""; return; }
+  $("toolsPersonas").innerHTML = '<p class="muted">Loading...</p>';
+  try {
+    const list = await api("/guilds/" + gid + "/personas");
+    $("toolsPersonas").innerHTML = list.length
+      ? list.map((p) =>
+        '<div class="mrow">' +
+        (p.avatar_url ? '<img src="' + esc(p.avatar_url) + '" alt="" style="width:32px;height:32px;border-radius:50%;object-fit:cover">' : "") +
+        '<div class="grow"><b>' + esc(p.name) + '</b></div>' +
+        '<button class="small ib danger" data-rmpersona="' + p.id + '" title="Delete">' + ic("trash") + "</button></div>").join("")
+      : '<p class="muted">No presets yet.</p>';
+  } catch (e) {
+    if (e.message !== "login") $("toolsPersonas").innerHTML = '<p class="muted">Could not load: ' + esc(e.message) + "</p>";
+  }
+}
+
+$("personaAdd").onclick = async () => {
+  const gid = $("toolsGuild").value;
+  const name = $("personaName").value.trim();
+  if (!name) { toolsStatus("Type a name for the preset."); return; }
+  toolsStatus("Saving...");
+  try {
+    await api("/guilds/" + gid + "/personas", {
+      method: "POST",
+      body: JSON.stringify({ name, avatar_url: $("personaAvatar").value.trim() }),
+    });
+    $("personaName").value = "";
+    $("personaAvatar").value = "";
+    toolsStatus("Preset saved.");
+    loadToolsPersonas();
+  } catch (e) {
+    if (e.message !== "login") toolsStatus("Failed: " + e.message);
+  }
+};
+
+$("toolsPersonas").addEventListener("click", async (e) => {
+  const id = btnData(e).rmpersona;
+  if (!id || !confirm("Delete this preset?")) return;
+  try {
+    await api("/personas/" + id, { method: "DELETE" });
+    loadToolsPersonas();
   } catch (err) {
     if (err.message !== "login") toolsStatus("Failed: " + err.message);
   }
@@ -2877,26 +2937,37 @@ $("sendBtn").onclick = async () => {
     const gid = fresh.guild_id || cur.layout.guild_id;
     sg.innerHTML = opts([[gid, guildName(gid)]], gid);
     sg.disabled = true;
-    setStatus(fresh.posted_message_id ? "Already posted once. You can update it or post a new copy." : "Not posted yet.");
+    setStatus(fresh.posted_message_id
+      ? (fresh.webhook_id ? "Posted through a webhook. Update and Delete use that webhook." : "Already posted once. You can update it or post a new copy.")
+      : "Not posted yet.");
     refreshSendButtons();
     $("sendOverlay").classList.remove("hidden");
     await loadSendChannels(gid, fresh.channel_id);
+    await loadSendAs(gid);
   } catch (e) {
     if (e.message !== "login") alert(e.message);
   }
 };
 
-async function send(path, withTarget) {
+async function loadSendAs(gid) {
+  let list = [];
+  try { list = await api("/guilds/" + gid + "/personas"); } catch (e) { list = []; }
+  $("sendAs").innerHTML = '<option value="">The bot (normal)</option>' +
+    list.map((p) => '<option value="' + p.id + '">Webhook: ' + esc(p.name) + "</option>").join("");
+}
+
+async function send(path, withTarget, extra) {
   setStatus("Sending...");
   postBtn.disabled = true;
   updBtn.disabled = true;
   delBtn.disabled = true;
   try {
     const o = { method: "POST" };
-    if (withTarget) o.body = JSON.stringify({ guild_id: sg.value, channel_id: sc.value });
+    if (withTarget) o.body = JSON.stringify({ guild_id: sg.value, channel_id: sc.value, ...(extra || {}) });
     fresh = await api("/messages/" + cur.id + path, o);
     cur.posted_message_id = fresh.posted_message_id;
     cur.channel_id = fresh.channel_id;
+    cur.webhook_id = fresh.webhook_id;
     cur.changed = !!fresh.changed;
     setStatus("Done! Check Discord.");
   } catch (e) {
@@ -2906,7 +2977,11 @@ async function send(path, withTarget) {
   refreshSendButtons();
 }
 
-postBtn.onclick = () => send("/post", true);
+postBtn.onclick = () => {
+  const pid = $("sendAs").value;
+  if (!pid) { send("/post", true); return; }
+  send("/post-webhook", true, { persona_id: Number(pid) });
+};
 updBtn.onclick = () => send("/update", false);
 
 delBtn.onclick = async () => {
