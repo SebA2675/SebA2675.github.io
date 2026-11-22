@@ -1864,20 +1864,25 @@ function actionExtra(a, p, i) {
   return "";
 }
 
+function roleChecks(allowed, p, i) {
+  if (!roles.length) return '<p class="muted">No roles loaded for this server.</p>';
+  return '<div style="max-height:160px;overflow:auto">' + roles.map((r) =>
+    '<label style="text-transform:none;display:flex;gap:8px;align-items:center;letter-spacing:0;margin:4px 0">' +
+    '<input type="checkbox" data-f="' + p + 'rolechk" data-i="' + i + '" data-rid="' + esc(r.id) + '"' +
+    (allowed.includes(r.id) ? " checked" : "") + "> " + esc(r.name) + "</label>"
+  ).join("") + "</div>";
+}
+
 function rulesEditor(x, p, i) {
-  const allowed = Array.isArray(x.allowed_roles) ? x.allowed_roles : [];
-  const roleChoices = roles.length
-    ? roles.map((r) =>
-      '<label style="display:flex;align-items:center;gap:6px;margin:4px 0">' +
-      '<input type="checkbox" data-f="' + p + 'roles" data-role="' + esc(r.id) + '" data-i="' + i + '"' +
-      (allowed.includes(r.id) ? " checked" : "") + '> ' + esc(r.name) + "</label>").join("")
-    : '<p class="muted">No roles loaded for this server.</p>';
-  return '<label>Who can use it (optional)</label>' +
-    '<div class="bcard" style="margin:4px 0 8px;padding:8px">' + roleChoices + "</div>" +
-    '<label>Cooldown (seconds)</label>' +
-    '<input type="number" min="0" max="86400" data-f="' + p + 'cooldown" data-i="' + i + '" value="' + Number(x.cooldown || 0) + '">' +
-    '<label style="display:flex;align-items:center;gap:6px;margin-top:8px">' +
-    '<input type="checkbox" data-f="' + p + 'once" data-i="' + i + '"' + (x.once ? " checked" : "") + '> Use once per person</label>';
+  const allowed = x.allowed_roles || [];
+  const n = allowed.length + (x.cooldown > 0 ? 1 : 0) + (x.once ? 1 : 0);
+  return '<details style="margin-top:8px"' + (n ? " open" : "") + '><summary class="muted" style="cursor:pointer">Who can use it' +
+    (n ? " (" + n + " rule" + (n > 1 ? "s" : "") + " on)" : " (everyone)") + "</summary>" +
+    "<label>Only people with one of these roles (none ticked = everyone)</label>" + roleChecks(allowed, p, i) +
+    "<label>Cooldown for each person, in seconds (0 = none)</label>" +
+    '<input type="number" min="0" max="86400" data-f="' + p + 'cd" data-i="' + i + '" value="' + (x.cooldown || 0) + '">' +
+    '<label style="text-transform:none;display:flex;gap:8px;align-items:center;letter-spacing:0">' +
+    '<input type="checkbox" data-f="' + p + 'once" data-i="' + i + '"' + (x.once ? " checked" : "") + "> Each person can use it only once</label></details>";
 }
 
 function buttonEditor(x, i, single) {
@@ -1889,7 +1894,8 @@ function buttonEditor(x, i, single) {
     emojiRow(x, "b", i) +
     '<label>When clicked</label><select data-f="baction" data-i="' + i + '">' +
     opts([["link", "Open a link"], ["reply", "Show a private reply"], ["form", "Open a pop-up form"], ["role", "Give or remove a role"]], x.action.type) + "</select>" +
-    actionExtra(x.action, "b", i) + colour + rulesEditor(x, "b", i) +
+    actionExtra(x.action, "b", i) + colour +
+    (x.action.type === "link" ? "" : rulesEditor(x, "b", i)) +
     (single ? "" : '<button class="small danger" data-act2="delbtn" data-i="' + i + '" style="margin-top:8px">' + ic("trash") + "Remove button</button>") +
     "</div>";
 }
@@ -1902,7 +1908,8 @@ function optionEditor(o, i) {
     '<input data-f="odesc" data-i="' + i + '" value="' + esc(o.description || "") + '">' +
     '<label>When chosen</label><select data-f="oaction" data-i="' + i + '">' +
     opts([["reply", "Show a private reply"], ["form", "Open a pop-up form"], ["role", "Give or remove a role"]], o.action.type) + "</select>" +
-    actionExtra(o.action, "o", i) + rulesEditor(o, "o", i) +
+    actionExtra(o.action, "o", i) +
+    rulesEditor(o, "o", i) +
     '<button class="small danger" data-act2="delopt" data-i="' + i + '" style="margin-top:8px">' + ic("trash") + "Remove option</button></div>";
 }
 
@@ -2304,14 +2311,18 @@ $("settings").addEventListener("input", (e) => {
     if (v === "role") btns[i].action = { type: "role", mode: "toggle", role_id: "" };
     again = true;
   }
-  if (f === "broles") {
-    const rid = e.target.dataset.role;
-    const ids = new Set(Array.isArray(btns[i].allowed_roles) ? btns[i].allowed_roles : []);
-    if (e.target.checked) ids.add(rid); else ids.delete(rid);
-    btns[i].allowed_roles = Array.from(ids);
+  const ruled = (f === "bcd" || f === "bonce" || f === "brolechk") ? btns[i]
+    : ((f === "ocd" || f === "oonce" || f === "orolechk") ? b.options[i] : null);
+  if (ruled) {
+    if (f.endsWith("cd")) ruled.cooldown = Math.max(0, Math.min(86400, parseInt(v, 10) || 0));
+    if (f.endsWith("once")) { ruled.once = e.target.checked; again = true; }
+    if (f.endsWith("rolechk")) {
+      const set = new Set(ruled.allowed_roles || []);
+      if (e.target.checked) set.add(e.target.dataset.rid); else set.delete(e.target.dataset.rid);
+      ruled.allowed_roles = Array.from(set);
+      again = true;
+    }
   }
-  if (f === "bcooldown") btns[i].cooldown = Math.max(0, Math.min(86400, parseInt(v || "0", 10) || 0));
-  if (f === "bonce") btns[i].once = e.target.checked;
   if (f === "dph") b.placeholder = v;
   if (f === "olabel") b.options[i].label = v;
   if (f === "odesc") b.options[i].description = v;
@@ -2325,14 +2336,6 @@ $("settings").addEventListener("input", (e) => {
     if (v === "role") b.options[i].action = { type: "role", mode: "toggle", role_id: "" };
     again = true;
   }
-  if (f === "oroles") {
-    const rid = e.target.dataset.role;
-    const ids = new Set(Array.isArray(b.options[i].allowed_roles) ? b.options[i].allowed_roles : []);
-    if (e.target.checked) ids.add(rid); else ids.delete(rid);
-    b.options[i].allowed_roles = Array.from(ids);
-  }
-  if (f === "ocooldown") b.options[i].cooldown = Math.max(0, Math.min(86400, parseInt(v || "0", 10) || 0));
-  if (f === "oonce") b.options[i].once = e.target.checked;
   markDirty();
   renderTabs();
   renderTree();
