@@ -147,6 +147,26 @@ label{display:block;font-size:12px;color:var(--muted);margin:10px 0 4px;text-tra
 .padd{margin:6px 0;padding:6px 10px;border:1px dashed var(--d-line);border-radius:6px;color:var(--d-muted);font-size:13px;cursor:pointer;text-align:center}
 .padd:hover{color:var(--d-text);border-color:var(--d-muted)}
 
+/* ----- Classic embeds ----- */
+.cmsg{margin:6px 0}
+.cembed{background:var(--d-box);border-left:4px solid #5865f2;border-radius:4px;padding:8px 16px 16px 12px;margin:6px 0;max-width:520px}
+.cembed .ctop{display:flex;gap:16px}
+.cembed .cmain{flex:1;min-width:0}
+.cembed .cauthor{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:600;margin-top:8px}
+.cembed .cauthor img{width:24px;height:24px;border-radius:50%}
+.cembed .ctitle{font-size:16px;font-weight:700;margin-top:8px}
+.cembed .ctitle a{color:var(--d-link);text-decoration:none}
+.cembed .cdesc{font-size:14px;margin-top:8px}
+.cembed .cthumb{width:80px;height:80px;object-fit:cover;border-radius:4px;flex:none}
+.cembed .cfields{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px}
+.cembed .cfield{grid-column:1/-1;min-width:0}
+.cembed .cfield.inline{grid-column:auto}
+.cembed .cfname{font-size:14px;font-weight:700}
+.cembed .cfval{font-size:14px;white-space:pre-wrap}
+.cembed .cimg{margin-top:12px;max-width:100%;border-radius:4px;display:block}
+.cembed .cfoot{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--d-muted);margin-top:8px}
+.cembed .cfoot img{width:20px;height:20px;border-radius:50%}
+
 /* ----- Test mode ----- */
 .tpanel{margin-top:10px;border:1px dashed var(--d-line);border-radius:10px;padding:12px}
 .tpanel .topt{padding:8px 10px;border-radius:6px;cursor:pointer;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
@@ -228,6 +248,7 @@ label{display:block;font-size:12px;color:var(--muted);margin:10px 0 4px;text-tra
     <img class="logo" src="logo.png" alt="" onerror="this.style.display='none'">
     <h1>My messages</h1>
     <button class="primary" id="newBtn"><svg class="ic"><use href="#i-plus"></use></svg>New message</button>
+    <button class="primary" id="newClassicBtn"><svg class="ic"><use href="#i-section"></use></svg>New classic embed</button>
     <button id="toolsBtn" class="tb" title="Server tools"><svg class="ic"><use href="#i-tools"></use></svg><span class="t">Server tools</span></button>
     <button id="adminBtn" class="tb hidden" title="Approved servers"><svg class="ic"><use href="#i-servers"></use></svg><span class="t">Servers</span></button>
     <button id="logoutBtn" class="tb" title="Log out"><svg class="ic"><use href="#i-logout"></use></svg><span class="t">Log out</span></button>
@@ -287,6 +308,7 @@ label{display:block;font-size:12px;color:var(--muted);margin:10px 0 4px;text-tra
           <button class="small" data-add="box"><svg class="ic"><use href="#i-box"></use></svg>Box</button>
           <button class="small" data-add="button_row"><svg class="ic"><use href="#i-buttons"></use></svg>Buttons</button>
           <button class="small" data-add="dropdown"><svg class="ic"><use href="#i-dropdown"></use></svg>Dropdown</button>
+          <button class="small hidden" data-add="embed"><svg class="ic"><use href="#i-section"></use></svg>Embed</button>
         </div>
       </div>
       <div id="fieldPalette" class="hidden">
@@ -513,11 +535,11 @@ try { pv = localStorage.getItem("pv") === "light" ? "light" : "dark"; } catch (e
 const uid = () => Math.random().toString(36).slice(2, 8);
 const NAMES = {
   text: "Text", section: "Text + side", images: "Images", divider: "Divider",
-  box: "Box", button_row: "Buttons", dropdown: "Dropdown",
+  box: "Box", button_row: "Buttons", dropdown: "Dropdown", embed: "Embed",
 };
 const TYPE_ICON = {
   text: "text", section: "section", images: "images", divider: "divider",
-  box: "box", button_row: "buttons", dropdown: "dropdown",
+  box: "box", button_row: "buttons", dropdown: "dropdown", embed: "section",
 };
 
 window.addEventListener("beforeunload", (e) => {
@@ -888,7 +910,7 @@ function fmtBar() {
 }
 
 function formatText(kind) {
-  const el = document.querySelector('#settings textarea[data-f="content"]');
+  const el = document.querySelector('#settings textarea[data-f="content"], #settings textarea[data-fmt-target]');
   if (!el) return;
   const v = el.value;
   const s = el.selectionStart;
@@ -971,6 +993,15 @@ function normalize(layout) {
   if (!Array.isArray(layout.blocks)) layout.blocks = [];
   if (!Array.isArray(layout.replies)) layout.replies = [];
   if (!Array.isArray(layout.forms)) layout.forms = [];
+  if (layout.kind === "classic") {
+    if (typeof layout.content !== "string") layout.content = "";
+    if (!Array.isArray(layout.embeds)) layout.embeds = [];
+    layout.embeds.forEach((e) => {
+      const d = blankEmbed();
+      Object.keys(d).forEach((k) => { if (e[k] === undefined) e[k] = d[k]; });
+      if (!Array.isArray(e.fields)) e.fields = [];
+    });
+  }
   const fix = (b) => {
     if (b.type === "box") b.children.forEach(fix);
     if (b.type === "button_row") b.buttons.forEach(fixButton);
@@ -1040,6 +1071,7 @@ function findLoc(id) {
 }
 
 function addBlock(type) {
+  if (type === "embed") { addEmbed(); return; }
   const b = newBlock(type);
   const loc = selId ? findLoc(selId) : null;
   if (loc && type !== "box") {
@@ -1280,7 +1312,14 @@ function problemsFor(blocks, prefix, p, tabId) {
 
 function findProblems() {
   const p = [];
-  problemsFor(cur.layout.blocks, "Main message ", p, "main");
+  if (isClassic()) {
+    const mp = [];
+    problemsFor(cur.layout.blocks, "Main message ", mp, "main");
+    p.push(...mp.filter((x) => x.msg !== "Main message is empty"));
+    classicProblems(p);
+  } else {
+    problemsFor(cur.layout.blocks, "Main message ", p, "main");
+  }
   cur.layout.replies.forEach((r) => problemsFor(r.blocks, 'Reply "' + r.name + '" ', p, r.id));
   cur.layout.forms.forEach((f) => {
     const add = (msg, id) => p.push({ msg: 'Form "' + f.name + '" ' + msg, blockId: id || null, tab: f.id, level: "error" });
@@ -1353,6 +1392,250 @@ $("problemList").addEventListener("click", (e) => {
 document.addEventListener("click", (e) => {
   if (!e.target.closest("#problemList") && !e.target.closest("#problems")) $("problemList").classList.add("hidden");
 });
+
+/* ---------- Classic embeds ---------- */
+function isClassic() { return !!(cur && cur.layout && cur.layout.kind === "classic"); }
+function isClassicMain() { return isClassic() && tab === "main"; }
+
+function blankEmbed() {
+  return {
+    id: uid(), title: "", description: "", color: "#5865F2", url: "",
+    author_name: "", author_url: "", author_icon: "", image: "", thumbnail: "",
+    footer_text: "", footer_icon: "", timestamp: false, fields: [],
+  };
+}
+
+function newEmbed() {
+  const e = blankEmbed();
+  e.title = "New embed";
+  e.description = "Write your description here";
+  return e;
+}
+
+function embedSize(e) {
+  return (e.title || "").length + (e.description || "").length + (e.author_name || "").length +
+    (e.footer_text || "").length + e.fields.reduce((n, f) => n + (f.name || "").length + (f.value || "").length, 0);
+}
+
+function classicSize() {
+  return cur.layout.embeds.reduce((n, e) => n + embedSize(e), 0);
+}
+
+function classicProblems(p) {
+  const L = cur.layout;
+  const add = (msg, id) => p.push({ msg: "Main message " + msg, blockId: id || null, tab: "main", level: "error" });
+  const urlOk = (u) => !String(u || "").trim() || okUrl(u);
+  if (L.content.length > 2000) add("has over 2000 text characters", "content");
+  if (!L.content.trim() && !L.embeds.length) add("needs some text or an embed");
+  if (L.embeds.length > 10) add("has more than 10 embeds");
+  if (L.blocks.length > 5) add("has more than 5 rows of buttons and dropdowns");
+  L.embeds.forEach((e, n) => {
+    const w = "embed " + (n + 1) + " ";
+    if (!(e.title || e.description || e.author_name || e.footer_text || e.fields.length || okUrl(e.image) || okUrl(e.thumbnail))) {
+      add("has " + w + "with nothing in it", e.id);
+    }
+    if (e.title.length > 256) add("has " + w + "title over 256 characters", e.id);
+    if (e.description.length > 4096) add("has " + w + "description over 4096 characters", e.id);
+    if (e.author_name.length > 256) add("has " + w + "author name over 256 characters", e.id);
+    if (e.footer_text.length > 2048) add("has " + w + "footer over 2048 characters", e.id);
+    if (e.fields.length > 25) add("has " + w + "with more than 25 fields", e.id);
+    if (e.fields.some((f) => !f.name.trim() || !f.value.trim())) add("has " + w + "with a field missing its name or value", e.id);
+    if (e.fields.some((f) => f.name.length > 256 || f.value.length > 1024)) add("has " + w + "with a field that is too long", e.id);
+    if (["url", "author_url", "author_icon", "image", "thumbnail", "footer_icon"].some((k) => !urlOk(e[k]))) {
+      add("has " + w + "with a link not starting with https://", e.id);
+    }
+  });
+  if (classicSize() > 6000) add("has embeds over 6000 characters in total");
+}
+
+function renderEmbed(e) {
+  const s = (u) => String(u || "").trim();
+  const ok = (u) => s(u).startsWith("https://");
+  const c = /^#[0-9a-f]{6}$/i.test(e.color) ? e.color : "#5865F2";
+  let h = '<div class="cembed"' + bAttr(e) + ' style="border-left-color:' + c + '"><div class="ctop"><div class="cmain">';
+  if (e.author_name) {
+    h += '<div class="cauthor">' + (ok(e.author_icon) ? '<img src="' + esc(s(e.author_icon)) + '" alt="">' : "") +
+      "<span>" + esc(e.author_name) + "</span></div>";
+  }
+  if (e.title) {
+    h += '<div class="ctitle">' + (ok(e.url) ? '<a href="' + esc(s(e.url)) + '" target="_blank" rel="noopener">' + esc(e.title) + "</a>" : esc(e.title)) + "</div>";
+  }
+  if (e.description) h += '<div class="cdesc ptext">' + md(e.description) + "</div>";
+  if (e.fields.length) {
+    h += '<div class="cfields">' + e.fields.map((f) =>
+      '<div class="cfield' + (f.inline ? " inline" : "") + '"><div class="cfname">' + esc(f.name) +
+      '</div><div class="cfval">' + inline(f.value) + "</div></div>").join("") + "</div>";
+  }
+  h += "</div>" + (ok(e.thumbnail) ? '<img class="cthumb" src="' + esc(s(e.thumbnail)) + '" alt="">' : "") + "</div>";
+  if (ok(e.image)) h += '<img class="cimg" src="' + esc(s(e.image)) + '" alt="">';
+  if (e.footer_text || e.timestamp) {
+    const t = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    h += '<div class="cfoot">' + (e.footer_text && ok(e.footer_icon) ? '<img src="' + esc(s(e.footer_icon)) + '" alt="">' : "") +
+      "<span>" + esc(e.footer_text || "") + (e.footer_text && e.timestamp ? " &bull; " : "") + (e.timestamp ? "Today at " + esc(t) : "") + "</span></div>";
+  }
+  return h + "</div>";
+}
+
+function renderClassicPreview() {
+  const L = cur.layout;
+  const msg = L.content.trim()
+    ? '<div class="ptext cmsg"' + bAttr({ id: "content" }) + ">" + md(L.content) + "</div>"
+    : (mode === "test" ? "" : '<div class="dm cmsg"' + bAttr({ id: "content" }) + ">(no message text, click to add)</div>");
+  return msg + L.embeds.map(renderEmbed).join("") + L.blocks.map(renderBlock).join("");
+}
+
+function classicRows() {
+  const L = cur.layout;
+  const row = (id, icon, name, text, buttons) =>
+    '<div class="node' + (id === selId ? " sel" : "") + '" draggable="false" data-id="' + esc(id) + '">' +
+    '<span class="lbl">' + ic(icon) + '<span class="tx"><b>' + name + "</b> " + esc(text) + "</span>" +
+    (bad.has(id) ? '<span class="dotred"></span>' : "") + "</span>" + buttons + "</div>";
+  return row("content", "text", "Message text", L.content.split("\n")[0].slice(0, 30) || "(none)", "") +
+    L.embeds.map((e, n) => row(e.id, "section", "Embed " + (n + 1), (e.title || e.description || "").slice(0, 30), rowButtons())).join("") +
+    treeRows(L.blocks, false);
+}
+
+function classicTreeAction(id, act) {
+  const L = cur.layout;
+  if (id !== "content" && !L.embeds.some((e) => e.id === id)) return false;
+  if (id === "content" && act) return true;
+  if (act === "up") moveEmbed(id, -1);
+  else if (act === "down") moveEmbed(id, 1);
+  else if (act === "dup") dupEmbed(id);
+  else if (act === "del") removeEmbed(id);
+  else {
+    selId = id;
+    renderTree();
+    renderPreview();
+    renderSettings();
+    if (isMobile()) setPane("settings");
+  }
+  return true;
+}
+
+function addEmbed() {
+  const L = cur.layout;
+  if (L.embeds.length >= 10) { toast("A message can have at most 10 embeds."); return; }
+  const e = newEmbed();
+  L.embeds.push(e);
+  selId = e.id;
+  markDirty();
+  renderAll();
+  if (isMobile()) setPane("settings");
+}
+
+function moveEmbed(id, dir) {
+  const a = cur.layout.embeds;
+  const i = a.findIndex((x) => x.id === id);
+  const j = i + dir;
+  if (i < 0 || j < 0 || j >= a.length) return;
+  const t = a[i];
+  a[i] = a[j];
+  a[j] = t;
+  markDirty();
+  renderAll();
+}
+
+function removeEmbed(id) {
+  cur.layout.embeds = cur.layout.embeds.filter((x) => x.id !== id);
+  if (selId === id) selId = null;
+  markDirty();
+  renderAll();
+}
+
+function dupEmbed(id) {
+  const a = cur.layout.embeds;
+  const i = a.findIndex((x) => x.id === id);
+  if (i < 0 || a.length >= 10) return;
+  const copy = JSON.parse(JSON.stringify(a[i]));
+  reid(copy);
+  a.splice(i + 1, 0, copy);
+  selId = copy.id;
+  markDirty();
+  renderAll();
+}
+
+function fieldEditor(f, i) {
+  return '<div class="bcard"><label style="margin-top:0">Field ' + (i + 1) + ' name</label>' +
+    '<input data-f="ef_name" data-i="' + i + '" maxlength="256" value="' + esc(f.name) + '">' +
+    '<label>Value</label><textarea data-f="ef_value" data-i="' + i + '" maxlength="1024">' + esc(f.value) + "</textarea>" +
+    '<label>Layout</label><select data-f="ef_inline" data-i="' + i + '">' +
+    opts([["0", "Full width"], ["1", "Side by side (inline)"]], f.inline ? "1" : "0") + "</select>" +
+    '<button class="small danger" data-act2="efdel" data-i="' + i + '" style="margin-top:8px">' + ic("trash") + "Remove field</button></div>";
+}
+
+function classicSettings() {
+  if (!isClassicMain()) return false;
+  const L = cur.layout;
+  const el = $("settings");
+  if (selId === "content") {
+    el.innerHTML = '<button class="small" data-act2="emojitext">' + ic("smile") + "Insert emoji</button>" +
+      "<label>Message text (above the embeds, max 2000)</label>" + fmtBar() +
+      '<textarea data-f="c_content" data-fmt-target="1" maxlength="2000">' + esc(L.content) + "</textarea>";
+    return true;
+  }
+  const e = L.embeds.find((x) => x.id === selId);
+  if (!e) return false;
+  const inp = (k, lab, max) => "<label>" + lab + '</label><input data-f="e_' + k + '" maxlength="' + max + '" value="' + esc(e[k] || "") + '">';
+  el.innerHTML = inp("title", "Title", 256) + inp("url", "Title link (https)", 2000) +
+    '<button class="small" data-act2="emojitext" style="margin-top:8px">' + ic("smile") + "Insert emoji</button>" +
+    "<label>Description (max 4096)</label>" + fmtBar() +
+    '<textarea data-f="e_description" data-fmt-target="1" maxlength="4096">' + esc(e.description) + "</textarea>" +
+    '<label>Colour</label><input type="color" data-f="e_color" value="' + esc(/^#[0-9a-f]{6}$/i.test(e.color) ? e.color : "#5865F2") + '" style="height:44px;padding:2px">' +
+    inp("author_name", "Author name", 256) + inp("author_url", "Author link (https)", 2000) + inp("author_icon", "Author icon (https)", 2000) +
+    inp("thumbnail", "Small image, top right (https)", 2000) + inp("image", "Big image at the bottom (https)", 2000) +
+    inp("footer_text", "Footer text", 2048) + inp("footer_icon", "Footer icon (https)", 2000) +
+    '<label>Timestamp</label><select data-f="e_timestamp">' + opts([["0", "None"], ["1", "Time when posted"]], e.timestamp ? "1" : "0") + "</select>" +
+    "<label>Fields (max 25)</label>" + e.fields.map(fieldEditor).join("") +
+    (e.fields.length < 25 ? '<button class="small" data-act2="efadd">' + ic("plus") + "Add field</button>" : "");
+  return true;
+}
+
+const EMBED_KEYS = ["title", "description", "color", "url", "author_name", "author_url", "author_icon", "image", "thumbnail", "footer_text", "footer_icon"];
+
+function classicInput(e, f, v) {
+  if (!/^(c_|e_|ef_)/.test(f) || !isClassicMain()) return false;
+  const L = cur.layout;
+  if (f === "c_content") {
+    L.content = v;
+  } else {
+    const em = L.embeds.find((x) => x.id === selId);
+    if (!em) return true;
+    const i = Number(e.target.dataset.i);
+    if (f === "e_timestamp") em.timestamp = v === "1";
+    else if (f.startsWith("e_") && EMBED_KEYS.includes(f.slice(2))) em[f.slice(2)] = v;
+    else if (em.fields[i]) {
+      if (f === "ef_name") em.fields[i].name = v;
+      if (f === "ef_value") em.fields[i].value = v;
+      if (f === "ef_inline") em.fields[i].inline = v === "1";
+    }
+  }
+  markDirty();
+  renderTabs();
+  renderTree();
+  renderPreview();
+  renderStatus();
+  return true;
+}
+
+function classicClick(act, d) {
+  if (!isClassicMain()) return false;
+  if (act === "emojitext") {
+    pickEmoji((em) => insertIntoField("[data-fmt-target]", "<" + (em.animated ? "a" : "") + ":" + em.name + ":" + em.id + ">"));
+    return true;
+  }
+  const em = cur.layout.embeds.find((x) => x.id === selId);
+  if (act === "efadd" && em && em.fields.length < 25) em.fields.push({ id: uid(), name: "Field", value: "Value", inline: false });
+  else if (act === "efdel" && em) em.fields.splice(Number(d.i), 1);
+  else return false;
+  markDirty();
+  renderAll();
+  return true;
+}
+
+$("newClassicBtn").onclick = () => {
+  openBuilder({ id: null, name: "Untitled embed", layout: { kind: "classic", content: "", embeds: [newEmbed()], blocks: [], replies: [], forms: [] } });
+};
 
 function label(b) {
   if (b.type === "text" || b.type === "section") return b.content.split("\n")[0].slice(0, 30) || "(empty)";
@@ -1469,7 +1752,11 @@ function renderTree() {
   $("treeTitle").textContent = f ? "Questions (max 5)" : "Message tree";
   $("blockPalette").classList.toggle("hidden", !!f);
   $("fieldPalette").classList.toggle("hidden", !f);
-  $("tree").innerHTML = f ? fieldRows(f) : treeRows(activeBlocks(), false);
+  document.querySelectorAll("[data-add]").forEach((b) => {
+    const keep = isClassicMain() ? ["embed", "button_row", "dropdown"].includes(b.dataset.add) : b.dataset.add !== "embed";
+    b.classList.toggle("hidden", !keep);
+  });
+  $("tree").innerHTML = f ? fieldRows(f) : isClassicMain() ? classicRows() : treeRows(activeBlocks(), false);
 }
 
 function renderPreview() {
@@ -1488,7 +1775,7 @@ function renderPreview() {
   $("previewNote").textContent = mode === "test"
     ? "Test mode: click buttons and dropdowns. Nothing is sent. Role permissions are checked by Discord for real."
     : base;
-  $("preview").innerHTML = activeBlocks().map(renderBlock).join("") +
+  $("preview").innerHTML = (isClassicMain() ? renderClassicPreview() : activeBlocks().map(renderBlock).join("")) +
     (mode === "test" ? "" : '<div class="padd" data-addto="main">+ Add</div>');
   if (mode === "test") hideFloatBar(); else positionFloatBar();
 }
@@ -1509,9 +1796,9 @@ function renderStatus() {
     ce.textContent = f.fields.length + "/5 questions";
     ce.className = "badge " + (f.fields.length > 5 ? "bad" : "ok");
   } else {
-    const n = countComponents(activeBlocks());
-    ce.textContent = n + "/40 components";
-    ce.className = "badge " + (n > 40 ? "bad" : "ok");
+    const n = isClassicMain() ? 0 : countComponents(activeBlocks());
+    ce.textContent = isClassicMain() ? classicSize() + "/6000 embed characters" : n + "/40 components";
+    ce.className = "badge " + ((isClassicMain() ? classicSize() > 6000 : n > 40) ? "bad" : "ok");
   }
   const probs = problems();
   const pe = $("problems");
@@ -1631,6 +1918,7 @@ function renderSettingsBody() {
   const el = $("settings");
   const form = activeForm();
   if (form) { renderFormSettings(form); return; }
+  if (classicSettings()) return;
   const loc = selId ? findLoc(selId) : null;
   if (!loc) {
     const r = activeReply();
@@ -1707,6 +1995,7 @@ $("tree").addEventListener("click", (e) => {
   if (!node) return;
   const id = node.dataset.id;
   const act = btnData(e).act;
+  if (isClassicMain() && classicTreeAction(id, act)) return;
   if (activeForm()) {
     if (act === "up") moveField(id, -1);
     else if (act === "down") moveField(id, 1);
@@ -1814,7 +2103,7 @@ function positionFloatBar() {
 
 function openAddMenu(row, target) {
   const menu = $("addMenu");
-  const types = target === "main" ? ADD_TYPES : ADD_TYPES.filter((t) => t !== "box");
+  const types = isClassicMain() ? ["embed", "button_row", "dropdown"] : target === "main" ? ADD_TYPES : ADD_TYPES.filter((t) => t !== "box");
   menu.innerHTML = types.map((t) =>
     '<button class="small" data-addtype="' + t + '" data-target="' + esc(target) + '">' + ic(TYPE_ICON[t]) + NAMES[t] + "</button>"
   ).join("");
@@ -1826,6 +2115,7 @@ function openAddMenu(row, target) {
 }
 
 function addBlockTo(type, target) {
+  if (type === "embed") { addEmbed(); return; }
   const b = newBlock(type);
   if (target === "main") {
     activeBlocks().push(b);
@@ -1910,6 +2200,7 @@ function buttonsOf(b) {
 $("settings").addEventListener("input", (e) => {
   const f = e.target.dataset.f;
   const v = e.target.value;
+  if (f && classicInput(e, f, v)) return;
   if (!f) return;
 
   if (f === "rname") {
@@ -1995,6 +2286,7 @@ $("settings").addEventListener("click", (e) => {
   const act = d.act2;
   if (!act) return;
   if (act === "fmt") { formatText(d.fmt); return; }
+  if (classicClick(act, d)) return;
   if (act === "delreply") {
     if (!confirm("Delete this reply?")) return;
     cur.layout.replies = cur.layout.replies.filter((r) => r.id !== tab);
