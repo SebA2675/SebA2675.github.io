@@ -287,9 +287,11 @@ label{display:block;font-size:12px;color:var(--muted);margin:10px 0 4px;text-tra
     <button id="histBtn" class="tb" title="Older versions"><svg class="ic"><use href="#i-history"></use></svg><span class="t">History</span></button>
     <button id="schedBtn" class="tb" title="Post or update at a set time"><svg class="ic"><use href="#i-schedule"></use></svg><span class="t">Schedule</span></button>
     <span id="counter" class="badge ok"></span>
+    <span id="changed" class="badge hidden" style="background:#fdf0d0;color:#8a5a00" title="Your saved edits are not on Discord yet. Press Send, then Update posted message.">Changed since posted</span>
     <span id="problems" class="badge ok"></span>
     <div id="problemList" class="plist hidden"></div>
     <button class="primary" id="saveBtn"></button>
+    <button id="dmBtn" class="tb" title="Send a test copy to your DMs"><svg class="ic"><use href="#i-send"></use></svg><span class="t">DM me</span></button>
     <button class="primary" id="sendBtn"><svg class="ic"><use href="#i-send"></use></svg>Send</button>
   </div>
   <div class="builder" id="builderEl" data-pane="preview">
@@ -1800,6 +1802,8 @@ function renderStatus() {
     ce.textContent = isClassicMain() ? classicSize() + "/6000 embed characters" : n + "/40 components";
     ce.className = "badge " + ((isClassicMain() ? classicSize() > 6000 : n > 40) ? "bad" : "ok");
   }
+  const chg = $("changed");
+  chg.classList.toggle("hidden", !(cur.posted_message_id && cur.changed));
   const probs = problems();
   const pe = $("problems");
   pe.textContent = probs.length ? probs[0].msg + (probs.length > 1 ? " (+" + (probs.length - 1) + ")" : "") : "Ready to post";
@@ -2390,6 +2394,7 @@ async function save(silent) {
     cur.guild_id = saved.guild_id;
     cur.posted_message_id = saved.posted_message_id;
     cur.channel_id = saved.channel_id;
+    cur.changed = !!saved.changed;
     if (editCount === version) dirty = false;
     else scheduleAutosave();
     renderStatus();
@@ -2442,7 +2447,7 @@ async function openLibrary() {
     $("list").innerHTML = items.map((m) =>
       '<div class="row"><div class="grow"><b>' + esc(m.name) + '</b><div class="muted">' +
       esc(m.guild_id ? guildName(m.guild_id) : "No server") + " &middot; " +
-      (m.posted_message_id ? "Posted" : "Draft") + " &middot; " + new Date(m.updated_at * 1000).toLocaleString() +
+      (m.posted_message_id ? (m.changed ? "Posted (changed since posted)" : "Posted") : "Draft") + " &middot; " + new Date(m.updated_at * 1000).toLocaleString() +
       '</div></div>' +
       '<button class="primary small" data-open="' + m.id + '">' + ic("edit") + "Open</button>" +
       '<button class="small ib" data-copy="' + m.id + '" title="Make a copy">' + ic("copy") + "</button>" +
@@ -2884,6 +2889,7 @@ async function send(path, withTarget) {
     fresh = await api("/messages/" + cur.id + path, o);
     cur.posted_message_id = fresh.posted_message_id;
     cur.channel_id = fresh.channel_id;
+    cur.changed = !!fresh.changed;
     setStatus("Done! Check Discord.");
   } catch (e) {
     if (e.message !== "login") setStatus("Failed: " + e.message);
@@ -2908,6 +2914,18 @@ delBtn.onclick = async () => {
   refreshSendButtons();
 };
 
+$("dmBtn").onclick = async () => {
+  const probs = problems();
+  if (probs.length) { jumpToProblem(probs[0]); alert("Fix this first: " + probs[0].msg); return; }
+  await save(false);
+  if (dirty || !cur.id) return;
+  try {
+    await api("/messages/" + cur.id + "/test", { method: "POST" });
+    toast("Test sent. Check your Discord DMs.");
+  } catch (e) {
+    if (e.message !== "login") alert(e.message);
+  }
+};
 $("sendClose").onclick = () => { $("sendOverlay").classList.add("hidden"); };
 $("sendOverlay").onclick = (e) => { if (e.target === $("sendOverlay")) $("sendOverlay").classList.add("hidden"); };
 
