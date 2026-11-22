@@ -434,7 +434,11 @@ function clearToken() { try { localStorage.removeItem("token"); } catch (e) {} }
 
 let loginError = "";
 if (location.hash.startsWith("#token=")) {
-  saveToken(location.hash.slice(7));
+  const parts = new URLSearchParams(location.hash.slice(1));
+  let expected = null;
+  try { expected = localStorage.getItem("login_nonce"); localStorage.removeItem("login_nonce"); } catch (e) {}
+  if (expected && parts.get("n") === expected) saveToken(parts.get("token"));
+  else loginError = "Login check failed. Please log in again.";
   history.replaceState(null, "", location.pathname);
 } else if (location.hash.startsWith("#error=")) {
   loginError = "You need to be an Administrator of a server where this bot is installed.";
@@ -2195,7 +2199,11 @@ $("backBtn").onclick = () => {
   openLibrary();
 };
 
-$("loginBtn").onclick = () => { location.href = API_URL + "/auth/login"; };
+$("loginBtn").onclick = () => {
+  const n = Array.from(crypto.getRandomValues(new Uint8Array(16)), (b) => b.toString(16).padStart(2, "0")).join("");
+  try { localStorage.setItem("login_nonce", n); } catch (e) {}
+  location.href = API_URL + "/auth/login?n=" + n;
+};
 $("logoutBtn").onclick = () => {
   clearToken();
   emojiData = null;
