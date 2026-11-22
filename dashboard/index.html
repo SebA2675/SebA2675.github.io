@@ -1815,7 +1815,15 @@ function renderStatus() {
 }
 
 function roleList() {
-  return [["", "Choose..."]].concat(roles.map((r) => [r.id, r.name + (r.assignable ? "" : " (bot can't manage)")]));
+  return [["", "Choose..."]].concat(roles.map((r) =>
+    [r.id, r.name + (r.assignable ? "" : " (bot can't manage)") + (r.dangerous ? " (powerful role)" : "")]));
+}
+
+function roleWarn(id) {
+  const r = roles.find((x) => x.id === id);
+  return r && r.dangerous
+    ? '<p class="muted" style="color:var(--bad)">This role has powerful permissions. The bot refuses to give roles that have Administrator, Manage Server or Manage Roles.</p>'
+    : "";
 }
 
 function actionExtra(a, p, i) {
@@ -1835,7 +1843,7 @@ function actionExtra(a, p, i) {
   if (a.type === "role") {
     return '<label>What it does</label><select data-f="' + p + 'mode" data-i="' + i + '">' +
       opts([["toggle", "Toggle (add or remove)"], ["add", "Add the role"], ["remove", "Remove the role"]], a.mode) + "</select>" +
-      '<label>Role</label><select data-f="' + p + 'role" data-i="' + i + '">' + opts(roleList(), a.role_id) + "</select>";
+      '<label>Role</label><select data-f="' + p + 'role" data-i="' + i + '">' + opts(roleList(), a.role_id) + "</select>" + roleWarn(a.role_id);
   }
   return "";
 }
@@ -2256,7 +2264,7 @@ $("settings").addEventListener("input", (e) => {
   if (f === "breply") btns[i].action.reply_id = v;
   if (f === "bform") btns[i].action.form_id = v;
   if (f === "bmode") btns[i].action.mode = v;
-  if (f === "brole") btns[i].action.role_id = v;
+  if (f === "brole") { btns[i].action.role_id = v; again = true; }
   if (f === "baction") {
     if (v === "link") btns[i].action = { type: "link", url: "https://" };
     if (v === "reply") btns[i].action = { type: "reply", reply_id: "" };
@@ -2270,7 +2278,7 @@ $("settings").addEventListener("input", (e) => {
   if (f === "oreply") b.options[i].action.reply_id = v;
   if (f === "oform") b.options[i].action.form_id = v;
   if (f === "omode") b.options[i].action.mode = v;
-  if (f === "orole") b.options[i].action.role_id = v;
+  if (f === "orole") { b.options[i].action.role_id = v; again = true; }
   if (f === "oaction") {
     if (v === "reply") b.options[i].action = { type: "reply", reply_id: "" };
     if (v === "form") b.options[i].action = { type: "form", form_id: "" };
