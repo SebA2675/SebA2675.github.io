@@ -848,7 +848,7 @@ $("redoBtn").onclick = redo;
 function scheduleAutosave() {
   clearTimeout(autosaveTimer);
   if (!cur || !cur.id) return;
-  autosaveTimer = setTimeout(() => { if (dirty) save(true); }, 3000);
+  autosaveTimer = setTimeout(() => { if (dirty) save(true); }, 6000);
 }
 
 /* ---------- Emoji picker ---------- */
@@ -2447,7 +2447,7 @@ async function save(silent) {
   try {
     const body = JSON.stringify({ name: cur.name, layout: cur.layout });
     const saved = cur.id
-      ? await api("/messages/" + cur.id, { method: "PUT", body })
+      ? await api("/messages/" + cur.id + (silent ? "?auto=1" : ""), { method: "PUT", body })
       : await api("/messages", { method: "POST", body });
     cur.id = saved.id;
     cur.guild_id = saved.guild_id;
