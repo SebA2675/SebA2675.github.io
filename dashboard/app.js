@@ -2659,29 +2659,50 @@ function toggleFavGuild(gid) {
   const favs = loadFavGuilds();
   if (favs.has(gid)) favs.delete(gid); else favs.add(gid);
   try { localStorage.setItem("fav_guilds", JSON.stringify(Array.from(favs))); } catch (e) {}
-  renderServerPicker();
+  drawServerModal();
+}
+
+function srvIconHtml(g, size) {
+  const s = size || 22;
+  if (!g) return '<span class="srvicon" style="width:' + s + 'px;height:' + s + 'px;font-size:10px">All</span>';
+  return g.icon_url
+    ? '<img class="srvicon" src="' + esc(g.icon_url) + '" alt="" style="width:' + s + 'px;height:' + s + 'px">'
+    : '<span class="srvicon" style="width:' + s + 'px;height:' + s + 'px;font-size:' + Math.max(10, Math.round(s * 0.4)) + 'px">' + esc((g.name || "?").slice(0, 2).toUpperCase()) + '</span>';
 }
 
 function renderServerPicker() {
-  const el = $("serverPicker");
-  if (!el) return;
-  if (guilds.length < 2) { el.classList.add("hidden"); el.innerHTML = ""; return; }
-  el.classList.remove("hidden");
+  const btn = $("srvPickBtn");
+  if (!btn) return;
+  if (guilds.length < 2) { btn.classList.add("hidden"); return; }
+  btn.classList.remove("hidden");
+  const g = libGuild ? guilds.find((x) => x.id === libGuild) : null;
+  btn.innerHTML = srvIconHtml(g, 22) +
+    '<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(g ? g.name : "All servers") + '</span>' +
+    '<span style="margin-left:auto;opacity:.6">&#9662;</span>';
+}
+
+function drawServerModal() {
+  const listEl = $("srvModalList");
+  if (!listEl) return;
+  const q = ($("srvSearch").value || "").trim().toLowerCase();
   const favs = loadFavGuilds();
-  const sorted = guilds.slice().sort((a, b) => (favs.has(b.id) ? 1 : 0) - (favs.has(a.id) ? 1 : 0));
-  el.innerHTML = '<div class="srvcard' + (libGuild === "" ? " on" : "") + '" data-pickguild="">' +
-    '<div class="srvicon">All</div><div class="srvmeta"><b>All servers</b><small>' + libItems.length + ' message(s)</small></div></div>' +
-    sorted.map((g) => {
-      const icon = g.icon_url
-        ? '<img class="srvicon" src="' + esc(g.icon_url) + '" alt="">'
-        : '<div class="srvicon">' + esc((g.name || "?").slice(0, 2).toUpperCase()) + '</div>';
-      const cnt = g.message_count !== undefined ? g.message_count : libItems.filter((m) => String(m.guild_id) === g.id).length;
-      const fav = favs.has(g.id);
-      return '<div class="srvcard' + (libGuild === g.id ? " on" : "") + '" data-pickguild="' + esc(g.id) + '">' +
-        icon + '<div class="srvmeta"><b>' + esc(g.name) + '</b><small>' + cnt + ' msg(s)' +
-        (g.last_edit ? ' &middot; ' + esc(ago(g.last_edit)) : '') + '</small></div>' +
-        '<button type="button" class="srvfav' + (fav ? " on" : "") + '" data-favguild="' + esc(g.id) + '" title="Pin server">' + (fav ? "★" : "☆") + '</button></div>';
-    }).join("");
+  const sorted = guilds
+    .filter((g) => !q || g.name.toLowerCase().includes(q) || g.id.includes(q))
+    .sort((a, b) => (favs.has(b.id) ? 1 : 0) - (favs.has(a.id) ? 1 : 0));
+  let html = "";
+  if (!q) {
+    html += '<div class="srvcard' + (libGuild === "" ? " on" : "") + '" data-pickguild="">' +
+      srvIconHtml(null, 36) + '<div class="srvmeta"><b>All servers</b><small>' + libItems.length + ' message(s) across ' + guilds.length + ' servers</small></div></div>';
+  }
+  html += sorted.map((g) => {
+    const cnt = g.message_count !== undefined ? g.message_count : libItems.filter((m) => String(m.guild_id) === g.id).length;
+    const fav = favs.has(g.id);
+    return '<div class="srvcard' + (libGuild === g.id ? " on" : "") + '" data-pickguild="' + esc(g.id) + '">' +
+      srvIconHtml(g, 36) + '<div class="srvmeta"><b>' + esc(g.name) + '</b><small>' + cnt + ' msg(s)' +
+      (g.last_edit ? ' &middot; ' + esc(ago(g.last_edit)) : '') + '</small></div>' +
+      '<button type="button" class="srvfav' + (fav ? " on" : "") + '" data-favguild="' + esc(g.id) + '" title="Pin server">' + (fav ? "★" : "☆") + '</button></div>';
+  }).join("");
+  listEl.innerHTML = html || '<p class="muted">No matching servers.</p>';
 }
 function renderLibrary() {
   $("libTools").classList.toggle("hidden", !libItems.length);
@@ -2705,7 +2726,16 @@ $("libGuild").addEventListener("change", () => {
   renderLibChips();
   renderLibList();
 });
-$("serverPicker").addEventListener("click", (e) => {
+$("srvPickBtn").onclick = () => {
+  $("srvSearch").value = "";
+  drawServerModal();
+  $("srvOverlay").classList.remove("hidden");
+  $("srvSearch").focus();
+};
+$("srvSearch").oninput = drawServerModal;
+$("srvClose").onclick = () => { $("srvOverlay").classList.add("hidden"); };
+$("srvOverlay").onclick = (e) => { if (e.target === $("srvOverlay")) $("srvOverlay").classList.add("hidden"); };
+$("srvModalList").addEventListener("click", (e) => {
   const fav = e.target.closest("[data-favguild]");
   if (fav) { e.stopPropagation(); toggleFavGuild(fav.dataset.favguild); return; }
   const card = e.target.closest("[data-pickguild]");
@@ -2713,6 +2743,7 @@ $("serverPicker").addEventListener("click", (e) => {
   libGuild = card.dataset.pickguild;
   try { localStorage.setItem("last_guild", libGuild); } catch (e) {}
   if ($("libGuild")) $("libGuild").value = libGuild;
+  $("srvOverlay").classList.add("hidden");
   renderServerPicker();
   renderLibChips();
   renderLibList();
@@ -3571,7 +3602,7 @@ document.addEventListener("keydown", (e) => {
     hideAddMenu();
     const fm = $("fmtMore");
     if (fm) fm.classList.add("hidden");
-    for (const id of ["sendOverlay", "toolsOverlay", "histOverlay", "schedOverlay", "emojiOverlay", "rawJsonOverlay", "galleryOverlay", "helpOverlay"]) {
+    for (const id of ["sendOverlay", "toolsOverlay", "histOverlay", "schedOverlay", "emojiOverlay", "rawJsonOverlay", "galleryOverlay", "helpOverlay", "srvOverlay"]) {
       if (!$(id).classList.contains("hidden")) { $(id).classList.add("hidden"); if (id === "emojiOverlay") emojiCb = null; }
     }
     return;

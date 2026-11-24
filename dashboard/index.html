@@ -9,7 +9,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="logo.png">
 <title>Embed Dashboard</title>
-<link rel="stylesheet" href="styles.css?v=20">
+<link rel="stylesheet" href="styles.css?v=21">
 </head>
 <body>
 
@@ -86,10 +86,10 @@
     <button id="logoutBtn" class="tb" title="Log out"><svg class="ic"><use href="#i-logout"></use></svg><span class="t">Log out</span></button>
   </div>
   <div class="wrap">
-    <div id="serverPicker" class="srvgrid hidden"></div>
     <div id="libTools" class="libtools hidden">
       <input id="libSearch" type="search" placeholder="Search messages" aria-label="Search messages" autocomplete="off">
-      <select id="libGuild" class="hidden" aria-label="Server"></select>
+      <button type="button" id="srvPickBtn" class="hidden" style="display:inline-flex;align-items:center;gap:8px;max-width:260px"></button>
+      <select id="libGuild" class="hidden" aria-label="Server" style="display:none"></select>
       <div id="libChips" class="chips"></div>
     </div>
     <div id="list"></div>
@@ -380,6 +380,15 @@
   </div>
 </div>
 
+<div id="srvOverlay" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="srvModalTitle">
+  <div class="modal" style="width:min(520px,100%)">
+    <h2 id="srvModalTitle">Select Server</h2>
+    <input id="srvSearch" type="search" placeholder="Search servers..." autocomplete="off" style="margin-bottom:10px">
+    <div id="srvModalList" style="max-height:380px;overflow:auto;display:flex;flex-direction:column;gap:8px"></div>
+    <div class="btnrow" style="margin-top:12px"><button id="srvClose"><svg class="ic"><use href="#i-close"></use></svg>Close</button></div>
+  </div>
+</div>
+
 <div id="dialogOverlay" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="dialogTitle">
   <div class="modal" style="width:min(420px,100%)">
     <h2 id="dialogTitle"></h2>
@@ -394,6 +403,6 @@
 
 <div id="testToast" class="ttoast hidden"></div>
 
-<script src="app.js?v=20"></script>
+<script src="app.js?v=21"></script>
 </body>
 </html>
