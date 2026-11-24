@@ -619,9 +619,12 @@ function fmtBar() {
     b("underline", "Underline", "<u>U</u>") +
     b("strike", "Strikethrough", "<s>S</s>") +
     b("code", "Inline code", "&lt;&gt;") +
-    b("h1", "Big heading", "H1") +
     b("link", "Link", "Link") +
-    '<div class="fmtmore-wrap"><button type="button" class="small" data-act2="fmtvar" title="Insert variable" aria-label="Insert variable" aria-expanded="false">{x} Var</button>' +
+    b("h1", "Big heading", "H1") +
+    b("h2", "Heading", "H2") +
+    b("spoiler", "Spoiler", "|| Spoiler") +
+    b("small", "Small text", "-# Small") +
+    '<div class="fmtvar-wrap"><button type="button" class="small" data-act2="fmtvar" title="Insert variable" aria-label="Insert variable" aria-expanded="false">{x} Variables</button>' +
     '<div id="fmtVarMenu" class="fmtvar hidden">' +
     (((cur && cur.layout && cur.layout.variables) || []).length
       ? '<div class="fvh">Custom variables</div>' + cur.layout.variables.map((v) =>
@@ -634,12 +637,6 @@ function fmtBar() {
         '<button type="button" class="small" data-act2="insertvar" data-vname="' + esc(k) + '"><b>' + esc(k) + '</b><span class="muted">' + esc(desc) + '</span></button>'
       ).join("")
     ).join("") +
-    '</div></div>' +
-    '<div class="fmtmore-wrap"><button type="button" class="small" data-act2="fmtmore" title="More formatting" aria-label="More formatting" aria-expanded="false">' + ic("more") + '</button>' +
-    '<div id="fmtMore" class="fmtmore hidden">' +
-    b("h2", "Heading", "H2 Heading") +
-    b("spoiler", "Spoiler", "|| Spoiler") +
-    b("small", "Small text", "-# Small text") +
     "</div></div></div>";
 }
 
@@ -2345,7 +2342,7 @@ document.addEventListener("click", (e) => {
   const m = $("fmtMore");
   if (m && !e.target.closest(".fmtmore-wrap")) m.classList.add("hidden");
   const vm = $("fmtVarMenu");
-  if (vm && !e.target.closest(".fmtmore-wrap")) vm.classList.add("hidden");
+  if (vm && !e.target.closest(".fmtvar-wrap")) vm.classList.add("hidden");
 });
 
 document.querySelectorAll("[data-add]").forEach((btn) => {
