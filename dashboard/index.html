@@ -3,10 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' https: data:; connect-src https://h5nngnplb6.apps.bot-hosting.cloud; font-src 'self'; base-uri 'none'; form-action 'none'">
 <meta name="theme-color" content="#f5efe1">
 <link rel="icon" href="logo.png">
 <title>Embed Dashboard</title>
-<link rel="stylesheet" href="styles.css?v=1">
+<link rel="stylesheet" href="styles.css?v=3">
 </head>
 <body>
 
@@ -51,7 +52,7 @@
 
 <div id="viewLogin" class="center hidden">
   <div class="card">
-    <img class="logo big" src="logo.png" alt="" onerror="this.style.display='none'">
+    <img class="logo big" src="logo.png" alt="">
     <h1 style="margin:6px 0">Embed Dashboard</h1>
     <p id="loginMsg" class="muted">Not logged in.</p>
     <button class="primary" id="loginBtn"><svg class="ic"><use href="#i-logout"></use></svg>Log in with Discord</button>
@@ -62,7 +63,7 @@
 
 <div id="viewLibrary" class="hidden">
   <div class="top">
-    <img class="logo" src="logo.png" alt="" onerror="this.style.display='none'">
+    <img class="logo" src="logo.png" alt="">
     <h1>My messages</h1>
     <button class="primary" id="newBtn"><svg class="ic"><use href="#i-plus"></use></svg>New message</button>
     <button class="primary" id="newClassicBtn"><svg class="ic"><use href="#i-section"></use></svg>New classic embed</button>
@@ -270,6 +271,6 @@
 
 <div id="testToast" class="ttoast hidden"></div>
 
-<script src="app.js?v=2"></script>
+<script src="app.js?v=3"></script>
 </body>
 </html>
