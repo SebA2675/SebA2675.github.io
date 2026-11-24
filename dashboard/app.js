@@ -1202,6 +1202,21 @@ function closeNewMenu() {
   $("newBtn").setAttribute("aria-expanded", "false");
 }
 
+function closeMore() {
+  $("moreMenu").classList.remove("open");
+  $("moreBtn").setAttribute("aria-expanded", "false");
+}
+
+$("moreBtn").onclick = (e) => {
+  e.stopPropagation();
+  const open = $("moreMenu").classList.toggle("open");
+  $("moreBtn").setAttribute("aria-expanded", open ? "true" : "false");
+};
+document.addEventListener("click", (e) => {
+  if (e.target.closest("#moreMenu button") || !e.target.closest("#moreMenu, #moreBtn")) closeMore();
+});
+document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeMore(); });
+
 $("newBtn").onclick = (e) => {
   e.stopPropagation();
   const open = $("newMenu").classList.toggle("hidden") === false;

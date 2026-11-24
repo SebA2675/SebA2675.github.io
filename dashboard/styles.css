@@ -220,3 +220,38 @@ label{display:block;font-size:12px;color:var(--muted);margin:10px 0 4px;text-tra
 @media(max-width:430px){
   #viewLibrary .top .logo{display:none}
 }
+
+/* ----- Builder top bar (Phase 2.1) ----- */
+.btop{display:block;padding:8px 12px}
+.toprow{display:flex;align-items:center;gap:8px;flex-wrap:nowrap}
+.btop #nameInput{flex:1 1 140px;min-width:0;max-width:340px}
+.statusrow{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:6px}
+.statusrow .badge{padding:3px 9px;font-size:12px}
+.moreBtn{display:none}
+#moreMenu{display:contents}
+#moreMenu .tb .t{display:none}
+.mlabel{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted)}
+.mtext{display:none}
+.mlabel select{width:auto;max-width:170px}
+#sendBtn .st{display:inline}
+@media(max-width:900px){
+  .toprow{gap:6px}
+  .moreBtn{display:inline-flex}
+  #moreMenu{display:none;position:fixed;left:10px;right:10px;top:58px;z-index:45;flex-direction:column;gap:2px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:8px;box-shadow:0 12px 28px rgba(43,34,24,.22)}
+  #moreMenu.open{display:flex}
+  #moreMenu .tb{width:100%;justify-content:flex-start;background:transparent;border:0;padding:10px 12px}
+  #moreMenu .tb:hover{background:var(--panel2)}
+  #moreMenu .tb .t{display:inline}
+  #moreMenu .tb:disabled{opacity:.4}
+  .mlabel{flex-direction:column;align-items:stretch;padding:6px 12px 10px;border-bottom:1px solid var(--line);margin-bottom:4px}
+  .mtext{display:block;text-transform:uppercase;letter-spacing:.04em;font-size:11px}
+  .mlabel select{max-width:none;width:100%}
+}
+@media(max-width:430px){
+  #sendBtn .st{display:none}
+}
+
+/* ----- Tree rows (Phase 2.2): actions only on the selected row ----- */
+.node{min-height:46px}
+.node:not(.sel)>button.ib{display:none}
+@media(hover:hover){.node:hover>button.ib{display:inline-flex}}
