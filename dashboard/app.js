@@ -4142,5 +4142,5 @@ $("wipeGuildBtn").onclick = async () => {
     notify("All data deleted for that server.", "ok");
     openLibrary();
   } catch (e) { if (e.message !== "login") toolsStatus("Failed: " + e.message); }
-});
+};
 start();
