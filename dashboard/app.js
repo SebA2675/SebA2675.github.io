@@ -2054,10 +2054,10 @@ async function openLibrary() {
       esc(m.guild_id ? guildName(m.guild_id) : "No server") + " &middot; " +
       (m.posted_message_id ? (m.changed ? "Posted (changed since posted)" : "Posted") : "Draft") + " &middot; " + new Date(m.updated_at * 1000).toLocaleString() +
       '</div></div>' +
-      '<button class="primary small" data-open="' + m.id + '">' + ic("edit") + "Open</button>" +
-      '<button class="small ib" data-copy="' + m.id + '" title="Make a copy">' + ic("copy") + "</button>" +
-      '<button class="small ib" data-export="' + m.id + '" title="Export as a file">' + ic("export") + "</button>" +
-      '<button class="small ib danger" data-del="' + m.id + '" title="Delete">' + ic("trash") + "</button></div>"
+      '<button class="primary small" data-open="' + esc(m.id) + '">' + ic("edit") + "Open</button>" +
+      '<button class="small ib" data-copy="' + esc(m.id) + '" title="Make a copy">' + ic("copy") + "</button>" +
+      '<button class="small ib" data-export="' + esc(m.id) + '" title="Export as a file">' + ic("export") + "</button>" +
+      '<button class="small ib danger" data-del="' + esc(m.id) + '" title="Delete">' + ic("trash") + "</button></div>"
     ).join("");
   } catch (e) {
     if (e.message !== "login") $("list").innerHTML = '<p class="muted">Could not load: ' + esc(e.message) + "</p>";
@@ -2128,8 +2128,8 @@ async function loadToolsTemplates() {
       ? list.map((t) =>
         '<div class="mrow"><div class="grow"><b>' + esc(t.name) + '</b><div class="muted">' +
         new Date(t.created_at * 1000).toLocaleDateString() + '</div></div>' +
-        '<button class="primary small" data-use="' + t.id + '">' + ic("check") + "Use</button>" +
-        '<button class="small ib danger" data-rmtpl="' + t.id + '" title="Delete">' + ic("trash") + "</button></div>").join("")
+        '<button class="primary small" data-use="' + esc(t.id) + '">' + ic("check") + "Use</button>" +
+        '<button class="small ib danger" data-rmtpl="' + esc(t.id) + '" title="Delete">' + ic("trash") + "</button></div>").join("")
       : '<p class="muted">No templates yet. Open a message and tap "Template" to save one.</p>';
   } catch (e) {
     if (e.message !== "login") $("toolsTemplates").innerHTML = '<p class="muted">Could not load: ' + esc(e.message) + "</p>";
@@ -2212,7 +2212,7 @@ async function loadToolsPersonas() {
         '<div class="mrow">' +
         (p.avatar_url ? '<img src="' + esc(p.avatar_url) + '" alt="" style="width:32px;height:32px;border-radius:50%;object-fit:cover">' : "") +
         '<div class="grow"><b>' + esc(p.name) + '</b></div>' +
-        '<button class="small ib danger" data-rmpersona="' + p.id + '" title="Delete">' + ic("trash") + "</button></div>").join("")
+        '<button class="small ib danger" data-rmpersona="' + esc(p.id) + '" title="Delete">' + ic("trash") + "</button></div>").join("")
       : '<p class="muted">No presets yet.</p>';
   } catch (e) {
     if (e.message !== "login") $("toolsPersonas").innerHTML = '<p class="muted">Could not load: ' + esc(e.message) + "</p>";
@@ -2274,7 +2274,7 @@ $("histBtn").onclick = async () => {
       ? list.map((v) =>
         '<div class="mrow"><div class="grow"><b>' + new Date(v.created_at * 1000).toLocaleString() +
         '</b><div class="muted">' + esc(v.name || "") + '</div></div>' +
-        '<button class="primary small" data-restore="' + v.id + '">' + ic("history") + "Restore</button></div>").join("")
+        '<button class="primary small" data-restore="' + esc(v.id) + '">' + ic("history") + "Restore</button></div>").join("")
       : '<p class="muted">No versions yet. A snapshot is saved the next time you post or update this message.</p>';
   } catch (e) {
     if (e.message !== "login") $("histList").innerHTML = '<p class="muted">Could not load: ' + esc(e.message) + "</p>";
@@ -2329,7 +2329,7 @@ function scheduleRow(s) {
   return '<div class="mrow"><div class="grow"><b>' + esc(what) + '</b>' +
     '<div class="muted">' + esc(when + " at " + s.run_time + " (" + s.tz + ")") + '</div>' +
     '<div class="muted">' + esc(next + last) + '</div></div>' +
-    '<button class="small ib danger" data-sdel="' + s.id + '" title="Delete">' + ic("trash") + "</button></div>";
+    '<button class="small ib danger" data-sdel="' + esc(s.id) + '" title="Delete">' + ic("trash") + "</button></div>";
 }
 
 async function loadSchedules() {
@@ -2362,7 +2362,7 @@ $("schedBtn").onclick = async () => {
   $("schedDate").value = t.getFullYear() + "-" + pad2(t.getMonth() + 1) + "-" + pad2(t.getDate());
   $("schedTime").value = pad2(t.getHours()) + ":00";
   $("schedChannel").innerHTML = chans.length
-    ? chans.map((c) => '<option value="' + c.id + '">#' + esc(c.name) + "</option>").join("")
+    ? chans.map((c) => '<option value="' + esc(c.id) + '">#' + esc(c.name) + "</option>").join("")
     : "<option value=''>No channel the bot can write in</option>";
   if (cur.channel_id && chans.some((c) => c.id === cur.channel_id)) $("schedChannel").value = cur.channel_id;
   syncSchedForm();
@@ -2513,7 +2513,7 @@ async function loadSendChannels(gid, wanted) {
       return;
     }
     sc.innerHTML = list.map((c) =>
-      '<option value="' + c.id + '">#' + esc(c.name) + (c.category ? " (" + esc(c.category) + ")" : "") + "</option>"
+      '<option value="' + esc(c.id) + '">#' + esc(c.name) + (c.category ? " (" + esc(c.category) + ")" : "") + "</option>"
     ).join("");
     if (wanted && list.some((c) => c.id === wanted)) sc.value = wanted;
   } catch (e) {
@@ -2547,7 +2547,7 @@ async function loadSendAs(gid) {
   let list = [];
   try { list = await api("/guilds/" + gid + "/personas"); } catch (e) { list = []; }
   $("sendAs").innerHTML = '<option value="">The bot (normal)</option>' +
-    list.map((p) => '<option value="' + p.id + '">Webhook: ' + esc(p.name) + "</option>").join("");
+    list.map((p) => '<option value="' + esc(p.id) + '">Webhook: ' + esc(p.name) + "</option>").join("");
 }
 
 async function send(path, withTarget, extra) {
