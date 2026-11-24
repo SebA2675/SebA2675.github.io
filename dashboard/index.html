@@ -263,6 +263,8 @@ label{display:block;font-size:12px;color:var(--muted);margin:10px 0 4px;text-tra
   </div>
   <div class="wrap">
     <p class="muted">The bot stays only in servers on this list and leaves any other server it is added to. Administrators of an approved server can use this dashboard for that server's messages only.</p>
+    <h3>Storage</h3>
+    <p class="muted" id="adminStorage">Loading...</p>
     <h3>Approved</h3>
     <div id="adminAllowed"></div>
     <h3>Approve a server by ID</h3>
@@ -2869,6 +2871,12 @@ async function openAdmin() {
   $("adminPending").innerHTML = "";
   try {
     const d = await api("/admin/servers");
+    const st = d.storage || { size_bytes: 0, counts: {} };
+    const kb = st.size_bytes / 1024;
+    $("adminStorage").textContent = "Database: " + (kb >= 1024 ? (kb / 1024).toFixed(1) + " MB" : Math.round(kb) + " KB") +
+      " of about 512 MB on the free host. Messages: " + (st.counts.messages || 0) +
+      ", saved versions: " + (st.counts.versions || 0) + ", schedules: " + (st.counts.schedules || 0) +
+      ", templates: " + (st.counts.templates || 0) + ".";
     $("adminAllowed").innerHTML = d.allowed.length
       ? d.allowed.map((g) =>
         '<div class="row"><div class="grow"><b>' + esc(g.name || "(unknown)") + '</b><div class="muted">' + esc(g.id) +
