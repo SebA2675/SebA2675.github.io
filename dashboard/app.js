@@ -223,6 +223,7 @@ $("treeEdge").onclick = () => { treeOpen = !treeOpen; applyTree(); };
 
 /* ---------- Edit / Test mode ---------- */
 let testRoles = new Set();
+let testPageIdx = 0;
 let toastTimer = null;
 
 function toast(text) {
@@ -310,6 +311,7 @@ function testClear() {
 function setMode(m) {
   mode = m;
   testRoles = new Set();
+  testPageIdx = 0;
   testClear();
   hideAddMenu();
   $("testToast").classList.add("hidden");
@@ -396,6 +398,26 @@ function testRun(a) {
       testRoles.delete(role.id);
       toast("Removed the " + role.name + " role.");
     }
+    return;
+  }
+  if (a.type === "page") {
+    const pages = cur.layout.pages || [];
+    if (!pages.length) { toast("No pages defined yet."); return; }
+    const req = Number(a.page_index || 0);
+    if (req === -2) testPageIdx = (testPageIdx + 1) % pages.length;
+    else if (req === -1) testPageIdx = (testPageIdx - 1 + pages.length) % pages.length;
+    else testPageIdx = Math.max(0, Math.min(req, pages.length - 1));
+    const p = pages[testPageIdx];
+    const oldBlocks = cur.layout.blocks;
+    const oldContent = cur.layout.content;
+    const oldEmbeds = cur.layout.embeds;
+    if (isClassic()) { cur.layout.content = p.content || ""; cur.layout.embeds = p.embeds || []; }
+    else cur.layout.blocks = p.blocks || [];
+    $("preview").innerHTML = isClassic() ? renderClassicPreview() : cur.layout.blocks.map(renderBlock).join("");
+    cur.layout.blocks = oldBlocks;
+    cur.layout.content = oldContent;
+    cur.layout.embeds = oldEmbeds;
+    toast("Page " + (testPageIdx + 1) + " / " + pages.length);
   }
 }
 
@@ -492,7 +514,7 @@ function restore(state) {
   lastState = state;
   burst = false;
   selId = null;
-  if (tab !== "main" && tab !== "__vars" && !activeReply() && !activeForm()) tab = "main";
+  if (tab !== "main" && tab !== "__vars" && !activeReply() && !activeForm() && !activePage()) tab = "main";
   if (cur.layout.guild_id) $("guildSel").value = cur.layout.guild_id;
   markDirty();
   restoring = false;
@@ -729,6 +751,7 @@ function normalize(layout) {
   if (!Array.isArray(layout.blocks)) layout.blocks = [];
   if (!Array.isArray(layout.replies)) layout.replies = [];
   if (!Array.isArray(layout.forms)) layout.forms = [];
+  if (!Array.isArray(layout.pages)) layout.pages = [];
   if (!Array.isArray(layout.variables)) layout.variables = [];
   layout.variables = layout.variables.filter((v) => v && typeof v === "object").map((v) => ({ id: String(v.id || uid()), name: String(v.name || ""), default: String(v.default || "") }));
   if (layout.kind === "classic") {
@@ -768,6 +791,12 @@ function normalize(layout) {
   layout.forms.forEach((f) => {
     if (!Array.isArray(f.fields)) f.fields = [];
   });
+  layout.pages.forEach((pg) => {
+    if (!Array.isArray(pg.blocks)) pg.blocks = [];
+    pg.blocks.forEach(fix);
+    if (typeof pg.content !== "string") pg.content = "";
+    if (!Array.isArray(pg.embeds)) pg.embeds = [];
+  });
   return layout;
 }
 
@@ -792,9 +821,35 @@ function activeForm() {
   return cur.layout.forms.find((f) => f.id === tab) || null;
 }
 
+function activePage() {
+  if (tab === "main") return null;
+  return (cur.layout.pages || []).find((p) => p.id === tab) || null;
+}
+
 function activeBlocks() {
   const r = activeReply();
-  return r ? r.blocks : cur.layout.blocks;
+  if (r) return r.blocks;
+  const p = activePage();
+  return p ? p.blocks : cur.layout.blocks;
+}
+
+function addPage() {
+  if (!Array.isArray(cur.layout.pages)) cur.layout.pages = [];
+  if (cur.layout.pages.length >= 25) { toast("Max 25 pages."); return; }
+  const idx = cur.layout.pages.length + 1;
+  const p = { id: uid(), name: "Page " + idx, blocks: [], content: "", embeds: [] };
+  if (!isClassic()) {
+    const box = newBlock("box");
+    box.children.push({ id: uid(), type: "text", content: "# Page " + idx + "\nWrite page content here." });
+    p.blocks.push(box);
+  } else {
+    p.embeds.push(newEmbed());
+  }
+  cur.layout.pages.push(p);
+  tab = p.id;
+  selId = null;
+  markDirty();
+  renderAll();
 }
 
 function findLoc(id) {
@@ -1532,14 +1587,14 @@ function fieldRows(f) {
 function renderTabs() {
   const all = [{ id: "main", name: "Main message" }]
     .concat(cur.layout.replies.map((r) => ({ id: r.id, name: r.name })))
-    .concat(cur.layout.forms.map((f) => ({ id: f.id, name: "Form: " + f.name })));
+    .concat(cur.layout.forms.map((f) => ({ id: f.id, name: "Form: " + f.name }))).concat((cur.layout.pages || []).map((p) => ({ id: p.id, name: p.name })));
   const list = problems();
   $("tabs").innerHTML = all.map((t) =>
     '<button class="small' + (t.id === tab ? " primary" : "") + '" data-tab="' + esc(t.id) + '">' + esc(t.name) +
     (list.some((x) => x.tab === t.id) ? '<span class="dotred"></span>' : "") + "</button>"
   ).join("") +
     '<button class="small" data-tab="__new">' + ic("reply") + "Reply</button>" +
-    '<button class="small' + (tab === "__vars" ? " primary" : "") + '" data-tab="__vars">' + ic("code") + "Variables" + ((cur.layout.variables || []).length ? " (" + cur.layout.variables.length + ")" : "") + (list.some((x) => x.tab === "__vars") ? '<span class="dotred"></span>' : "") + "</button>" + '<button class="small" data-tab="__newform">' + ic("form") + "Form</button>";
+    '<button class="small' + (tab === "__vars" ? " primary" : "") + '" data-tab="__vars">' + ic("code") + "Variables" + ((cur.layout.variables || []).length ? " (" + cur.layout.variables.length + ")" : "") + (list.some((x) => x.tab === "__vars") ? '<span class="dotred"></span>' : "") + "</button>" + '<button class="small" data-tab="__newform">' + ic("form") + "Form</button>" + '<button class="small" data-tab="__newpage">' + ic("plus") + "Page</button>";
 }
 
 function extractUsedVars() {
@@ -1691,6 +1746,12 @@ function actionExtra(a, p, i) {
       opts([["toggle", "Toggle (add or remove)"], ["add", "Add the role"], ["remove", "Remove the role"]], a.mode) + "</select>" +
       '<label>Role</label><select data-f="' + p + 'role" data-i="' + i + '">' + opts(roleList(), a.role_id) + "</select>" + roleWarn(a.role_id);
   }
+  if (a.type === "page") {
+    const pages = cur.layout.pages || [];
+    if (!pages.length) return '<p class="muted">Add a page first with the "+ Page" tab above the tree.</p>';
+    const list = [["-2", "Next page"], ["-1", "Previous page"]].concat(pages.map((pg, idx) => [String(idx), (idx + 1) + ". " + (pg.name || "Page")]));
+    return '<label>Page to show</label><select data-f="' + p + 'page" data-i="' + i + '">' + opts(list, String(a.page_index ?? -2)) + "</select>";
+  }
   return "";
 }
 
@@ -1723,7 +1784,7 @@ function buttonEditor(x, i, single) {
     '<input data-f="blabel" data-i="' + i + '" value="' + esc(x.label) + '">' +
     emojiRow(x, "b", i) +
     '<label>When clicked</label><select data-f="baction" data-i="' + i + '">' +
-    opts([["link", "Open a link"], ["reply", "Show a private reply"], ["form", "Open a pop-up form"], ["role", "Give or remove a role"]], x.action.type) + "</select>" +
+    opts([["link", "Open a link"], ["reply", "Show a private reply"], ["form", "Open a pop-up form"], ["role", "Give or remove a role"], ["page", "Go to page"]], x.action.type) + "</select>" +
     actionExtra(x.action, "b", i) + colour +
     (x.action.type === "link" ? "" : rulesEditor(x, "b", i)) +
     (single ? "" : '<button class="small danger" data-act2="delbtn" data-i="' + i + '" style="margin-top:8px">' + ic("trash") + "Remove button</button>") +
@@ -1737,7 +1798,7 @@ function optionEditor(o, i) {
     "<label>Small description (optional)</label>" +
     '<input data-f="odesc" data-i="' + i + '" value="' + esc(o.description || "") + '">' +
     '<label>When chosen</label><select data-f="oaction" data-i="' + i + '">' +
-    opts([["reply", "Show a private reply"], ["form", "Open a pop-up form"], ["role", "Give or remove a role"]], o.action.type) + "</select>" +
+    opts([["reply", "Show a private reply"], ["form", "Open a pop-up form"], ["role", "Give or remove a role"], ["page", "Go to page"]], o.action.type) + "</select>" +
     actionExtra(o.action, "o", i) +
     rulesEditor(o, "o", i) +
     '<button class="small danger" data-act2="delopt" data-i="' + i + '" style="margin-top:8px">' + ic("trash") + "Remove option</button></div>";
@@ -1823,10 +1884,15 @@ function renderSettingsBody() {
   const loc = selId ? findLoc(selId) : null;
   if (!loc) {
     const r = activeReply();
+    const pg = activePage();
     if (r) {
       el.innerHTML = '<label>Reply name</label><input data-f="rname" value="' + esc(r.name) + '">' +
         '<p class="muted">Only the person who clicks the button sees this reply.</p>' +
         '<button class="small danger" data-act2="delreply">' + ic("trash") + "Delete this reply</button>";
+    } else if (pg) {
+      el.innerHTML = '<label>Page name</label><input data-f="pname" value="' + esc(pg.name) + '">' +
+        '<p class="muted">Use a button or dropdown with "Go to page" to switch pages in Discord.</p>' +
+        '<button class="small danger" data-act2="delpage">' + ic("trash") + "Delete this page</button>";
     } else {
       el.innerHTML = '<p class="muted">Select a part in the tree to edit it.</p>';
     }
@@ -1871,7 +1937,7 @@ function renderSettingsBody() {
 }
 
 function renderAll() {
-  if (tab !== "main" && tab !== "__vars" && !activeReply() && !activeForm()) tab = "main";
+  if (tab !== "main" && tab !== "__vars" && !activeReply() && !activeForm() && !activePage()) tab = "main";
   renderTabs();
   renderTree();
   renderPreview();
@@ -1885,6 +1951,7 @@ $("tabs").addEventListener("click", (e) => {
   if (!t) return;
   if (t === "__new") { addReply(); return; }
   if (t === "__newform") { addForm(); return; }
+  if (t === "__newpage") { addPage(); return; }
   tab = t;
   selId = null;
   testClear();
@@ -2127,6 +2194,14 @@ $("settings").addEventListener("input", (e) => {
     renderStatus();
     return;
   }
+  if (f === "pname") {
+    const pg = activePage();
+    if (pg) pg.name = v;
+    markDirty();
+    renderTabs();
+    renderStatus();
+    return;
+  }
 
   const form = activeForm();
   if (form) {
@@ -2169,11 +2244,13 @@ $("settings").addEventListener("input", (e) => {
   if (f === "bform") btns[i].action.form_id = v;
   if (f === "bmode") btns[i].action.mode = v;
   if (f === "brole") { btns[i].action.role_id = v; again = true; }
+  if (f === "bpage") { btns[i].action.page_index = Number(v); }
   if (f === "baction") {
     if (v === "link") btns[i].action = { type: "link", url: "https://" };
     if (v === "reply") btns[i].action = { type: "reply", reply_id: "" };
     if (v === "form") btns[i].action = { type: "form", form_id: "" };
     if (v === "role") btns[i].action = { type: "role", mode: "toggle", role_id: "" };
+    if (v === "page") btns[i].action = { type: "page", page_index: -2 };
     again = true;
   }
   const ruled = (f === "bcd" || f === "bonce" || f === "brolechk") ? btns[i]
@@ -2195,10 +2272,12 @@ $("settings").addEventListener("input", (e) => {
   if (f === "oform") b.options[i].action.form_id = v;
   if (f === "omode") b.options[i].action.mode = v;
   if (f === "orole") { b.options[i].action.role_id = v; again = true; }
+  if (f === "opage") { b.options[i].action.page_index = Number(v); }
   if (f === "oaction") {
     if (v === "reply") b.options[i].action = { type: "reply", reply_id: "" };
     if (v === "form") b.options[i].action = { type: "form", form_id: "" };
     if (v === "role") b.options[i].action = { type: "role", mode: "toggle", role_id: "" };
+    if (v === "page") b.options[i].action = { type: "page", page_index: -2 };
     again = true;
   }
   markDirty();
@@ -2291,6 +2370,15 @@ $("settings").addEventListener("click", async (e) => {
   if (act === "delreply") {
     if (!await uiConfirm("Delete this reply?", { title: "Delete reply", okText: "Delete", danger: true })) return;
     cur.layout.replies = cur.layout.replies.filter((r) => r.id !== tab);
+    tab = "main";
+    selId = null;
+    markDirty();
+    renderAll();
+    return;
+  }
+  if (act === "delpage") {
+    if (!await uiConfirm("Delete this page?", { title: "Delete page", okText: "Delete", danger: true })) return;
+    cur.layout.pages = (cur.layout.pages || []).filter((p) => p.id !== tab);
     tab = "main";
     selId = null;
     markDirty();
@@ -2675,10 +2763,11 @@ $("toolsBtn").onclick = async () => {
   toolsStatus("");
   $("toolsOverlay").classList.remove("hidden");
   loadToolsTemplates();
+  loadToolsSequences();
   loadToolsPersonas();
 };
 
-$("toolsGuild").onchange = () => { toolsStatus(""); loadToolsTemplates(); loadToolsPersonas(); };
+$("toolsGuild").onchange = () => { toolsStatus(""); loadToolsTemplates(); loadToolsSequences(); loadToolsPersonas(); };
 $("toolsClose").onclick = () => { $("toolsOverlay").classList.add("hidden"); };
 $("toolsOverlay").onclick = (e) => { if (e.target === $("toolsOverlay")) $("toolsOverlay").classList.add("hidden"); };
 
@@ -2726,6 +2815,81 @@ $("toolsTemplates").addEventListener("click", async (e) => {
     if (d.rmtpl && await uiConfirm("Delete this template?", { title: "Delete template", okText: "Delete", danger: true })) {
       await api("/templates/" + d.rmtpl, { method: "DELETE" });
       loadToolsTemplates();
+    }
+  } catch (err) {
+    if (err.message !== "login") toolsStatus("Failed: " + err.message);
+  }
+});
+
+/* ---------- Message sequences (Phase 3.6) ---------- */
+async function loadToolsSequences() {
+  const gid = $("toolsGuild").value;
+  if (!gid) { $("toolsSequences").innerHTML = ""; return; }
+  $("toolsSequences").innerHTML = '<p class="muted">Loading...</p>';
+  try {
+    const [seqs, chansList] = await Promise.all([
+      api("/guilds/" + gid + "/sequences"),
+      api("/guilds/" + gid + "/channels"),
+    ]);
+    $("seqChannel").innerHTML = chansList.length
+      ? chansList.map((c) => '<option value="' + esc(c.id) + '">#' + esc(c.name) + "</option>").join("")
+      : "<option value=''>No channel the bot can write in</option>";
+    const gMsgs = libItems.filter((m) => String(m.guild_id) === gid);
+    $("seqMsgChecks").innerHTML = gMsgs.length
+      ? gMsgs.map((m) =>
+        '<label style="text-transform:none;display:flex;gap:8px;align-items:center;letter-spacing:0;margin:3px 0">' +
+        '<input type="checkbox" class="seq-chk" value="' + esc(m.id) + '"> ' + esc(m.name) + "</label>"
+      ).join("")
+      : '<p class="muted">No saved messages in this server yet.</p>';
+    $("toolsSequences").innerHTML = seqs.length
+      ? seqs.map((s) =>
+        '<div class="mrow"><div class="grow"><b>' + esc(s.name) + '</b>' +
+        '<div class="muted">' + s.message_ids.length + ' message(s)</div></div>' +
+        '<button class="primary small" data-postseq="' + esc(s.id) + '">' + ic("send") + "Post all</button>" +
+        '<button class="small ib danger" data-rmseq="' + esc(s.id) + '" title="Delete">' + ic("trash") + "</button></div>"
+      ).join("")
+      : '<p class="muted">No sequences yet.</p>';
+  } catch (e) {
+    if (e.message !== "login") $("toolsSequences").innerHTML = '<p class="muted">Could not load: ' + esc(e.message) + "</p>";
+  }
+}
+
+$("seqAdd").onclick = async () => {
+  const gid = $("toolsGuild").value;
+  const name = $("seqName").value.trim();
+  const ids = Array.from(document.querySelectorAll(".seq-chk:checked")).map((c) => Number(c.value));
+  if (!name) { toolsStatus("Type a name for the sequence."); return; }
+  if (!ids.length || ids.length > 10) { toolsStatus("Select 1 to 10 messages."); return; }
+  toolsStatus("Saving sequence...");
+  try {
+    await api("/guilds/" + gid + "/sequences", {
+      method: "POST",
+      body: JSON.stringify({ name, message_ids: ids }),
+    });
+    $("seqName").value = "";
+    toolsStatus("Sequence saved.");
+    loadToolsSequences();
+  } catch (e) {
+    if (e.message !== "login") toolsStatus("Failed: " + e.message);
+  }
+};
+
+$("toolsSequences").addEventListener("click", async (e) => {
+  const d = btnData(e);
+  try {
+    if (d.postseq) {
+      const ch = $("seqChannel").value;
+      if (!ch) { toolsStatus("Choose a channel first."); return; }
+      toolsStatus("Posting sequence...");
+      const r = await api("/sequences/" + d.postseq + "/post-all", {
+        method: "POST",
+        body: JSON.stringify({ channel_id: ch }),
+      });
+      toolsStatus("Posted " + r.posted + " message(s) in order!");
+    }
+    if (d.rmseq && await uiConfirm("Delete this sequence?", { title: "Delete sequence", okText: "Delete", danger: true })) {
+      await api("/sequences/" + d.rmseq, { method: "DELETE" });
+      loadToolsSequences();
     }
   } catch (err) {
     if (err.message !== "login") toolsStatus("Failed: " + err.message);
@@ -3070,6 +3234,7 @@ $("sendBtn").onclick = async () => {
     $("sendOverlay").classList.remove("hidden");
     await loadSendChannels(gid, fresh.channel_id);
     await loadSendAs(gid);
+    renderSendVars();
   } catch (e) {
     if (e.message !== "login") notifyErr(e.message);
   }
@@ -3082,6 +3247,26 @@ async function loadSendAs(gid) {
     list.map((p) => '<option value="' + esc(p.id) + '">Webhook: ' + esc(p.name) + "</option>").join("");
 }
 
+function renderSendVars() {
+  const wrap = $("sendVarsWrap");
+  const vars = (cur && cur.layout && cur.layout.variables) || [];
+  if (!vars.length) { wrap.classList.add("hidden"); wrap.innerHTML = ""; return; }
+  wrap.classList.remove("hidden");
+  wrap.innerHTML = '<label style="margin-bottom:4px">Fill in variables before sending</label>' +
+    vars.map((v) => {
+      const val = varTestValues[v.name] !== undefined ? varTestValues[v.name] : (v.default || "");
+      return '<div style="margin-bottom:6px"><small class="muted">{{' + esc(v.name) + '}}</small>' +
+        '<input data-sendvar="' + esc(v.name) + '" value="' + esc(val) + '" placeholder="' + esc(v.default || "value...") + '"></div>';
+    }).join("");
+}
+
+function collectSendVars() {
+  const out = {};
+  document.querySelectorAll("[data-sendvar]").forEach((inp) => {
+    out[inp.dataset.sendvar] = inp.value;
+  });
+  return out;
+}
 async function send(path, withTarget, extra) {
   setStatus("Sending...");
   postBtn.disabled = true;
@@ -3089,7 +3274,9 @@ async function send(path, withTarget, extra) {
   delBtn.disabled = true;
   try {
     const o = { method: "POST" };
-    if (withTarget) o.body = JSON.stringify({ guild_id: sg.value, channel_id: sc.value, ...(extra || {}) });
+    const sv = collectSendVars();
+    if (withTarget) o.body = JSON.stringify({ guild_id: sg.value, channel_id: sc.value, variables: sv, ...(extra || {}) });
+    else if (Object.keys(sv).length) o.body = JSON.stringify({ variables: sv });
     fresh = await api("/messages/" + cur.id + path, o);
     cur.posted_message_id = fresh.posted_message_id;
     cur.channel_id = fresh.channel_id;
@@ -3244,7 +3431,7 @@ $("rawJsonApply").onclick = () => {
   cur.layout = normalize(parsed);
   if (!cur.layout.guild_id && keepGuild) cur.layout.guild_id = keepGuild;
   selId = null;
-  if (tab !== "main" && tab !== "__vars" && !activeReply() && !activeForm()) tab = "main";
+  if (tab !== "main" && tab !== "__vars" && !activeReply() && !activeForm() && !activePage()) tab = "main";
   markDirty();
   renderAll();
   $("rawJsonOverlay").classList.add("hidden");

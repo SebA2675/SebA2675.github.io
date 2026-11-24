@@ -9,7 +9,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="logo.png">
 <title>Embed Dashboard</title>
-<link rel="stylesheet" href="styles.css?v=15">
+<link rel="stylesheet" href="styles.css?v=16">
 </head>
 <body>
 
@@ -215,6 +215,7 @@
     <label>Server</label><select id="sendGuild"></select>
     <label>Channel</label><select id="sendChannel"></select>
     <label>Send as</label><select id="sendAs"></select>
+    <div id="sendVarsWrap" class="hidden" style="margin-top:8px"></div>
     <p class="muted" style="margin:4px 0 0">Update and Delete always use whatever posted the message.</p>
     <p id="sendStatus" class="muted" style="min-height:20px"></p>
     <div class="btnrow">
@@ -247,6 +248,17 @@
     <p id="toolsStatus" class="muted" style="min-height:20px"></p>
     <h3>Templates</h3>
     <div id="toolsTemplates"></div>
+    <h3>Message sequences</h3>
+    <p class="muted">Group saved messages to post them in order into a channel.</p>
+    <label>Channel for posting sequences</label><select id="seqChannel"></select>
+    <div id="toolsSequences" style="margin-top:8px"></div>
+    <div class="bcard" style="margin-top:8px">
+      <label style="margin-top:0">New sequence name</label>
+      <input id="seqName" maxlength="100" placeholder="e.g. Server Rules + Info">
+      <label>Messages to include (max 10)</label>
+      <div id="seqMsgChecks" style="max-height:130px;overflow:auto;margin-bottom:8px"></div>
+      <button class="primary small" id="seqAdd"><svg class="ic"><use href="#i-plus"></use></svg>Create sequence</button>
+    </div>
     <h3>Webhook presets</h3>
     <p class="muted">A preset is a name and picture to post under, like "Server News". You pick one with "Send as" in the Send window.</p>
     <div id="toolsPersonas"></div>
@@ -329,6 +341,6 @@
 
 <div id="testToast" class="ttoast hidden"></div>
 
-<script src="app.js?v=15"></script>
+<script src="app.js?v=16"></script>
 </body>
 </html>
