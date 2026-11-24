@@ -255,3 +255,12 @@ label{display:block;font-size:12px;color:var(--muted);margin:10px 0 4px;text-tra
 .node{min-height:46px}
 .node:not(.sel)>button.ib{display:none}
 @media(hover:hover){.node:hover>button.ib{display:inline-flex}}
+
+/* ----- Notices (Phase 2.6) ----- */
+#toasts{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:80;display:flex;flex-direction:column;gap:8px;align-items:center;width:min(440px,calc(100vw - 24px));pointer-events:none}
+.toast{pointer-events:auto;cursor:pointer;width:100%;background:var(--ink);color:var(--cream);padding:11px 14px 11px 16px;border-radius:12px;box-shadow:0 10px 26px rgba(43,34,24,.32);font-size:14px;line-height:1.35;border-left:5px solid #9aa0a6;animation:toastin .18s ease-out;overflow-wrap:anywhere}
+.toast.ok{border-left-color:#4bb07a}
+.toast.error{border-left-color:#e0574b}
+@keyframes toastin{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@media(max-width:900px){#toasts{bottom:calc(78px + env(safe-area-inset-bottom))}}
+@media(prefers-reduced-motion:reduce){.toast{animation:none}}

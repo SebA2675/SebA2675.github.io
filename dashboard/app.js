@@ -185,6 +185,24 @@ function toast(text) {
   toastTimer = setTimeout(() => t.classList.add("hidden"), 2800);
 }
 
+function notify(text, kind) {
+  kind = kind || "info";
+  const box = $("toasts");
+  [...box.children].filter((n) => n.dataset.text === text).forEach((n) => n.remove());
+  const n = document.createElement("div");
+  n.className = "toast " + kind;
+  n.dataset.text = text;
+  n.setAttribute("role", kind === "error" ? "alert" : "status");
+  n.title = "Tap to dismiss";
+  n.textContent = text;
+  n.onclick = () => n.remove();
+  box.appendChild(n);
+  while (box.children.length > 3) box.firstChild.remove();
+  setTimeout(() => n.remove(), kind === "error" ? 7000 : 3200);
+}
+
+function notifyErr(text) { notify(text, "error"); }
+
 function testShow(html) {
   $("testPanel").innerHTML = html;
   $("testPanel").classList.remove("hidden");
@@ -2066,7 +2084,7 @@ async function save(silent) {
     else scheduleAutosave();
     renderStatus();
   } catch (e) {
-    if (e.message !== "login" && !silent) alert("Could not save: " + e.message);
+    if (e.message !== "login" && !silent) notifyErr("Could not save: " + e.message);
   }
   saving = false;
 }
@@ -2076,7 +2094,7 @@ async function openBuilder(msg) {
   msg.layout = normalize(msg.layout || {});
   await loadGuilds();
   if (!guilds.length) {
-    alert("No server available. The bot must be in a server where you are an Administrator.");
+    notifyErr("No server available. The bot must be in a server where you are an Administrator.");
     return;
   }
   if (msg.guild_id) msg.layout.guild_id = msg.guild_id;
@@ -2211,18 +2229,21 @@ $("list").addEventListener("click", async (e) => {
         method: "POST",
         body: JSON.stringify({ name: (m.name + " (copy)").slice(0, 100), layout: m.layout }),
       });
+      notify("Copy created.", "ok");
       openLibrary();
     }
     if (d.export) {
       const data = await api("/messages/" + d.export + "/export");
       downloadJson(data.name || "message", data);
+      notify("Exported as a file.", "ok");
     }
     if (d.del && confirm("Delete this message from the dashboard? Its schedules are deleted too. (A posted Discord message is not removed.)")) {
       await api("/messages/" + d.del, { method: "DELETE" });
+      notify("Message deleted.", "ok");
       openLibrary();
     }
   } catch (err) {
-    if (err.message !== "login") alert(err.message);
+    if (err.message !== "login") notifyErr(err.message);
   }
 });
 
@@ -2276,7 +2297,7 @@ async function loadToolsTemplates() {
 
 $("toolsBtn").onclick = async () => {
   await loadGuilds();
-  if (!guilds.length) { alert("No server available."); return; }
+  if (!guilds.length) { notifyErr("No server available."); return; }
   $("toolsGuild").innerHTML = opts(guilds.map((g) => [g.id, g.name]), "");
   toolsStatus("");
   $("toolsOverlay").classList.remove("hidden");
@@ -2396,14 +2417,14 @@ $("tplBtn").onclick = async () => {
       method: "POST",
       body: JSON.stringify({ name: name.trim(), layout: cur.layout }),
     });
-    alert("Template saved for " + guildName(cur.layout.guild_id) + ".");
+    notify("Template saved for " + guildName(cur.layout.guild_id) + ".", "ok");
   } catch (e) {
-    if (e.message !== "login") alert("Could not save the template: " + e.message);
+    if (e.message !== "login") notifyErr("Could not save the template: " + e.message);
   }
 };
 
 $("histBtn").onclick = async () => {
-  if (!cur.id) { alert("Save the message first."); return; }
+  if (!cur.id) { notify("Save the message first.", "info"); return; }
   $("histList").innerHTML = '<p class="muted">Loading...</p>';
   $("histOverlay").classList.remove("hidden");
   try {
@@ -2434,7 +2455,7 @@ $("histList").addEventListener("click", async (e) => {
     renderAll();
     $("histOverlay").classList.add("hidden");
   } catch (err) {
-    if (err.message !== "login") alert(err.message);
+    if (err.message !== "login") notifyErr(err.message);
   }
 });
 
@@ -2492,7 +2513,7 @@ $("schedAction").onchange = syncSchedForm;
 
 $("schedBtn").onclick = async () => {
   const probs = problems();
-  if (probs.length) { jumpToProblem(probs[0]); alert("Fix this first: " + probs[0].msg); return; }
+  if (probs.length) { jumpToProblem(probs[0]); notifyErr("Fix this first: " + probs[0].msg); return; }
   await save(false);
   if (dirty || !cur.id) return;
   $("schedTz").textContent = "Times use your browser's time zone: " + tzName + ".";
@@ -2583,14 +2604,14 @@ $("adminBack").onclick = () => openLibrary();
 
 $("adminAddBtn").onclick = async () => {
   const id = $("adminGuildId").value.trim();
-  if (!/^\d+$/.test(id)) { alert("A server ID is only numbers."); return; }
+  if (!/^\d+$/.test(id)) { notifyErr("A server ID is only numbers."); return; }
   try {
     await api("/admin/allow", { method: "POST", body: JSON.stringify({ guild_id: id, name: "" }) });
     $("adminGuildId").value = "";
     guilds = [];
     openAdmin();
   } catch (e) {
-    if (e.message !== "login") alert(e.message);
+    if (e.message !== "login") notifyErr(e.message);
   }
 };
 
@@ -2603,7 +2624,7 @@ $("adminAllowed").addEventListener("click", async (e) => {
     guilds = [];
     openAdmin();
   } catch (err) {
-    if (err.message !== "login") alert(err.message);
+    if (err.message !== "login") notifyErr(err.message);
   }
 });
 
@@ -2612,7 +2633,7 @@ $("adminPending").addEventListener("click", async (e) => {
   try {
     if (d.ok) {
       await api("/admin/allow", { method: "POST", body: JSON.stringify({ guild_id: d.ok, name: d.name || "" }) });
-      alert("Approved. Ask them to add the bot to their server again.");
+      notify("Approved. Ask them to add the bot to their server again.", "ok");
       guilds = [];
       openAdmin();
     }
@@ -2621,7 +2642,7 @@ $("adminPending").addEventListener("click", async (e) => {
       openAdmin();
     }
   } catch (err) {
-    if (err.message !== "login") alert(err.message);
+    if (err.message !== "login") notifyErr(err.message);
   }
 });
 
@@ -2661,7 +2682,7 @@ async function loadSendChannels(gid, wanted) {
 
 $("sendBtn").onclick = async () => {
   const probs = problems();
-  if (probs.length) { jumpToProblem(probs[0]); alert("Fix this first: " + probs[0].msg); return; }
+  if (probs.length) { jumpToProblem(probs[0]); notifyErr("Fix this first: " + probs[0].msg); return; }
   await save(false);
   if (dirty || !cur.id) return;
   try {
@@ -2677,7 +2698,7 @@ $("sendBtn").onclick = async () => {
     await loadSendChannels(gid, fresh.channel_id);
     await loadSendAs(gid);
   } catch (e) {
-    if (e.message !== "login") alert(e.message);
+    if (e.message !== "login") notifyErr(e.message);
   }
 };
 
@@ -2731,14 +2752,14 @@ delBtn.onclick = async () => {
 
 $("dmBtn").onclick = async () => {
   const probs = problems();
-  if (probs.length) { jumpToProblem(probs[0]); alert("Fix this first: " + probs[0].msg); return; }
+  if (probs.length) { jumpToProblem(probs[0]); notifyErr("Fix this first: " + probs[0].msg); return; }
   await save(false);
   if (dirty || !cur.id) return;
   try {
     await api("/messages/" + cur.id + "/test", { method: "POST" });
     toast("Test sent. Check your Discord DMs.");
   } catch (e) {
-    if (e.message !== "login") alert(e.message);
+    if (e.message !== "login") notifyErr(e.message);
   }
 };
 $("sendClose").onclick = () => { $("sendOverlay").classList.add("hidden"); };
