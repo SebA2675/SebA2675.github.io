@@ -1754,8 +1754,27 @@ $("settings").addEventListener("click", (e) => {
   renderAll();
 });
 
-settings);
-  const form = activeForm();"settings");
+function renderSettingsBody() {
+  const el = $("settings");
+  if (tab === "__vars") {
+    const vars = cur.layout.variables || [];
+    const used = extractUsedVars();
+    const defined = new Set(vars.map((v) => v.name));
+    const missing = used.filter((n) => !defined.has(n));
+    el.innerHTML = '<p class="muted">Use <code>{{name}}</code> in any text, title, description, or button label. URLs are never substituted.</p>' +
+      (missing.length ? '<div class="bcard"><b>Detected in message:</b><div class="btnrow" style="margin-top:6px">' +
+        missing.map((n) => '<button type="button" class="small" data-act2="addvarnamed" data-vname="' + esc(n) + '">' + ic("plus") + '{{' + esc(n) + '}}</button>').join("") +
+        '</div></div>' : '') +
+      vars.map((v, i) =>
+        '<div class="bcard"><label style="margin-top:0">Variable name (letters, numbers, _)</label>' +
+        '<input data-f="vname" data-i="' + i + '" maxlength="32" value="' + esc(v.name) + '">' +
+        '<label>Default value</label>' +
+        '<input data-f="vdefault" data-i="' + i + '" maxlength="2000" value="' + esc(v.default || "") + '">' +
+        '<button type="button" class="small danger" data-act2="delvar" data-i="' + i + '" style="margin-top:8px">' + ic("trash") + 'Remove</button></div>'
+      ).join("") +
+      (vars.length < 20 ? '<button type="button" class="small" data-act2="addvar">' + ic("plus") + 'Add variable</button>' : '<p class="muted">Max 20 variables reached.</p>');
+    return;
+  }
   const form = activeForm();
   if (form) { renderFormSettings(form); return; }
   if (classicSettings()) return;
