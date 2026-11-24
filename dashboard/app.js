@@ -2837,9 +2837,10 @@ $("toolsBtn").onclick = async () => {
   loadToolsTemplates();
   loadToolsSequences();
   loadToolsPersonas();
+  loadToolsWebhooks();
 };
 
-$("toolsGuild").onchange = () => { toolsStatus(""); loadToolsTemplates(); loadToolsSequences(); loadToolsPersonas(); };
+$("toolsGuild").onchange = () => { toolsStatus(""); loadToolsTemplates(); loadToolsSequences(); loadToolsPersonas(); loadToolsWebhooks(); };
 $("toolsClose").onclick = () => { $("toolsOverlay").classList.add("hidden"); };
 $("toolsOverlay").onclick = (e) => { if (e.target === $("toolsOverlay")) $("toolsOverlay").classList.add("hidden"); };
 
@@ -2968,6 +2969,69 @@ $("toolsSequences").addEventListener("click", async (e) => {
   }
 });
 
+async function loadToolsWebhooks() {
+  const gid = $("toolsGuild").value;
+  if (!gid) { $("toolsWebhooks").innerHTML = ""; return; }
+  try {
+    const chList = await api("/guilds/" + gid + "/channels");
+    const prev = $("whChannel").value;
+    $("whChannel").innerHTML = chList.filter((c) => c.type !== "thread").map((c) =>
+      '<option value="' + esc(c.id) + '">#' + esc(c.name) + "</option>"
+    ).join("");
+    if (prev && chList.some((c) => c.id === prev)) $("whChannel").value = prev;
+    await refreshChannelWebhooks();
+  } catch (e) {
+    $("toolsWebhooks").innerHTML = '<p class="muted">Could not load channels.</p>';
+  }
+}
+
+async function refreshChannelWebhooks() {
+  const gid = $("toolsGuild").value;
+  const cid = $("whChannel").value;
+  if (!gid || !cid) { $("toolsWebhooks").innerHTML = ""; return; }
+  $("toolsWebhooks").innerHTML = '<p class="muted">Loading webhooks...</p>';
+  try {
+    const hooks = await api("/guilds/" + gid + "/channels/" + cid + "/webhooks");
+    $("toolsWebhooks").innerHTML = hooks.length
+      ? hooks.map((h) =>
+        '<div class="mrow"><div class="grow"><b>' + esc(h.name) + '</b>' +
+        (h.is_mine ? ' <span class="badge ok">Bot-owned</span>' : ' <span class="badge">External</span>') +
+        '</div><button class="small ib danger" data-rmwh="' + esc(h.id) + '" title="Delete">' + ic("trash") + "</button></div>"
+      ).join("")
+      : '<p class="muted">No webhooks in this channel.</p>';
+  } catch (e) {
+    $("toolsWebhooks").innerHTML = '<p class="muted">' + esc(e.message) + "</p>";
+  }
+}
+
+$("whChannel").onchange = refreshChannelWebhooks;
+$("whCreateBtn").onclick = async () => {
+  const gid = $("toolsGuild").value;
+  const cid = $("whChannel").value;
+  const name = $("whNewName").value.trim();
+  if (!name) { toolsStatus("Enter a webhook name."); return; }
+  try {
+    await api("/guilds/" + gid + "/channels/" + cid + "/webhooks", {
+      method: "POST",
+      body: JSON.stringify({ name }),
+    });
+    $("whNewName").value = "";
+    toolsStatus("Webhook created.");
+    refreshChannelWebhooks();
+  } catch (e) {
+    if (e.message !== "login") toolsStatus("Failed: " + e.message);
+  }
+};
+$("toolsWebhooks").addEventListener("click", async (e) => {
+  const hid = btnData(e).rmwh;
+  if (!hid || !await uiConfirm("Delete this webhook from Discord?", { title: "Delete webhook", okText: "Delete", danger: true })) return;
+  try {
+    await api("/guilds/" + $("toolsGuild").value + "/channels/" + $("whChannel").value + "/webhooks/" + hid, { method: "DELETE" });
+    refreshChannelWebhooks();
+  } catch (err) {
+    if (err.message !== "login") toolsStatus("Failed: " + err.message);
+  }
+});
 /* ---------- Webhook presets ---------- */
 async function loadToolsPersonas() {
   const gid = $("toolsGuild").value;
@@ -3086,17 +3150,19 @@ function channelName(id) {
 
 function scheduleRow(s) {
   const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  const repLabels = { every_30m: "every 30 min", hourly: "every hour", every_6h: "every 6 hours", every_12h: "every 12 hours", daily: "every day", monthly: "every month" };
   let when = "once on " + s.run_date;
-  if (s.repeat === "daily") when = "every day";
+  if (repLabels[s.repeat]) when = repLabels[s.repeat];
   if (s.repeat === "weekly") when = "every " + days[new Date(s.run_date + "T12:00:00").getDay()];
   const what = s.action === "post"
     ? "Post to #" + channelName(s.channel_id) + (s.replace_previous ? " (replaces the previous post)" : "")
     : "Update the posted message";
-  const next = s.active ? "Next: " + new Date(s.next_run * 1000).toLocaleString() : "Finished";
+  const next = s.active && s.next_run ? "Next: " + new Date(s.next_run * 1000).toLocaleString() : (s.repeat === "once" ? "Finished" : "Paused");
   const last = s.last_status ? " | Last: " + s.last_status : "";
   return '<div class="mrow"><div class="grow"><b>' + esc(what) + '</b>' +
     '<div class="muted">' + esc(when + " at " + s.run_time + " (" + s.tz + ")") + '</div>' +
     '<div class="muted">' + esc(next + last) + '</div></div>' +
+    (s.repeat !== "once" ? '<button class="small" data-stoggle="' + esc(s.id) + '" data-sactive="' + (s.active ? "0" : "1") + '">' + (s.active ? "Pause" : "Resume") + '</button>' : '') +
     '<button class="small ib danger" data-sdel="' + esc(s.id) + '" title="Delete">' + ic("trash") + "</button></div>";
 }
 
@@ -3163,7 +3229,20 @@ $("schedAdd").onclick = async () => {
 };
 
 $("schedList").addEventListener("click", async (e) => {
-  const id = btnData(e).sdel;
+  const d = btnData(e);
+  if (d.stoggle) {
+    try {
+      await api("/schedules/" + d.stoggle + "/toggle", {
+        method: "POST",
+        body: JSON.stringify({ active: d.sactive === "1" }),
+      });
+      await loadSchedules();
+    } catch (err) {
+      if (err.message !== "login") schedStatus("Failed: " + err.message);
+    }
+    return;
+  }
+  const id = d.sdel;
   if (!id) return;
   if (!await uiConfirm("Delete this schedule?", { title: "Delete schedule", okText: "Delete", danger: true })) return;
   try {
@@ -3310,10 +3389,31 @@ async function loadSendChannels(gid, wanted) {
       '<option value="' + esc(c.id) + '">#' + esc(c.name) + (c.category ? " (" + esc(c.category) + ")" : "") + "</option>"
     ).join("");
     if (wanted && list.some((c) => c.id === wanted)) sc.value = wanted;
+    $("sendExtraChans").innerHTML = list.filter((c) => c.type !== "forum").map((c) =>
+      '<label style="text-transform:none;display:flex;gap:6px;align-items:center;letter-spacing:0;margin:3px 0">' +
+      '<input type="checkbox" class="extra-ch" value="' + esc(c.id) + '"> #' + esc(c.name) + "</label>"
+    ).join("");
+    await checkSendPerms(gid, sc.value);
   } catch (e) {
     if (e.message !== "login") setStatus(e.message);
   }
 }
+
+async function checkSendPerms(gid, cid) {
+  const note = $("sendPermNote");
+  $("sendThreadWrap").classList.add("hidden");
+  $("sendPublishWrap").classList.add("hidden");
+  if (!cid) { note.textContent = ""; return; }
+  try {
+    const p = await api("/guilds/" + gid + "/channels/" + cid + "/permissions");
+    note.textContent = p.ok ? "Permissions OK" : "Missing permissions: " + p.missing.join(", ");
+    note.style.color = p.ok ? "var(--ok, #2b7a4b)" : "var(--bad)";
+    $("sendThreadWrap").classList.toggle("hidden", !p.is_forum);
+    $("sendPublishWrap").classList.toggle("hidden", !p.is_news);
+  } catch (e) { note.textContent = ""; }
+}
+
+sc.onchange = () => { if (sg.value) checkSendPerms(sg.value, sc.value); };
 
 $("sendBtn").onclick = async () => {
   const probs = problems();
@@ -3332,6 +3432,11 @@ $("sendBtn").onclick = async () => {
     $("sendOverlay").classList.remove("hidden");
     await loadSendChannels(gid, fresh.channel_id);
     await loadSendAs(gid);
+    $("sendPingRole").innerHTML = '<option value="">None</option>' + roles.map((r) => '<option value="' + esc(r.id) + '">@' + esc(r.name) + '</option>').join('');
+    $("sendThreadName").value = '';
+    $("sendSilent").checked = false;
+    $("sendSuppress").checked = false;
+    $("sendPublish").checked = false;
     renderSendVars();
   } catch (e) {
     if (e.message !== "login") notifyErr(e.message);
@@ -3373,7 +3478,18 @@ async function send(path, withTarget, extra) {
   try {
     const o = { method: "POST" };
     const sv = collectSendVars();
-    if (withTarget) o.body = JSON.stringify({ guild_id: sg.value, channel_id: sc.value, variables: sv, ...(extra || {}) });
+    if (withTarget) {
+      const extras = Array.from(document.querySelectorAll(".extra-ch:checked")).map((c) => c.value);
+      const sendOpts = extra ? {} : {
+        thread_name: $("sendThreadName").value.trim(),
+        silent: $("sendSilent").checked,
+        suppress_embeds: $("sendSuppress").checked,
+        publish: $("sendPublish").checked,
+        ping_role_id: $("sendPingRole").value,
+        extra_channel_ids: extras,
+      };
+      o.body = JSON.stringify({ guild_id: sg.value, channel_id: sc.value, variables: sv, ...sendOpts, ...(extra || {}) });
+    }
     else if (Object.keys(sv).length) o.body = JSON.stringify({ variables: sv });
     fresh = await api("/messages/" + cur.id + path, o);
     cur.posted_message_id = fresh.posted_message_id;

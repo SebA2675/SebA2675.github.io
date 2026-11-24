@@ -9,7 +9,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="logo.png">
 <title>Embed Dashboard</title>
-<link rel="stylesheet" href="styles.css?v=18">
+<link rel="stylesheet" href="styles.css?v=20">
 </head>
 <body>
 
@@ -218,8 +218,17 @@
   <div class="modal">
     <h2>Send to Discord</h2>
     <label>Server</label><select id="sendGuild"></select>
-    <label>Channel</label><select id="sendChannel"></select>
+    <label>Channel / Thread / Forum</label><select id="sendChannel"></select>
+    <div id="sendPermNote" class="muted" style="font-size:12px;margin-top:4px"></div>
+    <div id="sendThreadWrap" class="hidden"><label>Forum Thread Title</label><input id="sendThreadName" maxlength="100" placeholder="Title for the new forum post"></div>
     <label>Send as</label><select id="sendAs"></select>
+    <label>Ping role (optional, @everyone is disabled)</label><select id="sendPingRole"></select>
+    <div style="display:flex;flex-wrap:wrap;gap:12px;margin-top:8px">
+      <label style="text-transform:none;display:flex;gap:6px;align-items:center;letter-spacing:0;margin:0"><input type="checkbox" id="sendSilent"> Silent (no ping)</label>
+      <label style="text-transform:none;display:flex;gap:6px;align-items:center;letter-spacing:0;margin:0"><input type="checkbox" id="sendSuppress"> Suppress link previews</label>
+      <label id="sendPublishWrap" class="hidden" style="text-transform:none;display:flex;gap:6px;align-items:center;letter-spacing:0;margin:0"><input type="checkbox" id="sendPublish"> Publish announcement</label>
+    </div>
+    <details id="sendExtraWrap" style="margin-top:8px"><summary class="muted" style="cursor:pointer">Also post to extra channels</summary><div id="sendExtraChans" style="max-height:110px;overflow:auto;margin-top:4px"></div></details>
     <div id="sendVarsWrap" class="hidden" style="margin-top:8px"></div>
     <p class="muted" style="margin:4px 0 0">Update and Delete always use whatever posted the message.</p>
     <p id="sendStatus" class="muted" style="min-height:20px"></p>
@@ -272,6 +281,14 @@
       <input id="personaAvatar" placeholder="Picture link (https, optional)" style="flex:1;min-width:150px">
       <button class="primary small" id="personaAdd"><svg class="ic"><use href="#i-plus"></use></svg>Add preset</button>
     </div>
+    <h3>Channel Webhooks</h3>
+    <p class="muted">List, create, or delete Discord webhooks in a channel (webhooks owned by the bot support all interactive components).</p>
+    <label>Channel</label><select id="whChannel"></select>
+    <div id="toolsWebhooks" style="margin-top:8px"></div>
+    <div class="btnrow" style="margin-top:8px">
+      <input id="whNewName" maxlength="80" placeholder="New webhook name" style="flex:1;min-width:150px">
+      <button class="primary small" id="whCreateBtn"><svg class="ic"><use href="#i-plus"></use></svg>Create webhook</button>
+    </div>
     <div class="btnrow" style="margin-top:10px"><button id="toolsClose"><svg class="ic"><use href="#i-close"></use></svg>Close</button></div>
   </div>
 </div>
@@ -302,8 +319,13 @@
     <label>Repeat</label>
     <select id="schedRepeat">
       <option value="once">Once</option>
+      <option value="every_30m">Every 30 minutes</option>
+      <option value="hourly">Every hour</option>
+      <option value="every_6h">Every 6 hours</option>
+      <option value="every_12h">Every 12 hours</option>
       <option value="daily">Every day</option>
       <option value="weekly">Every week</option>
+      <option value="monthly">Every month</option>
     </select>
     <div id="schedReplaceWrap">
       <label style="text-transform:none;display:flex;gap:8px;align-items:center;letter-spacing:0">
@@ -372,6 +394,6 @@
 
 <div id="testToast" class="ttoast hidden"></div>
 
-<script src="app.js?v=18"></script>
+<script src="app.js?v=20"></script>
 </body>
 </html>
