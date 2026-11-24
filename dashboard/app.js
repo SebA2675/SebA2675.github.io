@@ -127,10 +127,39 @@ function emojiUrl(e) {
   return "https://cdn.discordapp.com/emojis/" + encodeURIComponent(e.id) + "." + (e.animated ? "gif" : "png");
 }
 
+const BUILTIN_VARS = [
+  ["User (in replies & DMs)", [
+    ["userid", "User ID", "123456789012345678"],
+    ["username", "Username", "shivanshu"],
+    ["usertag", "User tag", "shivanshu"],
+    ["usermention", "Mentions user", "@Shivanshu"],
+    ["userglobalnickname", "Display name", "Shivanshu"],
+    ["usernickname", "Server nickname", "Shivanshu"],
+  ]],
+  ["Server & Channel", [
+    ["servername", "Server name", ""],
+    ["serverid", "Server ID", "987654321098765432"],
+    ["membercount", "Member count", "142"],
+    ["channelname", "Channel name", "announcements"],
+    ["channelid", "Channel ID", "112233445566778899"],
+    ["channelmention", "Mentions channel", "#announcements"],
+  ]],
+  ["Date & Time", [
+    ["date", "Current UTC date", "2026-11-24"],
+    ["time", "Current UTC time", "18:20 UTC"],
+    ["timestamp", "Discord timestamp", "Today at 6:20 PM"],
+  ]],
+];
+
 function subVarText(s) {
   if (!cur || !cur.layout) return String(s);
-  const defs = cur.layout.variables || [];
   const map = {};
+  BUILTIN_VARS.forEach(([, items]) => {
+    items.forEach(([k, , sample]) => {
+      map[k] = k === "servername" ? guildName(cur.layout.guild_id) : sample;
+    });
+  });
+  const defs = cur.layout.variables || [];
   defs.forEach((v) => {
     const val = varTestValues[v.name] !== undefined ? varTestValues[v.name] : v.default;
     if (val !== undefined && val !== "") map[v.name] = val;
@@ -592,6 +621,20 @@ function fmtBar() {
     b("code", "Inline code", "&lt;&gt;") +
     b("h1", "Big heading", "H1") +
     b("link", "Link", "Link") +
+    '<div class="fmtmore-wrap"><button type="button" class="small" data-act2="fmtvar" title="Insert variable" aria-label="Insert variable" aria-expanded="false">{x} Var</button>' +
+    '<div id="fmtVarMenu" class="fmtvar hidden">' +
+    (((cur && cur.layout && cur.layout.variables) || []).length
+      ? '<div class="fvh">Custom variables</div>' + cur.layout.variables.map((v) =>
+          '<button type="button" class="small" data-act2="insertvar" data-vname="' + esc(v.name) + '"><b>{{' + esc(v.name) + '}}</b><span class="muted">' + esc(v.default || "") + '</span></button>'
+        ).join("")
+      : "") +
+    BUILTIN_VARS.map(([grp, items]) =>
+      '<div class="fvh">' + esc(grp) + '</div>' +
+      items.map(([k, desc]) =>
+        '<button type="button" class="small" data-act2="insertvar" data-vname="' + esc(k) + '"><b>' + esc(k) + '</b><span class="muted">' + esc(desc) + '</span></button>'
+      ).join("")
+    ).join("") +
+    '</div></div>' +
     '<div class="fmtmore-wrap"><button type="button" class="small" data-act2="fmtmore" title="More formatting" aria-label="More formatting" aria-expanded="false">' + ic("more") + '</button>' +
     '<div id="fmtMore" class="fmtmore hidden">' +
     b("h2", "Heading", "H2 Heading") +
@@ -1772,7 +1815,7 @@ function renderSettingsBody() {
         '<input data-f="vdefault" data-i="' + i + '" maxlength="2000" value="' + esc(v.default || "") + '">' +
         '<button type="button" class="small danger" data-act2="delvar" data-i="' + i + '" style="margin-top:8px">' + ic("trash") + 'Remove</button></div>'
       ).join("") +
-      (vars.length < 20 ? '<button type="button" class="small" data-act2="addvar">' + ic("plus") + 'Add variable</button>' : '<p class="muted">Max 20 variables reached.</p>');
+      (vars.length < 20 ? '<button type="button" class="small" data-act2="addvar">' + ic("plus") + 'Add variable</button>' : '<p class="muted">Max 20 variables reached.</p>') + '<h3 style="margin-top:16px">Permanent Discord variables</h3><p class="muted">Click any variable to copy it. These fill in automatically when posted or when a user clicks a reply button.</p>' + BUILTIN_VARS.map(([grp, items]) => '<div class="bcard"><b>' + esc(grp) + '</b><div style="margin-top:6px;display:flex;flex-direction:column;gap:4px">' + items.map(([k, desc]) => '<button type="button" class="small" data-act2="copyvar" data-vname="' + esc(k) + '" style="justify-content:space-between"><span><b>{{' + esc(k) + '}}</b></span><span class="muted">' + esc(desc) + '</span></button>').join("") + '</div></div>').join("");
     return;
   }
   const form = activeForm();
@@ -2171,6 +2214,31 @@ $("settings").addEventListener("click", async (e) => {
   const d = btnData(e);
   const act = d.act2;
   if (!act) return;
+  if (act === "fmtvar") {
+    const m = $("fmtVarMenu");
+    if (m) {
+      const open = m.classList.toggle("hidden") === false;
+      const btn = e.target.closest("[data-act2=\"fmtvar\"]");
+      if (btn) btn.setAttribute("aria-expanded", open ? "true" : "false");
+    }
+    return;
+  }
+  if (act === "insertvar") {
+    const m = $("fmtVarMenu");
+    if (m) m.classList.add("hidden");
+    const vn = d.vname;
+    if (vn) {
+      const sel = isClassicMain() ? '#settings textarea[data-fmt-target]' : '#settings textarea[data-f="content"]';
+      insertIntoField(sel, "{{" + vn + "}}");
+    }
+    return;
+  }
+  if (act === "copyvar") {
+    const tok = "{{" + (d.vname || "") + "}}";
+    try { await navigator.clipboard.writeText(tok); notify("Copied " + tok, "ok"); }
+    catch (err) { notifyErr("Could not copy."); }
+    return;
+  }
   if (act === "fmtmore") {
     const m = $("fmtMore");
     if (m) {
@@ -2271,11 +2339,13 @@ $("settings").addEventListener("click", async (e) => {
 });
 
 $("settings").addEventListener("mousedown", (e) => {
-  if (e.target.closest("[data-fmt], [data-act2=\"fmtmore\"]")) e.preventDefault();
+  if (e.target.closest("[data-fmt], [data-act2=\"fmtmore\"], [data-act2=\"fmtvar\"], [data-act2=\"insertvar\"]")) e.preventDefault();
 });
 document.addEventListener("click", (e) => {
   const m = $("fmtMore");
   if (m && !e.target.closest(".fmtmore-wrap")) m.classList.add("hidden");
+  const vm = $("fmtVarMenu");
+  if (vm && !e.target.closest(".fmtmore-wrap")) vm.classList.add("hidden");
 });
 
 document.querySelectorAll("[data-add]").forEach((btn) => {
