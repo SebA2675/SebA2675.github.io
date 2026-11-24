@@ -7,7 +7,7 @@
 <meta name="theme-color" content="#f5efe1">
 <link rel="icon" href="logo.png">
 <title>Embed Dashboard</title>
-<link rel="stylesheet" href="styles.css?v=3">
+<link rel="stylesheet" href="styles.css?v=4">
 </head>
 <body>
 
@@ -65,13 +65,25 @@
   <div class="top">
     <img class="logo" src="logo.png" alt="">
     <h1>My messages</h1>
-    <button class="primary" id="newBtn"><svg class="ic"><use href="#i-plus"></use></svg>New message</button>
-    <button class="primary" id="newClassicBtn"><svg class="ic"><use href="#i-section"></use></svg>New classic embed</button>
+    <div class="newwrap">
+      <button class="primary" id="newBtn" aria-haspopup="true" aria-expanded="false"><svg class="ic"><use href="#i-plus"></use></svg>New</button>
+      <div id="newMenu" class="menu hidden" role="menu">
+        <button id="newLayoutBtn" role="menuitem"><svg class="ic"><use href="#i-plus"></use></svg><span><b>Layout message</b><small>Text, images, buttons, dropdowns, forms</small></span></button>
+        <button id="newClassicBtn" role="menuitem"><svg class="ic"><use href="#i-section"></use></svg><span><b>Classic embed</b><small>The traditional embed box, up to 10</small></span></button>
+      </div>
+    </div>
     <button id="toolsBtn" class="tb" title="Server tools"><svg class="ic"><use href="#i-tools"></use></svg><span class="t">Server tools</span></button>
     <button id="adminBtn" class="tb hidden" title="Approved servers"><svg class="ic"><use href="#i-servers"></use></svg><span class="t">Servers</span></button>
     <button id="logoutBtn" class="tb" title="Log out"><svg class="ic"><use href="#i-logout"></use></svg><span class="t">Log out</span></button>
   </div>
-  <div class="wrap"><div id="list"></div></div>
+  <div class="wrap">
+    <div id="libTools" class="libtools hidden">
+      <input id="libSearch" type="search" placeholder="Search messages" aria-label="Search messages" autocomplete="off">
+      <select id="libGuild" class="hidden" aria-label="Server"></select>
+      <div id="libChips" class="chips"></div>
+    </div>
+    <div id="list"></div>
+  </div>
 </div>
 
 <div id="viewAdmin" class="hidden">
@@ -271,6 +283,6 @@
 
 <div id="testToast" class="ttoast hidden"></div>
 
-<script src="app.js?v=3"></script>
+<script src="app.js?v=4"></script>
 </body>
 </html>

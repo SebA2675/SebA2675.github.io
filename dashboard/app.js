@@ -1197,7 +1197,21 @@ function classicClick(act, d) {
   return true;
 }
 
+function closeNewMenu() {
+  $("newMenu").classList.add("hidden");
+  $("newBtn").setAttribute("aria-expanded", "false");
+}
+
+$("newBtn").onclick = (e) => {
+  e.stopPropagation();
+  const open = $("newMenu").classList.toggle("hidden") === false;
+  $("newBtn").setAttribute("aria-expanded", open ? "true" : "false");
+};
+document.addEventListener("click", (e) => { if (!e.target.closest(".newwrap")) closeNewMenu(); });
+document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeNewMenu(); });
+
 $("newClassicBtn").onclick = () => {
+  closeNewMenu();
   openBuilder({ id: null, name: "Untitled embed", layout: { kind: "classic", content: "", embeds: [newEmbed()], blocks: [], replies: [], forms: [] } });
 };
 
@@ -1953,7 +1967,32 @@ document.querySelectorAll("[data-add]").forEach((btn) => {
   btn.onclick = () => addBlock(btn.dataset.add);
 });
 
-$("nameInput").addEventListener("input", () => { markDirty(); renderStatus(); });
+let nameTouched = false;
+$("nameInput").addEventListener("input", () => { nameTouched = true; markDirty(); renderStatus(); });
+
+function firstText(blocks) {
+  for (const b of blocks || []) {
+    if ((b.type === "text" || b.type === "section") && String(b.content || "").trim()) return b.content;
+    if (b.type === "box") { const t = firstText(b.children); if (t) return t; }
+  }
+  return "";
+}
+
+function guessName(layout) {
+  let t = "";
+  if (layout.kind === "classic") {
+    const e = (layout.embeds || [])[0] || {};
+    t = layout.content || e.title || e.description || "";
+  } else {
+    t = firstText(layout.blocks);
+  }
+  const line = String(t).split("\n")
+    .map((x) => x.replace(/<[^>]*>/g, "").replace(/^[#>\-*\s]+/, "").replace(/[*_~`|]/g, "").replace(/\s+/g, " ").trim())
+    .find(Boolean) || "";
+  return line.slice(0, 60);
+}
+
+function isDefaultName(n) { return n === "Untitled message" || n === "Untitled embed"; }
 
 $("guildSel").onchange = async () => {
   const next = $("guildSel").value;
@@ -1989,6 +2028,14 @@ async function save(silent) {
   saving = true;
   clearTimeout(autosaveTimer);
   cur.name = $("nameInput").value.trim() || "Untitled message";
+  if (!nameTouched && (isDefaultName(cur.name) || cur.autoNamed)) {
+    const guess = guessName(cur.layout);
+    if (guess) {
+      cur.name = guess;
+      cur.autoNamed = true;
+      $("nameInput").value = guess;
+    }
+  }
   const version = editCount;
   try {
     const body = JSON.stringify({ name: cur.name, layout: cur.layout });
@@ -2028,6 +2075,7 @@ async function openBuilder(msg) {
   resetHistory();
   $("guildSel").innerHTML = opts(guilds.map((g) => [g.id, g.name]), cur.layout.guild_id);
   $("nameInput").value = cur.name;
+  nameTouched = false;
   await loadGuildData();
   show("viewBuilder");
   setPane("preview");
@@ -2038,27 +2086,101 @@ async function openBuilder(msg) {
   renderAll();
 }
 
+let libItems = [];
+let libFilter = "all";
+let libQuery = "";
+let libGuild = "";
+
+function ago(ts) {
+  const s = Math.max(0, Math.floor(Date.now() / 1000 - ts));
+  if (s < 60) return "just now";
+  if (s < 3600) return Math.floor(s / 60) + " min ago";
+  if (s < 86400) return Math.floor(s / 3600) + " h ago";
+  if (s < 86400 * 30) return Math.floor(s / 86400) + " d ago";
+  return new Date(ts * 1000).toLocaleDateString();
+}
+
+function libState(m) {
+  if (!m.posted_message_id) return "draft";
+  return m.changed ? "changed" : "posted";
+}
+
+function libMatches(m, filter) {
+  if (libGuild && String(m.guild_id) !== libGuild) return false;
+  if (libQuery && !String(m.name).toLowerCase().includes(libQuery)) return false;
+  return filter === "all" || libState(m) === filter;
+}
+
+function renderLibChips() {
+  const defs = [["all", "All"], ["draft", "Drafts"], ["posted", "Posted"], ["changed", "Changed"]];
+  $("libChips").innerHTML = defs.map(([k, label]) => {
+    const n = libItems.filter((m) => libMatches(m, k)).length;
+    return '<button type="button" class="chip' + (libFilter === k ? " on" : "") + '" data-chip="' + k + '">' + label + "<b>" + n + "</b></button>";
+  }).join("");
+}
+
+function libRow(m) {
+  const st = libState(m);
+  const badges = (st === "draft" ? '<span class="badge draft">Draft</span>' : '<span class="badge ok">Posted</span>') +
+    (st === "changed" ? '<span class="badge warn" title="You edited it after posting. Press Update post to refresh it in Discord.">Changed</span>' : "") +
+    (m.webhook_id ? '<span class="badge hook">Webhook</span>' : "");
+  return '<div class="lrow"><div class="lmain"><div class="ltitle"><b>' + esc(m.name) + "</b>" + badges + '</div>' +
+    '<div class="lmeta">' + esc(m.guild_id ? guildName(m.guild_id) : "No server") + " &middot; Updated " +
+    '<span title="' + esc(new Date(m.updated_at * 1000).toLocaleString()) + '">' + esc(ago(m.updated_at)) + "</span></div></div>" +
+    '<div class="lacts">' +
+    '<button class="primary small" data-open="' + esc(m.id) + '">' + ic("edit") + "Open</button>" +
+    '<button class="small ib" data-copy="' + esc(m.id) + '" title="Make a copy" aria-label="Make a copy">' + ic("copy") + "</button>" +
+    '<button class="small ib" data-export="' + esc(m.id) + '" title="Export as a file" aria-label="Export as a file">' + ic("export") + "</button>" +
+    '<button class="small ib danger" data-del="' + esc(m.id) + '" title="Delete" aria-label="Delete">' + ic("trash") + "</button></div></div>";
+}
+
+function renderLibList() {
+  if (!libItems.length) {
+    $("list").innerHTML = '<div class="lempty"><b>No messages yet</b>Press New at the top to design your first one.</div>';
+    return;
+  }
+  const shown = libItems.filter((m) => libMatches(m, libFilter));
+  $("list").innerHTML = shown.length
+    ? shown.map(libRow).join("")
+    : '<div class="lempty"><b>Nothing matches</b>Try a different word or press All.</div>';
+}
+
+function renderLibrary() {
+  $("libTools").classList.toggle("hidden", !libItems.length);
+  const multi = guilds.length > 1;
+  $("libGuild").classList.toggle("hidden", !multi);
+  if (multi) $("libGuild").innerHTML = opts([["", "All servers"]].concat(guilds.map((g) => [g.id, g.name])), libGuild);
+  renderLibChips();
+  renderLibList();
+}
+
+$("libSearch").addEventListener("input", () => {
+  libQuery = $("libSearch").value.trim().toLowerCase();
+  renderLibChips();
+  renderLibList();
+});
+$("libGuild").addEventListener("change", () => {
+  libGuild = $("libGuild").value;
+  renderLibChips();
+  renderLibList();
+});
+$("libChips").addEventListener("click", (e) => {
+  const b = e.target.closest("[data-chip]");
+  if (!b) return;
+  libFilter = b.dataset.chip;
+  renderLibChips();
+  renderLibList();
+});
+
 async function openLibrary() {
   clearTimeout(autosaveTimer);
   show("viewLibrary");
   $("list").innerHTML = '<p class="muted">Loading...</p>';
   try {
     await loadGuilds();
-    const items = await api("/messages");
-    if (!items.length) {
-      $("list").innerHTML = '<p class="muted">No messages yet. Tap "New message".</p>';
-      return;
-    }
-    $("list").innerHTML = items.map((m) =>
-      '<div class="row"><div class="grow"><b>' + esc(m.name) + '</b><div class="muted">' +
-      esc(m.guild_id ? guildName(m.guild_id) : "No server") + " &middot; " +
-      (m.posted_message_id ? (m.changed ? "Posted (changed since posted)" : "Posted") : "Draft") + " &middot; " + new Date(m.updated_at * 1000).toLocaleString() +
-      '</div></div>' +
-      '<button class="primary small" data-open="' + esc(m.id) + '">' + ic("edit") + "Open</button>" +
-      '<button class="small ib" data-copy="' + esc(m.id) + '" title="Make a copy">' + ic("copy") + "</button>" +
-      '<button class="small ib" data-export="' + esc(m.id) + '" title="Export as a file">' + ic("export") + "</button>" +
-      '<button class="small ib danger" data-del="' + esc(m.id) + '" title="Delete">' + ic("trash") + "</button></div>"
-    ).join("");
+    libItems = await api("/messages");
+    if (libGuild && !guilds.some((g) => g.id === libGuild)) libGuild = "";
+    renderLibrary();
   } catch (e) {
     if (e.message !== "login") $("list").innerHTML = '<p class="muted">Could not load: ' + esc(e.message) + "</p>";
   }
@@ -2089,7 +2211,8 @@ $("list").addEventListener("click", async (e) => {
   }
 });
 
-$("newBtn").onclick = () => {
+$("newLayoutBtn").onclick = () => {
+  closeNewMenu();
   const box = newBlock("box");
   box.children.push({ id: uid(), type: "text", content: "# Hello there\nStart writing your message." });
   openBuilder({ id: null, name: "Untitled message", layout: { blocks: [box], replies: [], forms: [] } });
