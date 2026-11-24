@@ -90,6 +90,8 @@ let pane = "preview";
 let pv = "dark";
 let pw = "wide";
 let mode = "edit";
+let varTestValues = {};
+let varPlayOpen = true;
 try { pv = localStorage.getItem("pv") === "light" ? "light" : "dark"; } catch (e) {}
 try { pw = localStorage.getItem("pw") === "phone" ? "phone" : "wide"; } catch (e) {}
 const uid = () => Math.random().toString(36).slice(2, 8);
@@ -125,7 +127,21 @@ function emojiUrl(e) {
   return "https://cdn.discordapp.com/emojis/" + encodeURIComponent(e.id) + "." + (e.animated ? "gif" : "png");
 }
 
+function subVarText(s) {
+  if (!cur || !cur.layout) return String(s);
+  const defs = cur.layout.variables || [];
+  const map = {};
+  defs.forEach((v) => {
+    const val = varTestValues[v.name] !== undefined ? varTestValues[v.name] : v.default;
+    if (val !== undefined && val !== "") map[v.name] = val;
+  });
+  return String(s).replace(/\{\{([A-Za-z0-9_]{1,32})\}\}/g, (m, name) =>
+    map[name] !== undefined ? map[name] : m
+  );
+}
+
 function inline(s) {
+  s = subVarText(s);
   s = esc(s);
   s = s.replace(/&lt;(a?):(\w+):(\d+)&gt;/g, (m, a, n, id) =>
     '<img class="emoji" src="https://cdn.discordapp.com/emojis/' + id + "." + (a ? "gif" : "png") + '" alt=":' + n + ':">');
@@ -136,6 +152,7 @@ function inline(s) {
   s = s.replace(/\*(.+?)\*/g, "<i>$1</i>");
   s = s.replace(/~~(.+?)~~/g, "<s>$1</s>");
   s = s.replace(/\[(.+?)\]\((https?:\/\/[^\s)]+)\)/g, '<a class="dl" href="$2" target="_blank" rel="noopener">$1</a>');
+  s = s.replace(/\{\{([A-Za-z0-9_]{1,32})\}\}/g, '<span class="vartok">{{$1}}</span>');
   return s;
 }
 
@@ -446,7 +463,7 @@ function restore(state) {
   lastState = state;
   burst = false;
   selId = null;
-  if (tab !== "main" && !activeReply() && !activeForm()) tab = "main";
+  if (tab !== "main" && tab !== "__vars" && !activeReply() && !activeForm()) tab = "main";
   if (cur.layout.guild_id) $("guildSel").value = cur.layout.guild_id;
   markDirty();
   restoring = false;
@@ -481,17 +498,39 @@ async function loadEmojis() {
   try { emojiData = await api("/emojis"); } catch (e) { emojiData = []; }
 }
 
+function loadRecentEmojis() {
+  try {
+    const raw = JSON.parse(localStorage.getItem("recent_emojis") || "[]");
+    return Array.isArray(raw) ? raw.filter((e) => e && e.id && e.name) : [];
+  } catch (e) { return []; }
+}
+
+function saveRecentEmoji(em) {
+  try {
+    const prev = loadRecentEmojis().filter((e) => e.id !== em.id);
+    prev.unshift({ id: em.id, name: em.name, animated: !!em.animated });
+    localStorage.setItem("recent_emojis", JSON.stringify(prev.slice(0, 16)));
+  } catch (e) {}
+}
+
+function emojiGridHtml(list) {
+  return '<div class="eg">' + list.map((e) =>
+    '<button data-eid="' + esc(e.id) + '" data-ename="' + esc(e.name) + '" data-eanim="' + (e.animated ? "1" : "0") +
+    '" title=":' + esc(e.name) + ':"><img loading="lazy" src="' + emojiUrl(e) + '" alt=""></button>'
+  ).join("") + "</div>";
+}
+
 function drawEmojiList() {
   const q = $("emojiSearch").value.trim().toLowerCase();
   let html = "";
+  const recent = loadRecentEmojis().filter((e) => !q || e.name.toLowerCase().includes(q));
+  if (recent.length) {
+    html += '<div class="muted" style="margin:8px 0 4px">Recently used</div>' + emojiGridHtml(recent);
+  }
   (emojiData || []).forEach((g) => {
     const list = g.emojis.filter((e) => !q || e.name.toLowerCase().includes(q));
     if (!list.length) return;
-    html += '<div class="muted" style="margin:8px 0 4px">' + esc(g.guild_name) + '</div><div class="eg">' +
-      list.map((e) =>
-        '<button data-eid="' + esc(e.id) + '" data-ename="' + esc(e.name) + '" data-eanim="' + (e.animated ? "1" : "0") +
-        '" title=":' + esc(e.name) + ':"><img loading="lazy" src="' + emojiUrl(e) + '" alt=""></button>'
-      ).join("") + "</div>";
+    html += '<div class="muted" style="margin:8px 0 4px">' + esc(g.guild_name) + '</div>' + emojiGridHtml(list);
   });
   $("emojiList").innerHTML = html || '<p class="muted">No custom emojis found in your servers.</p>';
 }
@@ -513,6 +552,7 @@ $("emojiList").addEventListener("click", (e) => {
   const btn = e.target.closest("button[data-eid]");
   if (!btn || !emojiCb) return;
   const picked = { id: btn.dataset.eid, name: btn.dataset.ename, animated: btn.dataset.eanim === "1" };
+  saveRecentEmoji(picked);
   const cb = emojiCb;
   emojiCb = null;
   $("emojiOverlay").classList.add("hidden");
@@ -647,6 +687,8 @@ function normalize(layout) {
   if (!Array.isArray(layout.blocks)) layout.blocks = [];
   if (!Array.isArray(layout.replies)) layout.replies = [];
   if (!Array.isArray(layout.forms)) layout.forms = [];
+  if (!Array.isArray(layout.variables)) layout.variables = [];
+  layout.variables = layout.variables.filter((v) => v && typeof v === "object").map((v) => ({ id: String(v.id || uid()), name: String(v.name || ""), default: String(v.default || "") }));
   if (layout.kind === "classic") {
     if (typeof layout.content !== "string") layout.content = "";
     if (!Array.isArray(layout.embeds)) layout.embeds = [];
@@ -987,6 +1029,16 @@ function findProblems() {
     if (bare) add("has a question with no label", bare.id);
     if (!f.channel_id) add("has no channel chosen for the answers");
   });
+  const vnames = new Set();
+  (cur.layout.variables || []).forEach((v, idx) => {
+    if (!/^[A-Za-z0-9_]{1,32}$/.test(v.name || "")) {
+      p.push({ msg: "Variable #" + (idx + 1) + " name must be 1-32 letters, numbers, or _", blockId: null, tab: "__vars", level: "error" });
+    } else if (vnames.has(v.name)) {
+      p.push({ msg: 'Duplicate variable "' + v.name + '"', blockId: null, tab: "__vars", level: "error" });
+    } else {
+      vnames.add(v.name);
+    }
+  });
   const seen = new Set();
   return p.filter((x) => {
     const k = x.tab + "|" + x.blockId + "|" + x.msg;
@@ -1221,6 +1273,22 @@ function fieldEditor(f, i) {
     '<button class="small danger" data-act2="efdel" data-i="' + i + '" style="margin-top:8px">' + ic("trash") + "Remove field</button></div>";
 }
 
+const DISCORD_COLORS = [
+  ["#5865F2", "Blurple"], ["#57F287", "Green"], ["#FEE75C", "Yellow"],
+  ["#EB459E", "Fuchsia"], ["#ED4245", "Red"], ["#1ABC9C", "Teal"],
+  ["#E67E22", "Orange"], ["#2B2D31", "Dark"], ["#FFFFFF", "White"],
+];
+
+function colorPickerHtml(field, current) {
+  const hex = /^#[0-9a-f]{6}$/i.test(current || "") ? current.toUpperCase() : "#5865F2";
+  const swatches = DISCORD_COLORS.map(([c, name]) =>
+    '<button type="button" class="cswatch' + (hex === c.toUpperCase() ? " on" : "") + '" data-act2="pickcolor" data-target="' + esc(field) + '" data-hex="' + c + '" title="' + name + ' (' + c + ')" aria-label="' + name + '" style="background:' + c + '"></button>'
+  ).join("");
+  return '<div style="display:flex;gap:8px;align-items:center">' +
+    '<input type="color" data-f="' + esc(field) + '" value="' + esc(hex) + '" style="width:52px;height:38px;padding:2px">' +
+    '<span class="muted" style="font-family:ui-monospace,monospace">' + esc(hex) + '</span></div>' +
+    '<div class="cswatches">' + swatches + '</div>';
+}
 function classicSettings() {
   if (!isClassicMain()) return false;
   const L = cur.layout;
@@ -1238,7 +1306,7 @@ function classicSettings() {
     '<button class="small" data-act2="emojitext" style="margin-top:8px">' + ic("smile") + "Insert emoji</button>" +
     "<label>Description (max 4096)</label>" + fmtBar() +
     '<textarea data-f="e_description" data-fmt-target="1" maxlength="4096">' + esc(e.description) + "</textarea>" +
-    '<label>Colour</label><input type="color" data-f="e_color" value="' + esc(/^#[0-9a-f]{6}$/i.test(e.color) ? e.color : "#5865F2") + '" style="height:44px;padding:2px">' +
+    '<label>Colour</label>' + colorPickerHtml("e_color", e.color) +
     inp("author_name", "Author name", 256) + inp("author_url", "Author link (https)", 2000) + inp("author_icon", "Author icon (https)", 2000) +
     inp("thumbnail", "Small image, top right (https)", 2000) + inp("image", "Big image at the bottom (https)", 2000) +
     inp("footer_text", "Footer text", 2048) + inp("footer_icon", "Footer icon (https)", 2000) +
@@ -1429,11 +1497,44 @@ function renderTabs() {
     (list.some((x) => x.tab === t.id) ? '<span class="dotred"></span>' : "") + "</button>"
   ).join("") +
     '<button class="small" data-tab="__new">' + ic("reply") + "Reply</button>" +
-    '<button class="small" data-tab="__newform">' + ic("form") + "Form</button>";
+    '<button class="small' + (tab === "__vars" ? " primary" : "") + '" data-tab="__vars">' + ic("code") + "Variables" + ((cur.layout.variables || []).length ? " (" + cur.layout.variables.length + ")" : "") + (list.some((x) => x.tab === "__vars") ? '<span class="dotred"></span>' : "") + "</button>" + '<button class="small" data-tab="__newform">' + ic("form") + "Form</button>";
+}
+
+function extractUsedVars() {
+  const found = [];
+  const seen = new Set();
+  const urlKeys = new Set(["url", "author_url", "author_icon", "image", "thumbnail", "footer_icon", "urls"]);
+  const scan = (obj) => {
+    if (typeof obj === "string") {
+      const re = /\{\{([A-Za-z0-9_]{1,32})\}\}/g;
+      let m;
+      while ((m = re.exec(obj)) !== null) {
+        if (!seen.has(m[1])) { seen.add(m[1]); found.push(m[1]); }
+      }
+    } else if (Array.isArray(obj)) obj.forEach(scan);
+    else if (obj && typeof obj === "object") {
+      Object.keys(obj).forEach((k) => { if (!urlKeys.has(k)) scan(obj[k]); });
+    }
+  };
+  scan(cur.layout);
+  return found;
 }
 
 function renderTree() {
   problems();
+  if (tab === "__vars") {
+    $("treeTitle").textContent = "Variables (max 20)";
+    $("blockPalette").classList.add("hidden");
+    $("fieldPalette").classList.add("hidden");
+    const vars = cur.layout.variables || [];
+    $("tree").innerHTML = vars.length
+      ? vars.map((v) =>
+        '<div class="node" draggable="false"><span class="lbl">' + ic("code") +
+        '<span class="tx"><b>{{' + esc(v.name || "?") + '}}</b> ' + esc(v.default || "") + "</span></span></div>"
+      ).join("")
+      : '<p class="muted">No variables yet. Add one in Settings.</p>';
+    return;
+  }
   const f = activeForm();
   $("treeTitle").textContent = f ? "Questions (max 5)" : "Message tree";
   $("blockPalette").classList.toggle("hidden", !!f);
@@ -1445,7 +1546,24 @@ function renderTree() {
   $("tree").innerHTML = f ? fieldRows(f) : isClassicMain() ? classicRows() : treeRows(activeBlocks(), false);
 }
 
+function renderVarPlayground() {
+  const el = $("varPlayground");
+  if (!el || !cur) return;
+  const vars = cur.layout.variables || [];
+  if (!vars.length) { el.classList.add("hidden"); el.innerHTML = ""; return; }
+  el.classList.remove("hidden");
+  el.innerHTML = '<div class="varplay-head"><b>Variables Playground</b><div class="btnrow">' +
+    (cur.id ? '<button type="button" class="small" id="vpServerBtn">Test via Server</button>' : '') +
+    '<button type="button" class="small" id="vpResetBtn">Reset</button>' +
+    '<button type="button" class="small" id="vpToggleBtn">' + (varPlayOpen ? "Hide" : "Show") + '</button></div></div>' +
+    (varPlayOpen ? '<div class="varplay-grid">' + vars.map((v) => {
+      const val = varTestValues[v.name] !== undefined ? varTestValues[v.name] : (v.default || "");
+      return '<label>{{' + esc(v.name) + '}}<input data-vp="' + esc(v.name) + '" value="' + esc(val) + '" placeholder="' + esc(v.default || "value...") + '"></label>';
+    }).join("") + '</div>' : '');
+}
+
 function renderPreview() {
+  renderVarPlayground();
   problems();
   hideAddMenu();
   const f = activeForm();
@@ -1636,8 +1754,8 @@ $("settings").addEventListener("click", (e) => {
   renderAll();
 });
 
-function renderSettingsBody() {
-  const el = $("settings");
+settings);
+  const form = activeForm();"settings");
   const form = activeForm();
   if (form) { renderFormSettings(form); return; }
   if (classicSettings()) return;
@@ -1677,7 +1795,7 @@ function renderSettingsBody() {
       '<label>Line</label><select data-f="line">' + opts([["1", "Show line"], ["0", "No line"]], b.line ? "1" : "0") + "</select>";
   }
   if (b.type === "box") {
-    h = '<label>Accent colour</label><input type="color" data-f="accent" value="' + esc(b.accent) + '" style="height:44px;padding:2px">';
+    h = '<label>Accent colour</label>' + colorPickerHtml("accent", b.accent);
   }
   if (b.type === "button_row") {
     h = b.buttons.map((x, i) => buttonEditor(x, i, false)).join("") +
@@ -1692,7 +1810,7 @@ function renderSettingsBody() {
 }
 
 function renderAll() {
-  if (tab !== "main" && !activeReply() && !activeForm()) tab = "main";
+  if (tab !== "main" && tab !== "__vars" && !activeReply() && !activeForm()) tab = "main";
   renderTabs();
   renderTree();
   renderPreview();
@@ -1926,6 +2044,20 @@ $("settings").addEventListener("input", (e) => {
   if (f && classicInput(e, f, v)) return;
   if (!f) return;
 
+  if (f === "vname" || f === "vdefault") {
+    const idx = Number(e.target.dataset.i);
+    const vobj = (cur.layout.variables || [])[idx];
+    if (vobj) {
+      if (f === "vname") vobj.name = v.replace(/[^A-Za-z0-9_]/g, "").slice(0, 32);
+      if (f === "vdefault") vobj.default = v;
+      markDirty();
+      renderTabs();
+      renderTree();
+      renderPreview();
+      renderStatus();
+    }
+    return;
+  }
   if (f === "rname") {
     const r = activeReply();
     if (r) r.name = v;
@@ -2034,6 +2166,40 @@ $("settings").addEventListener("click", async (e) => {
     if (m) m.classList.add("hidden");
     formatText(d.fmt);
     return;
+  }
+  if (act === "pickcolor") {
+    const target = d.target;
+    const hex = d.hex;
+    if (target === "e_color" && isClassicMain()) {
+      const em = cur.layout.embeds.find((x) => x.id === selId);
+      if (em) em.color = hex;
+    } else if (target === "accent") {
+      const loc = findLoc(selId);
+      if (loc && loc.list[loc.index].type === "box") loc.list[loc.index].accent = hex;
+    }
+    markDirty();
+    renderAll();
+    return;
+  }
+  if (act === "addvar") {
+    if (!Array.isArray(cur.layout.variables)) cur.layout.variables = [];
+    if (cur.layout.variables.length >= 20) return;
+    cur.layout.variables.push({ id: uid(), name: "var_" + (cur.layout.variables.length + 1), default: "" });
+    markDirty(); renderAll(); return;
+  }
+  if (act === "addvarnamed") {
+    if (!Array.isArray(cur.layout.variables)) cur.layout.variables = [];
+    if (cur.layout.variables.length >= 20) return;
+    const vn = d.vname || "var";
+    if (!cur.layout.variables.some((x) => x.name === vn)) {
+      cur.layout.variables.push({ id: uid(), name: vn, default: "" });
+      markDirty(); renderAll();
+    }
+    return;
+  }
+  if (act === "delvar") {
+    cur.layout.variables.splice(Number(d.i), 1);
+    markDirty(); renderAll(); return;
   }
   if (classicClick(act, d)) return;
   if (act === "delreply") {
@@ -2915,7 +3081,7 @@ document.addEventListener("keydown", (e) => {
     hideAddMenu();
     const fm = $("fmtMore");
     if (fm) fm.classList.add("hidden");
-    for (const id of ["sendOverlay", "toolsOverlay", "histOverlay", "schedOverlay", "emojiOverlay"]) {
+    for (const id of ["sendOverlay", "toolsOverlay", "histOverlay", "schedOverlay", "emojiOverlay", "rawJsonOverlay"]) {
       if (!$(id).classList.contains("hidden")) { $(id).classList.add("hidden"); if (id === "emojiOverlay") emojiCb = null; }
     }
     return;
@@ -2930,4 +3096,70 @@ document.addEventListener("keydown", (e) => {
   else if ((k === "z" && e.shiftKey) || k === "y") { e.preventDefault(); redo(); }
 });
 
+$("varPlayground").addEventListener("input", (e) => {
+  const k = e.target.dataset.vp;
+  if (!k) return;
+  varTestValues[k] = e.target.value;
+  renderPreview();
+});
+$("varPlayground").addEventListener("click", async (e) => {
+  if (e.target.id === "vpToggleBtn") { varPlayOpen = !varPlayOpen; renderVarPlayground(); return; }
+  if (e.target.id === "vpResetBtn") { varTestValues = {}; renderPreview(); return; }
+  if (e.target.id === "vpServerBtn" && cur && cur.id) {
+    try {
+      const vals = {};
+      (cur.layout.variables || []).forEach((v) => {
+        vals[v.name] = varTestValues[v.name] !== undefined ? varTestValues[v.name] : (v.default || "");
+      });
+      const res = await api("/messages/" + cur.id + "/preview-variables", {
+        method: "POST",
+        body: JSON.stringify({ values: vals }),
+      });
+      if (res && res.layout) {
+        const L = normalize(res.layout);
+        const old = cur.layout;
+        cur.layout = L;
+        $("preview").innerHTML = (isClassicMain() ? renderClassicPreview() : activeBlocks().map(renderBlock).join(""));
+        cur.layout = old;
+        toast("Server variable preview applied.");
+      }
+    } catch (err) {
+      if (err.message !== "login") notifyErr("Server preview failed: " + err.message);
+    }
+  }
+});
+
+$("rawJsonBtn").onclick = () => {
+  closeMore();
+  $("rawJsonErr").textContent = "";
+  $("rawJsonArea").value = JSON.stringify(cur.layout, null, 2);
+  $("rawJsonOverlay").classList.remove("hidden");
+};
+$("rawJsonClose").onclick = () => { $("rawJsonOverlay").classList.add("hidden"); };
+$("rawJsonOverlay").onclick = (e) => { if (e.target === $("rawJsonOverlay")) $("rawJsonOverlay").classList.add("hidden"); };
+$("rawJsonCopy").onclick = async () => {
+  try {
+    await navigator.clipboard.writeText($("rawJsonArea").value);
+    notify("Copied JSON to clipboard.", "ok");
+  } catch (e) { notifyErr("Could not copy to clipboard."); }
+};
+$("rawJsonApply").onclick = () => {
+  $("rawJsonErr").textContent = "";
+  let parsed;
+  try { parsed = JSON.parse($("rawJsonArea").value); }
+  catch (err) { $("rawJsonErr").textContent = "Invalid JSON: " + err.message; return; }
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+    $("rawJsonErr").textContent = "Root value must be a JSON object.";
+    return;
+  }
+  const keepGuild = cur.layout.guild_id;
+  cur.layout = normalize(parsed);
+  if (!cur.layout.guild_id && keepGuild) cur.layout.guild_id = keepGuild;
+  selId = null;
+  if (tab !== "main" && tab !== "__vars" && !activeReply() && !activeForm()) tab = "main";
+  markDirty();
+  renderAll();
+  $("rawJsonOverlay").classList.add("hidden");
+  notify("Applied raw JSON.", "ok");
+};
 start();

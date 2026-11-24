@@ -301,3 +301,14 @@ label{display:block;font-size:12px;color:var(--muted);margin:10px 0 4px;text-tra
   .builder[data-tree="open"]{grid-template-columns:220px minmax(0,1fr) 300px}
   .builder[data-tree="open"] ~ .treeEdge{left:232px}
 }
+/* ----- Phase 3: Variables, Swatches, Playground ----- */
+.vartok{display:inline-block;background:rgba(88,101,242,.22);color:#99aab5;border:1px solid rgba(88,101,242,.45);border-radius:4px;padding:0 4px;font-family:ui-monospace,monospace;font-size:.9em}
+.discord.light .vartok{background:rgba(88,101,242,.12);color:#4752c4}
+.varplay{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin:0 auto 12px;max-width:740px}
+.varplay-head{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.varplay-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:8px;margin-top:8px}
+.varplay-grid label{margin:0;font-size:11px;display:block}
+.varplay-grid input{margin-top:3px;padding:6px 8px;font-size:13px}
+.cswatches{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:4px}
+.cswatch{width:24px;height:24px;min-width:24px;min-height:24px;padding:0;border-radius:6px;border:2px solid rgba(0,0,0,.18);cursor:pointer}
+.cswatch.on{outline:2px solid var(--ink);outline-offset:1px}
