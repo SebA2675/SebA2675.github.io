@@ -624,8 +624,8 @@ function fmtBar() {
     '</div><div class="fmtrow">' +
     b("h1", "Big heading", "H1") +
     b("h2", "Heading", "H2") +
-    b("spoiler", "Spoiler", "|| Spoiler") +
-    b("small", "Small text", "-# Small") +
+    b("spoiler", "Spoiler", "Spoiler") +
+    b("small", "Small text", "Small") +
     '<div class="fmtvar-wrap"><button type="button" class="small" data-act2="fmtvar" title="Insert variable" aria-label="Insert variable" aria-expanded="false">{x} Var</button>' +
     '<div id="fmtVarMenu" class="fmtvar hidden">' +
     (((cur && cur.layout && cur.layout.variables) || []).length
