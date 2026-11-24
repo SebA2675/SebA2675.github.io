@@ -205,6 +205,52 @@ function notify(text, kind) {
 
 function notifyErr(text) { notify(text, "error"); }
 
+/* ---------- Custom confirm & prompt modals (Phase 2.6) ---------- */
+let dialogResolve = null;
+function closeDialog(val) {
+  $("dialogOverlay").classList.add("hidden");
+  if (dialogResolve) {
+    const r = dialogResolve;
+    dialogResolve = null;
+    r(val);
+  }
+}
+function uiConfirm(msg, opts = {}) {
+  if (dialogResolve) closeDialog(false);
+  $("dialogTitle").textContent = opts.title || "Please confirm";
+  $("dialogMsg").textContent = msg;
+  $("dialogMsg").classList.remove("hidden");
+  $("dialogInput").classList.add("hidden");
+  $("dialogOk").textContent = opts.okText || "Confirm";
+  $("dialogOk").className = opts.danger ? "danger" : "primary";
+  $("dialogCancel").textContent = opts.cancelText || "Cancel";
+  $("dialogOverlay").classList.remove("hidden");
+  $("dialogOk").focus();
+  return new Promise((res) => { dialogResolve = res; });
+}
+function uiPrompt(title, defVal = "", msg = "") {
+  if (dialogResolve) closeDialog(null);
+  $("dialogTitle").textContent = title;
+  $("dialogMsg").textContent = msg;
+  $("dialogMsg").classList.toggle("hidden", !msg);
+  const inp = $("dialogInput");
+  inp.classList.remove("hidden");
+  inp.value = defVal;
+  $("dialogOk").textContent = "Save";
+  $("dialogOk").className = "primary";
+  $("dialogCancel").textContent = "Cancel";
+  $("dialogOverlay").classList.remove("hidden");
+  inp.focus();
+  inp.select();
+  return new Promise((res) => { dialogResolve = (ok) => res(ok ? inp.value : null); });
+}
+$("dialogOk").onclick = () => closeDialog(true);
+$("dialogCancel").onclick = () => closeDialog(false);
+$("dialogOverlay").onclick = (e) => { if (e.target === $("dialogOverlay")) closeDialog(false); };
+$("dialogInput").addEventListener("keydown", (e) => {
+  if (e.key === "Enter") { e.preventDefault(); closeDialog(true); }
+});
+
 function testShow(html) {
   $("testPanel").innerHTML = html;
   $("testPanel").classList.remove("hidden");
@@ -1347,10 +1393,10 @@ function renderFormPreview(f) {
 }
 
 function rowButtons() {
-  return '<button class="small ib" data-act="up" title="Move up">' + ic("up") + "</button>" +
-    '<button class="small ib" data-act="down" title="Move down">' + ic("down") + "</button>" +
-    '<button class="small ib" data-act="dup" title="Duplicate">' + ic("copy") + "</button>" +
-    '<button class="small ib danger" data-act="del" title="Delete">' + ic("trash") + "</button>";
+  return '<button class="small ib" data-act="up" title="Move up" aria-label="Move up">' + ic("up") + "</button>" +
+    '<button class="small ib" data-act="down" title="Move down" aria-label="Move down">' + ic("down") + "</button>" +
+    '<button class="small ib" data-act="dup" title="Duplicate" aria-label="Duplicate">' + ic("copy") + "</button>" +
+    '<button class="small ib danger" data-act="del" title="Delete" aria-label="Delete">' + ic("trash") + "</button>";
 }
 
 function treeRows(list, child) {
@@ -1970,7 +2016,7 @@ $("settings").addEventListener("input", (e) => {
   if (again) renderSettings();
 });
 
-$("settings").addEventListener("click", (e) => {
+$("settings").addEventListener("click", async (e) => {
   const d = btnData(e);
   const act = d.act2;
   if (!act) return;
@@ -1991,7 +2037,7 @@ $("settings").addEventListener("click", (e) => {
   }
   if (classicClick(act, d)) return;
   if (act === "delreply") {
-    if (!confirm("Delete this reply?")) return;
+    if (!await uiConfirm("Delete this reply?", { title: "Delete reply", okText: "Delete", danger: true })) return;
     cur.layout.replies = cur.layout.replies.filter((r) => r.id !== tab);
     tab = "main";
     selId = null;
@@ -2000,7 +2046,7 @@ $("settings").addEventListener("click", (e) => {
     return;
   }
   if (act === "delform") {
-    if (!confirm("Delete this form?")) return;
+    if (!await uiConfirm("Delete this form?", { title: "Delete form", okText: "Delete", danger: true })) return;
     cur.layout.forms = cur.layout.forms.filter((f) => f.id !== tab);
     tab = "main";
     selId = null;
@@ -2081,7 +2127,7 @@ function isDefaultName(n) { return n === "Untitled message" || n === "Untitled e
 $("guildSel").onchange = async () => {
   const next = $("guildSel").value;
   if (cur.posted_message_id && cur.guild_id && next !== cur.guild_id) {
-    if (!confirm("Changing the server unlinks this message from the one already posted in Discord. Continue?")) {
+    if (!await uiConfirm("Changing the server unlinks this message from the one already posted in Discord. Continue?", { title: "Change server", okText: "Continue" })) {
       $("guildSel").value = cur.layout.guild_id;
       return;
     }
@@ -2204,19 +2250,27 @@ function renderLibChips() {
   }).join("");
 }
 
+function closeCardMenus() {
+  document.querySelectorAll(".cardmenu").forEach((m) => m.classList.add("hidden"));
+  document.querySelectorAll("[data-cardmenu]").forEach((b) => b.setAttribute("aria-expanded", "false"));
+}
+
 function libRow(m) {
   const st = libState(m);
   const badges = (st === "draft" ? '<span class="badge draft">Draft</span>' : '<span class="badge ok">Posted</span>') +
     (st === "changed" ? '<span class="badge warn" title="You edited it after posting. Press Update post to refresh it in Discord.">Changed</span>' : "") +
     (m.webhook_id ? '<span class="badge hook">Webhook</span>' : "");
-  return '<div class="lrow"><div class="lmain"><div class="ltitle"><b>' + esc(m.name) + "</b>" + badges + '</div>' +
+  return '<div class="lrow st-' + st + '"><div class="lmain"><div class="ltitle"><b>' + esc(m.name) + "</b>" + badges + '</div>' +
     '<div class="lmeta">' + esc(m.guild_id ? guildName(m.guild_id) : "No server") + " &middot; Updated " +
     '<span title="' + esc(new Date(m.updated_at * 1000).toLocaleString()) + '">' + esc(ago(m.updated_at)) + "</span></div></div>" +
     '<div class="lacts">' +
     '<button class="primary small" data-open="' + esc(m.id) + '">' + ic("edit") + "Open</button>" +
-    '<button class="small ib" data-copy="' + esc(m.id) + '" title="Make a copy" aria-label="Make a copy">' + ic("copy") + "</button>" +
-    '<button class="small ib" data-export="' + esc(m.id) + '" title="Export as a file" aria-label="Export as a file">' + ic("export") + "</button>" +
-    '<button class="small ib danger" data-del="' + esc(m.id) + '" title="Delete" aria-label="Delete">' + ic("trash") + "</button></div></div>";
+    '<div class="cardmenu-wrap"><button class="small ib" data-cardmenu="' + esc(m.id) + '" title="More options" aria-label="More options" aria-haspopup="true" aria-expanded="false">' + ic("more") + "</button>" +
+    '<div class="cardmenu hidden" role="menu">' +
+    '<button class="small" role="menuitem" data-copy="' + esc(m.id) + '">' + ic("copy") + "Make a copy</button>" +
+    '<button class="small" role="menuitem" data-export="' + esc(m.id) + '">' + ic("export") + "Export JSON</button>" +
+    '<button class="small danger" role="menuitem" data-del="' + esc(m.id) + '">' + ic("trash") + "Delete</button>" +
+    "</div></div></div></div>";
 }
 
 function renderLibList() {
@@ -2260,7 +2314,7 @@ $("libChips").addEventListener("click", (e) => {
 async function openLibrary() {
   clearTimeout(autosaveTimer);
   show("viewLibrary");
-  $("list").innerHTML = '<p class="muted">Loading...</p>';
+  $("list").innerHTML = '<div class="skel-card"></div>'.repeat(6);
   try {
     await loadGuilds();
     libItems = await api("/messages");
@@ -2273,6 +2327,19 @@ async function openLibrary() {
 
 $("list").addEventListener("click", async (e) => {
   const d = btnData(e);
+  if (d.cardmenu) {
+    e.stopPropagation();
+    const wrap = e.target.closest(".cardmenu-wrap");
+    const menu = wrap && wrap.querySelector(".cardmenu");
+    const wasOpen = menu && !menu.classList.contains("hidden");
+    closeCardMenus();
+    if (menu && !wasOpen) {
+      menu.classList.remove("hidden");
+      e.target.closest("[data-cardmenu]").setAttribute("aria-expanded", "true");
+    }
+    return;
+  }
+  closeCardMenus();
   try {
     if (d.open) await openBuilder(await api("/messages/" + d.open));
     if (d.copy) {
@@ -2289,7 +2356,7 @@ $("list").addEventListener("click", async (e) => {
       downloadJson(data.name || "message", data);
       notify("Exported as a file.", "ok");
     }
-    if (d.del && confirm("Delete this message from the dashboard? Its schedules are deleted too. (A posted Discord message is not removed.)")) {
+    if (d.del && await uiConfirm("Delete this message from the dashboard? Its schedules are deleted too. (A posted Discord message is not removed.)", { title: "Delete message", okText: "Delete", danger: true })) {
       await api("/messages/" + d.del, { method: "DELETE" });
       notify("Message deleted.", "ok");
       openLibrary();
@@ -2306,8 +2373,8 @@ $("newLayoutBtn").onclick = () => {
   openBuilder({ id: null, name: "Untitled message", layout: { blocks: [box], replies: [], forms: [] } });
 };
 
-$("backBtn").onclick = () => {
-  if (dirty && !confirm("Discard unsaved changes?")) return;
+$("backBtn").onclick = async () => {
+  if (dirty && !await uiConfirm("Discard unsaved changes?", { title: "Unsaved changes", okText: "Discard", danger: true })) return;
   dirty = false;
   openLibrary();
 };
@@ -2402,7 +2469,7 @@ $("toolsTemplates").addEventListener("click", async (e) => {
       $("toolsOverlay").classList.add("hidden");
       await openBuilder({ id: null, name: t.name, guild_id: t.guild_id, layout: t.layout });
     }
-    if (d.rmtpl && confirm("Delete this template?")) {
+    if (d.rmtpl && await uiConfirm("Delete this template?", { title: "Delete template", okText: "Delete", danger: true })) {
       await api("/templates/" + d.rmtpl, { method: "DELETE" });
       loadToolsTemplates();
     }
@@ -2451,7 +2518,7 @@ $("personaAdd").onclick = async () => {
 
 $("toolsPersonas").addEventListener("click", async (e) => {
   const id = btnData(e).rmpersona;
-  if (!id || !confirm("Delete this preset?")) return;
+  if (!id || !await uiConfirm("Delete this preset?", { title: "Delete preset", okText: "Delete", danger: true })) return;
   try {
     await api("/personas/" + id, { method: "DELETE" });
     loadToolsPersonas();
@@ -2462,7 +2529,7 @@ $("toolsPersonas").addEventListener("click", async (e) => {
 
 /* ---------- Save as template, version history ---------- */
 $("tplBtn").onclick = async () => {
-  const name = prompt("Template name:", cur.name || "Untitled message");
+  const name = await uiPrompt("Save as template", cur.name || "Untitled message", "Choose a name for this reusable template.");
   if (!name || !name.trim()) return;
   try {
     await api("/guilds/" + cur.layout.guild_id + "/templates", {
@@ -2495,7 +2562,7 @@ $("histBtn").onclick = async () => {
 $("histList").addEventListener("click", async (e) => {
   const vid = btnData(e).restore;
   if (!vid) return;
-  if (!confirm("Replace the current design with this version? You can still use Undo afterwards.")) return;
+  if (!await uiConfirm("Replace the current design with this version? You can still use Undo afterwards.", { title: "Restore version", okText: "Restore" })) return;
   try {
     const v = await api("/messages/" + cur.id + "/versions/" + vid);
     const keepGuild = cur.layout.guild_id;
@@ -2608,7 +2675,7 @@ $("schedAdd").onclick = async () => {
 $("schedList").addEventListener("click", async (e) => {
   const id = btnData(e).sdel;
   if (!id) return;
-  if (!confirm("Delete this schedule?")) return;
+  if (!await uiConfirm("Delete this schedule?", { title: "Delete schedule", okText: "Delete", danger: true })) return;
   try {
     await api("/schedules/" + id, { method: "DELETE" });
     await loadSchedules();
@@ -2670,7 +2737,7 @@ $("adminAddBtn").onclick = async () => {
 $("adminAllowed").addEventListener("click", async (e) => {
   const id = btnData(e).rm;
   if (!id) return;
-  if (!confirm("Remove this server? The bot will leave it right away and its administrators lose access.")) return;
+  if (!await uiConfirm("Remove this server? The bot will leave it right away and its administrators lose access.", { title: "Remove server", okText: "Remove", danger: true })) return;
   try {
     await api("/admin/allow/" + id, { method: "DELETE" });
     guilds = [];
@@ -2790,7 +2857,7 @@ postBtn.onclick = () => {
 updBtn.onclick = () => send("/update", false);
 
 delBtn.onclick = async () => {
-  if (!confirm("Delete the posted message from Discord? Your saved design stays in the dashboard.")) return;
+  if (!await uiConfirm("Delete the posted message from Discord? Your saved design stays in the dashboard.", { title: "Delete from Discord", okText: "Delete", danger: true })) return;
   setStatus("Deleting...");
   try {
     fresh = await api("/messages/" + cur.id + "/posted", { method: "DELETE" });
@@ -2836,4 +2903,31 @@ async function start() {
     $("loginMsg").textContent = e instanceof TypeError ? "Could not reach the bot. Is it online?" : e.message;
   }
 }
+document.addEventListener("click", (e) => {
+  if (!e.target.closest(".cardmenu-wrap")) closeCardMenus();
+});
+
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") {
+    if (!$("dialogOverlay").classList.contains("hidden")) { closeDialog(false); return; }
+    closeCardMenus();
+    $("problemList").classList.add("hidden");
+    hideAddMenu();
+    const fm = $("fmtMore");
+    if (fm) fm.classList.add("hidden");
+    for (const id of ["sendOverlay", "toolsOverlay", "histOverlay", "schedOverlay", "emojiOverlay"]) {
+      if (!$(id).classList.contains("hidden")) { $(id).classList.add("hidden"); if (id === "emojiOverlay") emojiCb = null; }
+    }
+    return;
+  }
+  if ($("viewBuilder").classList.contains("hidden")) return;
+  const mod = e.ctrlKey || e.metaKey;
+  if (!mod) return;
+  const k = e.key.toLowerCase();
+  if (k === "s") { e.preventDefault(); save(false); return; }
+  if (e.target.closest("input, textarea, select")) return;
+  if (k === "z" && !e.shiftKey) { e.preventDefault(); undo(); }
+  else if ((k === "z" && e.shiftKey) || k === "y") { e.preventDefault(); redo(); }
+});
+
 start();

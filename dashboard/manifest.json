@@ -1,0 +1,17 @@
+{
+  "name": "9 Nation Embed Dashboard",
+  "short_name": "Embeds",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f5efe1",
+  "theme_color": "#f5efe1",
+  "icons": [
+    {
+      "src": "logo.png",
+      "sizes": "500x500",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

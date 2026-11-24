@@ -3,11 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' https: data:; connect-src https://h5nngnplb6.apps.bot-hosting.cloud; font-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' https: data:; connect-src https://h5nngnplb6.apps.bot-hosting.cloud; font-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
 <meta name="theme-color" content="#f5efe1">
 <link rel="icon" href="logo.png">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="logo.png">
 <title>Embed Dashboard</title>
-<link rel="stylesheet" href="styles.css?v=8">
+<link rel="stylesheet" href="styles.css?v=9">
 </head>
 <body>
 
@@ -182,11 +184,11 @@
         <div id="preview"></div>
         <div id="testPanel" class="tpanel hidden"></div>
         <div id="floatBar" class="floatbar hidden">
-          <button class="small ib" data-fact="parent" title="Select the box around this"><svg class="ic"><use href="#i-box"></use></svg></button>
-          <button class="small ib" data-fact="up" title="Move up"><svg class="ic"><use href="#i-up"></use></svg></button>
-          <button class="small ib" data-fact="down" title="Move down"><svg class="ic"><use href="#i-down"></use></svg></button>
-          <button class="small ib" data-fact="dup" title="Duplicate"><svg class="ic"><use href="#i-copy"></use></svg></button>
-          <button class="small ib danger" data-fact="del" title="Delete"><svg class="ic"><use href="#i-trash"></use></svg></button>
+          <button class="small ib" data-fact="parent" title="Select the box around this" aria-label="Select parent box"><svg class="ic"><use href="#i-box"></use></svg></button>
+          <button class="small ib" data-fact="up" title="Move up" aria-label="Move up"><svg class="ic"><use href="#i-up"></use></svg></button>
+          <button class="small ib" data-fact="down" title="Move down" aria-label="Move down"><svg class="ic"><use href="#i-down"></use></svg></button>
+          <button class="small ib" data-fact="dup" title="Duplicate" aria-label="Duplicate"><svg class="ic"><use href="#i-copy"></use></svg></button>
+          <button class="small ib danger" data-fact="del" title="Delete" aria-label="Delete"><svg class="ic"><use href="#i-trash"></use></svg></button>
         </div>
         <div id="addMenu" class="addmenu hidden"></div>
       </div>
@@ -296,8 +298,20 @@
   </div>
 </div>
 
+<div id="dialogOverlay" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="dialogTitle">
+  <div class="modal" style="width:min(420px,100%)">
+    <h2 id="dialogTitle"></h2>
+    <p id="dialogMsg" class="muted" style="font-size:14px;line-height:1.5;margin:6px 0 10px"></p>
+    <input id="dialogInput" class="hidden" autocomplete="off">
+    <div class="btnrow" style="margin-top:14px;justify-content:flex-end">
+      <button id="dialogCancel">Cancel</button>
+      <button id="dialogOk" class="primary">OK</button>
+    </div>
+  </div>
+</div>
+
 <div id="testToast" class="ttoast hidden"></div>
 
-<script src="app.js?v=8"></script>
+<script src="app.js?v=9"></script>
 </body>
 </html>
