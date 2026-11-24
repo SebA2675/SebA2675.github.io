@@ -1795,6 +1795,8 @@ function rulesEditor(x, p, i) {
     "<label>Only people with one of these roles (none ticked = everyone)</label>" + roleChecks(allowed, p, i) +
     "<label>Cooldown for each person, in seconds (0 = none)</label>" +
     '<input type="number" min="0" max="86400" data-f="' + p + 'cd" data-i="' + i + '" value="' + (x.cooldown || 0) + '">' +
+    "<label>Max total uses across everyone (0 = unlimited)</label>" +
+    '<input type="number" min="0" max="1000000" data-f="' + p + 'maxuses" data-i="' + i + '" value="' + (x.max_uses || 0) + '">' +
     '<label style="text-transform:none;display:flex;gap:8px;align-items:center;letter-spacing:0">' +
     '<input type="checkbox" data-f="' + p + 'once" data-i="' + i + '"' + (x.once ? " checked" : "") + "> Each person can use it only once</label></details>";
 }
@@ -1834,7 +1836,9 @@ function renderFormSettings(f) {
     el.innerHTML = '<label>Question label (max 45 characters)</label><input maxlength="45" data-f="qlabel" value="' + esc(q.label) + '">' +
       '<label>Answer size</label><select data-f="qstyle">' + opts([["short", "Short (one line)"], ["paragraph", "Paragraph"]], q.style) + "</select>" +
       '<label>Hint text (optional)</label><input maxlength="100" data-f="qph" value="' + esc(q.placeholder || "") + '">' +
-      '<label>Required</label><select data-f="qreq">' + opts([["1", "Yes"], ["0", "No"]], q.required ? "1" : "0") + "</select>";
+      '<label>Required</label><select data-f="qreq">' + opts([["1", "Yes"], ["0", "No"]], q.required ? "1" : "0") + "</select>" +
+      '<label>Min length (0 = none)</label><input type="number" min="0" max="4000" data-f="qmin" value="' + (q.min_length || 0) + '">' +
+      '<label>Max length</label><input type="number" min="1" max="4000" data-f="qmax" value="' + (q.max_length || (q.style === "paragraph" ? 600 : 200)) + '">';
     return;
   }
   const list = [["", "Choose..."]].concat(chans.map((c) => [c.id, "#" + c.name]));
@@ -1842,6 +1846,9 @@ function renderFormSettings(f) {
     '<label>Pop-up title (max 45 characters)</label><input maxlength="45" data-f="ftitle" value="' + esc(f.title) + '">' +
     '<label>Send answers to channel</label><select data-f="fchan">' + opts(list, f.channel_id) + "</select>" +
     '<label>Thank-you message (shown privately)</label><textarea data-f="fthanks">' + esc(f.thanks || "") + "</textarea>" +
+    '<label>Role to give on Accept (optional)</label><select data-f="faccrole">' + opts(roleList(), f.accept_role_id || "") + "</select>" +
+    '<label>DM to user on Accept (optional)</label><input maxlength="1500" data-f="faccdm" value="' + esc(f.accept_dm || "") + '">' +
+    '<label>DM to user on Deny (optional)</label><input maxlength="1500" data-f="fdenydm" value="' + esc(f.deny_dm || "") + '">' +
     '<p class="muted">Select a question in the tree to edit it.</p>' +
     '<button class="small danger" data-act2="delform">' + ic("trash") + "Delete this form</button>";
 }
@@ -1953,6 +1960,7 @@ function renderSettingsBody() {
   }
   if (b.type === "dropdown") {
     h = '<label>Placeholder text</label><input data-f="dph" value="' + esc(b.placeholder || "") + '">' +
+      '<div style="display:flex;gap:8px"><div style="flex:1"><label>Min pick</label><input type="number" min="1" max="25" data-f="dmin" value="' + (b.min_values || 1) + '"></div><div style="flex:1"><label>Max pick</label><input type="number" min="1" max="25" data-f="dmax" value="' + (b.max_values || 1) + '"></div></div>' +
       b.options.map(optionEditor).join("") +
       '<button class="small" data-act2="addopt">' + ic("plus") + "Add option</button>";
   }
@@ -2232,12 +2240,17 @@ $("settings").addEventListener("input", (e) => {
     if (f === "ftitle") form.title = v;
     if (f === "fchan") form.channel_id = v;
     if (f === "fthanks") form.thanks = v;
+    if (f === "faccrole") form.accept_role_id = v;
+    if (f === "faccdm") form.accept_dm = v;
+    if (f === "fdenydm") form.deny_dm = v;
     const q = form.fields.find((x) => x.id === selId);
     if (q) {
       if (f === "qlabel") q.label = v;
       if (f === "qstyle") q.style = v;
       if (f === "qph") q.placeholder = v;
       if (f === "qreq") q.required = v === "1";
+      if (f === "qmin") q.min_length = Math.max(0, Math.min(4000, parseInt(v, 10) || 0));
+      if (f === "qmax") q.max_length = Math.max(1, Math.min(4000, parseInt(v, 10) || 600));
     }
     markDirty();
     if (f === "fname") renderTabs();
@@ -2276,10 +2289,11 @@ $("settings").addEventListener("input", (e) => {
     if (v === "page") btns[i].action = { type: "page", page_index: -2 };
     again = true;
   }
-  const ruled = (f === "bcd" || f === "bonce" || f === "brolechk") ? btns[i]
-    : ((f === "ocd" || f === "oonce" || f === "orolechk") ? b.options[i] : null);
+  const ruled = (f === "bcd" || f === "bonce" || f === "brolechk" || f === "bmaxuses") ? btns[i]
+    : ((f === "ocd" || f === "oonce" || f === "orolechk" || f === "omaxuses") ? b.options[i] : null);
   if (ruled) {
     if (f.endsWith("cd")) ruled.cooldown = Math.max(0, Math.min(86400, parseInt(v, 10) || 0));
+    if (f.endsWith("maxuses")) ruled.max_uses = Math.max(0, Math.min(1000000, parseInt(v, 10) || 0));
     if (f.endsWith("once")) { ruled.once = e.target.checked; again = true; }
     if (f.endsWith("rolechk")) {
       const set = new Set(ruled.allowed_roles || []);
@@ -2289,6 +2303,8 @@ $("settings").addEventListener("input", (e) => {
     }
   }
   if (f === "dph") b.placeholder = v;
+  if (f === "dmin") b.min_values = Math.max(1, Math.min(25, parseInt(v, 10) || 1));
+  if (f === "dmax") b.max_values = Math.max(1, Math.min(25, parseInt(v, 10) || 1));
   if (f === "olabel") b.options[i].label = v;
   if (f === "odesc") b.options[i].description = v;
   if (f === "oreply") b.options[i].action.reply_id = v;
@@ -3602,7 +3618,7 @@ document.addEventListener("keydown", (e) => {
     hideAddMenu();
     const fm = $("fmtMore");
     if (fm) fm.classList.add("hidden");
-    for (const id of ["sendOverlay", "toolsOverlay", "histOverlay", "schedOverlay", "emojiOverlay", "rawJsonOverlay", "galleryOverlay", "helpOverlay", "srvOverlay"]) {
+    for (const id of ["sendOverlay", "toolsOverlay", "histOverlay", "schedOverlay", "emojiOverlay", "rawJsonOverlay", "galleryOverlay", "helpOverlay", "srvOverlay", "respOverlay"]) {
       if (!$(id).classList.contains("hidden")) { $(id).classList.add("hidden"); if (id === "emojiOverlay") emojiCb = null; }
     }
     return;
@@ -3797,4 +3813,78 @@ $("galleryGrid").addEventListener("click", (e) => {
 $("helpBtn").onclick = () => { $("helpOverlay").classList.remove("hidden"); };
 $("helpClose").onclick = () => { $("helpOverlay").classList.add("hidden"); };
 $("helpOverlay").onclick = (e) => { if (e.target === $("helpOverlay")) $("helpOverlay").classList.add("hidden"); };
+async function loadResponsesModal() {
+  if (!cur || !cur.id) { notify("Save the message first.", "info"); return; }
+  $("respStats").textContent = "Loading...";
+  $("respList").innerHTML = "";
+  $("respOverlay").classList.remove("hidden");
+  try {
+    const [stats, resps] = await Promise.all([
+      api("/messages/" + cur.id + "/stats"),
+      api("/messages/" + cur.id + "/responses"),
+    ]);
+    const clicks = stats.clicks || {};
+    const totalClicks = Object.values(clicks).reduce((a, b) => a + b, 0);
+    $("respStats").textContent = "Total button/menu clicks: " + totalClicks + " | Form submissions: " + resps.length;
+    $("respList").innerHTML = resps.length
+      ? resps.map((r) => {
+        const badgeCls = r.status === "accepted" ? "ok" : r.status === "denied" ? "bad" : "";
+        return '<div class="bcard"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px">' +
+          '<b>' + esc(r.username) + '</b><span class="badge ' + badgeCls + '">' + esc(r.status) + '</span></div>' +
+          '<div class="muted" style="font-size:12px;margin-bottom:6px">' + new Date(r.created_at * 1000).toLocaleString() + '</div>' +
+          (r.answers || []).map((a) => '<div style="margin:4px 0"><b>' + esc(a.label) + ':</b> ' + esc(a.answer) + '</div>').join("") +
+          '<div class="btnrow" style="margin-top:8px">' +
+          '<button class="small primary" data-decide="accepted" data-rid="' + esc(r.id) + '" data-fid="' + esc(r.form_id) + '">Accept</button>' +
+          '<button class="small danger" data-decide="denied" data-rid="' + esc(r.id) + '" data-fid="' + esc(r.form_id) + '">Deny</button>' +
+          '</div></div>';
+      }).join("")
+      : '<p class="muted">No form responses yet.</p>';
+  } catch (e) {
+    if (e.message !== "login") $("respStats").textContent = "Failed: " + e.message;
+  }
+}
+
+$("respBtn").onclick = () => { closeMore(); loadResponsesModal(); };
+$("respClose").onclick = () => { $("respOverlay").classList.add("hidden"); };
+$("respOverlay").onclick = (e) => { if (e.target === $("respOverlay")) $("respOverlay").classList.add("hidden"); };
+
+$("respCsvBtn").onclick = async () => {
+  if (!cur || !cur.id) return;
+  try {
+    const res = await fetch(API_URL + "/messages/" + cur.id + "/responses/csv", {
+      headers: { Authorization: "Bearer " + loadToken() },
+    });
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "responses-" + cur.id + ".csv";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  } catch (e) { notifyErr("CSV export failed: " + e.message); }
+};
+
+$("respList").addEventListener("click", async (e) => {
+  const b = e.target.closest("[data-decide]");
+  if (!b) return;
+  const decision = b.dataset.decide;
+  const f = (cur.layout.forms || []).find((x) => x.id === b.dataset.fid) || {};
+  try {
+    await api("/responses/" + b.dataset.rid + "/decide", {
+      method: "POST",
+      body: JSON.stringify({
+        decision,
+        role_id: decision === "accepted" ? (f.accept_role_id || "") : "",
+        dm_text: decision === "accepted" ? (f.accept_dm || "") : (f.deny_dm || ""),
+      }),
+    });
+    notify("Marked as " + decision + ".", "ok");
+    loadResponsesModal();
+  } catch (err) {
+    if (err.message !== "login") notifyErr(err.message);
+  }
+});
 start();

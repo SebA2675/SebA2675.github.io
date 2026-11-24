@@ -9,7 +9,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="logo.png">
 <title>Embed Dashboard</title>
-<link rel="stylesheet" href="styles.css?v=21">
+<link rel="stylesheet" href="styles.css?v=22">
 </head>
 <body>
 
@@ -134,6 +134,7 @@
         <button id="histBtn" class="tb" title="Older versions"><svg class="ic"><use href="#i-history"></use></svg><span class="t">History</span></button>
         <button id="schedBtn" class="tb" title="Post or update at a set time"><svg class="ic"><use href="#i-schedule"></use></svg><span class="t">Schedule</span></button>
         <button id="dmBtn" class="tb" title="Send a test copy to your DMs"><svg class="ic"><use href="#i-mail"></use></svg><span class="t">Send a test to my DMs</span></button>
+        <button id="respBtn" class="tb" title="Form responses &amp; click stats"><svg class="ic"><use href="#i-form"></use></svg><span class="t">Responses</span></button>
         <button id="rawJsonBtn" class="tb" title="View or edit raw JSON"><svg class="ic"><use href="#i-code"></use></svg><span class="t">Raw JSON</span></button>
       </div>
       <button class="primary" id="saveBtn"></button>
@@ -389,6 +390,18 @@
   </div>
 </div>
 
+<div id="respOverlay" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="respTitle">
+  <div class="modal" style="width:min(640px,100%)">
+    <h2 id="respTitle">Form Responses &amp; Click Stats</h2>
+    <div id="respStats" class="muted" style="margin-bottom:10px"></div>
+    <div class="btnrow" style="margin-bottom:10px">
+      <button id="respCsvBtn" class="primary small"><svg class="ic"><use href="#i-export"></use></svg>Download CSV</button>
+    </div>
+    <div id="respList" style="max-height:380px;overflow:auto"></div>
+    <div class="btnrow" style="margin-top:12px"><button id="respClose"><svg class="ic"><use href="#i-close"></use></svg>Close</button></div>
+  </div>
+</div>
+
 <div id="dialogOverlay" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="dialogTitle">
   <div class="modal" style="width:min(420px,100%)">
     <h2 id="dialogTitle"></h2>
@@ -403,6 +416,6 @@
 
 <div id="testToast" class="ttoast hidden"></div>
 
-<script src="app.js?v=21"></script>
+<script src="app.js?v=22"></script>
 </body>
 </html>
