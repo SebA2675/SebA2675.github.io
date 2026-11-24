@@ -88,8 +88,10 @@ let burstTimer = null;
 let restoring = false;
 let pane = "preview";
 let pv = "dark";
+let pw = "wide";
 let mode = "edit";
 try { pv = localStorage.getItem("pv") === "light" ? "light" : "dark"; } catch (e) {}
+try { pw = localStorage.getItem("pw") === "phone" ? "phone" : "wide"; } catch (e) {}
 const uid = () => Math.random().toString(36).slice(2, 8);
 const NAMES = {
   text: "Text", section: "Text + side", images: "Images", divider: "Divider",
@@ -337,12 +339,24 @@ function applyPv() {
   document.querySelectorAll("[data-pv]").forEach((b) => b.classList.toggle("on", b.dataset.pv === pv));
 }
 
+function applyPw() {
+  $("discordBox").classList.toggle("phonepv", pw === "phone");
+  document.querySelectorAll("[data-pw]").forEach((b) => b.classList.toggle("on", b.dataset.pw === pw));
+  positionFloatBar();
+}
+
 document.querySelector(".pvhead").addEventListener("click", (e) => {
   const d = btnData(e);
-  if (!d.pv) return;
-  pv = d.pv;
-  try { localStorage.setItem("pv", pv); } catch (err) {}
-  applyPv();
+  if (d.pv) {
+    pv = d.pv;
+    try { localStorage.setItem("pv", pv); } catch (err) {}
+    applyPv();
+  }
+  if (d.pw) {
+    pw = d.pw;
+    try { localStorage.setItem("pw", pw); } catch (err) {}
+    applyPw();
+  }
 });
 
 /* ---------- History (undo / redo) and autosave ---------- */
@@ -469,6 +483,19 @@ function insertIntoField(selector, text) {
 }
 
 /* ---------- Text toolbar ---------- */
+function autoGrow(el) {
+  if (!el || el.tagName !== "TEXTAREA") return;
+  el.style.height = "auto";
+  const maxH = Math.max(160, Math.round(window.innerHeight * 0.45));
+  const next = Math.min(el.scrollHeight + 2, maxH);
+  el.style.height = next + "px";
+  el.style.overflowY = el.scrollHeight + 2 > maxH ? "auto" : "hidden";
+}
+
+function growAllTextareas() {
+  $("settings").querySelectorAll("textarea").forEach(autoGrow);
+}
+
 function fmtBar() {
   const b = (k, t, l) => '<button type="button" class="small" data-act2="fmt" data-fmt="' + k + '" title="' + t + '">' + l + "</button>";
   return '<div class="fmtbar" role="toolbar" aria-label="Text formatting">' +
@@ -477,12 +504,14 @@ function fmtBar() {
     b("underline", "Underline", "<u>U</u>") +
     b("strike", "Strikethrough", "<s>S</s>") +
     b("code", "Inline code", "&lt;&gt;") +
-    b("spoiler", "Spoiler", "||") +
     b("h1", "Big heading", "H1") +
-    b("h2", "Heading", "H2") +
-    b("small", "Small text", "-#") +
     b("link", "Link", "Link") +
-    "</div>";
+    '<div class="fmtmore-wrap"><button type="button" class="small" data-act2="fmtmore" title="More formatting" aria-label="More formatting" aria-expanded="false">' + ic("more") + '</button>' +
+    '<div id="fmtMore" class="fmtmore hidden">' +
+    b("h2", "Heading", "H2 Heading") +
+    b("spoiler", "Spoiler", "|| Spoiler") +
+    b("small", "Small text", "-# Small text") +
+    "</div></div></div>";
 }
 
 function formatText(kind) {
@@ -1419,7 +1448,9 @@ function renderStatus() {
   pe.className = "badge " + (probs.length ? "bad" : "ok");
   if (!probs.length) $("problemList").classList.add("hidden");
   drawProblemList();
-  $("saveBtn").innerHTML = ic(dirty ? "save" : "check") + "<span>" + (dirty ? "Save" : "Saved") + "</span>" +
+  const sb = $("saveBtn");
+  sb.className = dirty ? "primary" : "clean";
+  sb.innerHTML = ic(dirty ? "save" : "check") + "<span>" + (dirty ? "Save" : "Saved") + "</span>" +
     (dirty ? '<span class="dot"></span>' : "");
 }
 
@@ -1549,6 +1580,7 @@ function renderSettings() {
   renderSettingsBody();
   $("settings").insertAdjacentHTML("afterbegin", crumbs());
   updateCharCount();
+  growAllTextareas();
 }
 
 $("settings").addEventListener("click", (e) => {
@@ -1738,7 +1770,7 @@ function positionFloatBar() {
   const b = $("discordBox").getBoundingClientRect();
   const r = el.getBoundingClientRect();
   let top = r.top - b.top - bar.offsetHeight - 6;
-  if (top < 4) top = r.top - b.top + 4;
+  if (top < 4) top = r.bottom - b.top + 6;
   let left = r.right - b.left - bar.offsetWidth;
   left = Math.max(4, Math.min(left, b.width - bar.offsetWidth - 4));
   bar.style.top = top + "px";
@@ -1842,6 +1874,7 @@ function buttonsOf(b) {
 }
 
 $("settings").addEventListener("input", (e) => {
+  if (e.target.tagName === "TEXTAREA") autoGrow(e.target);
   const f = e.target.dataset.f;
   const v = e.target.value;
   if (f && classicInput(e, f, v)) return;
@@ -1941,7 +1974,21 @@ $("settings").addEventListener("click", (e) => {
   const d = btnData(e);
   const act = d.act2;
   if (!act) return;
-  if (act === "fmt") { formatText(d.fmt); return; }
+  if (act === "fmtmore") {
+    const m = $("fmtMore");
+    if (m) {
+      const open = m.classList.toggle("hidden") === false;
+      const btn = e.target.closest("[data-act2=\"fmtmore\"]");
+      if (btn) btn.setAttribute("aria-expanded", open ? "true" : "false");
+    }
+    return;
+  }
+  if (act === "fmt") {
+    const m = $("fmtMore");
+    if (m) m.classList.add("hidden");
+    formatText(d.fmt);
+    return;
+  }
   if (classicClick(act, d)) return;
   if (act === "delreply") {
     if (!confirm("Delete this reply?")) return;
@@ -1993,7 +2040,11 @@ $("settings").addEventListener("click", (e) => {
 });
 
 $("settings").addEventListener("mousedown", (e) => {
-  if (e.target.closest("[data-fmt]")) e.preventDefault();
+  if (e.target.closest("[data-fmt], [data-act2=\"fmtmore\"]")) e.preventDefault();
+});
+document.addEventListener("click", (e) => {
+  const m = $("fmtMore");
+  if (m && !e.target.closest(".fmtmore-wrap")) m.classList.add("hidden");
 });
 
 document.querySelectorAll("[data-add]").forEach((btn) => {
@@ -2115,6 +2166,7 @@ async function openBuilder(msg) {
   treeOpen = false;
   applyTree();
   applyPv();
+  applyPw();
   setMode("edit");
   renderAll();
 }
@@ -2767,6 +2819,7 @@ $("sendOverlay").onclick = (e) => { if (e.target === $("sendOverlay")) $("sendOv
 
 async function start() {
   applyPv();
+  applyPw();
   if (!loadToken()) {
     show("viewLogin");
     if (loginError) $("loginMsg").textContent = loginError;

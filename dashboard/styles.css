@@ -18,10 +18,14 @@ button:disabled{opacity:.45;cursor:default}
 input,textarea,select{width:100%;background:#fffdf7;color:var(--text);border:1px solid var(--line);border-radius:10px;padding:9px;font:inherit}
 input:focus,textarea:focus,select:focus{outline:2px solid rgba(43,34,24,.25);outline-offset:1px}
 input[type=checkbox]{width:auto}
-textarea{min-height:90px;resize:vertical}
-.fmtbar{display:flex;flex-wrap:wrap;gap:4px;margin:4px 0}
-.fmtbar button{padding:4px 8px;min-width:32px;justify-content:center}
+textarea{min-height:84px;resize:vertical;overflow-y:hidden}
+.fmtbar{display:flex;flex-wrap:nowrap;align-items:center;gap:4px;margin:4px 0;position:relative}
+.fmtbar button{padding:4px 7px;min-width:28px;justify-content:center}
 .fmtbar button[data-fmt]{font-family:ui-monospace,SFMono-Regular,Consolas,monospace}
+.fmtmore-wrap{position:relative;margin-left:auto}
+.fmtmore{position:absolute;right:0;top:calc(100% + 4px);z-index:35;min-width:148px;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:4px;box-shadow:0 8px 20px rgba(43,34,24,.22);display:flex;flex-direction:column;gap:2px}
+.fmtmore button{justify-content:flex-start;background:transparent;border:0;width:100%;padding:6px 10px;font-family:inherit}
+.fmtmore button:hover{background:var(--panel2)}
 label{display:block;font-size:12px;color:var(--muted);margin:10px 0 4px;text-transform:uppercase;letter-spacing:.03em}
 .hidden{display:none!important}
 .center{min-height:100vh;display:grid;place-items:center;padding:12px}
@@ -264,3 +268,21 @@ label{display:block;font-size:12px;color:var(--muted);margin:10px 0 4px;text-tra
 @keyframes toastin{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
 @media(max-width:900px){#toasts{bottom:calc(78px + env(safe-area-inset-bottom))}}
 @media(prefers-reduced-motion:reduce){.toast{animation:none}}
+/* ----- Phase 2.1, 2.4: Quiet save, desktop full-height panels, preview width ----- */
+#saveBtn.clean{background:transparent;border-color:transparent;color:var(--muted)}
+#saveBtn.clean:hover{background:var(--panel2);color:var(--text)}
+#discordBox{max-width:740px;margin:0 auto;transition:max-width .15s ease}
+#discordBox.phonepv{max-width:390px}
+@media(min-width:901px){
+  #viewBuilder:not(.hidden){display:flex;flex-direction:column;height:100vh;overflow:hidden}
+  .btop{flex:none}
+  .builder{flex:1;min-height:0;grid-template-columns:minmax(0,1fr) 340px;align-items:stretch}
+  .builder[data-tree="open"]{grid-template-columns:260px minmax(0,1fr) 340px}
+  .builder[data-tree="open"] ~ .treeEdge{left:272px}
+  .col{min-height:0;overflow:auto}
+}
+@media(min-width:901px) and (max-width:1180px){
+  .builder{grid-template-columns:minmax(0,1fr) 300px}
+  .builder[data-tree="open"]{grid-template-columns:220px minmax(0,1fr) 300px}
+  .builder[data-tree="open"] ~ .treeEdge{left:232px}
+}
