@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self'; connect-src https://h5nngnplb6.apps.bot-hosting.cloud; base-uri 'none'; form-action 'none'">
+<meta name="theme-color" content="#f5efe1">
+<link rel="icon" href="../dashboard/logo.png">
+<title>Griedon Embeds — Discord Embed Dashboard</title>
+<link rel="stylesheet" href="../dashboard/styles.css?v=18">
+</head>
+<body>
+<div class="wrap" style="max-width:760px;padding:32px 16px">
+  <div class="bcard" style="text-align:center;padding:28px 20px">
+    <img src="../dashboard/logo.png" alt="Griedon Embeds" class="logo big" style="margin:0 auto 10px">
+    <h1 style="margin:6px 0">Griedon Embeds</h1>
+    <p class="muted" style="font-size:15px;max-width:560px;margin:8px auto 18px;line-height:1.5">
+      A private, free web dashboard for designing, scheduling, and managing rich Discord messages — supporting both Components V2 layouts (boxes, sections, buttons, dropdowns, forms, pages) and classic embeds.
+    </p>
+    <div class="btnrow" style="justify-content:center">
+      <a href="../dashboard/" style="text-decoration:none"><button class="primary" type="button">Open Dashboard / Log in</button></a>
+      <a href="../dashboard/status.html" style="text-decoration:none"><button type="button">Bot Status</button></a>
+    </div>
+  </div>
+
+  <div class="bcard" style="margin-top:16px;padding:20px">
+    <h2 style="margin-top:0">Request Server Access</h2>
+    <p class="muted">Griedon Embeds is invite-only. If you are a server administrator and want to use the bot in your Discord server, submit a request below.</p>
+    <label>Discord Server ID (numbers only)</label>
+    <input id="reqGuildId" maxlength="25" placeholder="e.g. 123456789012345678">
+    <label>Server Name</label>
+    <input id="reqGuildName" maxlength="100" placeholder="e.g. My Community">
+    <label>Your Discord Username</label>
+    <input id="reqUsername" maxlength="100" placeholder="e.g. shivanshu">
+    <p id="reqStatus" class="muted" style="min-height:20px;margin-top:8px"></p>
+    <button class="primary" id="reqSubmit" type="button">Submit Request</button>
+  </div>
+
+  <p class="muted" style="text-align:center;margin-top:20px">
+    <a href="../dashboard/about.html">About</a> &middot;
+    <a href="../dashboard/privacy.html">Privacy</a> &middot;
+    <a href="../dashboard/terms.html">Terms</a> &middot;
+    <a href="../dashboard/status.html">Status</a>
+  </p>
+</div>
+<script src="landing.js?v=18"></script>
+</body>
+</html>

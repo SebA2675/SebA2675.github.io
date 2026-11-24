@@ -9,7 +9,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="logo.png">
 <title>Embed Dashboard</title>
-<link rel="stylesheet" href="styles.css?v=17">
+<link rel="stylesheet" href="styles.css?v=18">
 </head>
 <body>
 
@@ -77,13 +77,16 @@
       <div id="newMenu" class="menu hidden" role="menu">
         <button id="newLayoutBtn" role="menuitem"><svg class="ic"><use href="#i-plus"></use></svg><span><b>Layout message</b><small>Text, images, buttons, dropdowns, forms</small></span></button>
         <button id="newClassicBtn" role="menuitem"><svg class="ic"><use href="#i-section"></use></svg><span><b>Classic embed</b><small>The traditional embed box, up to 10</small></span></button>
+        <button id="newGalleryBtn" role="menuitem"><svg class="ic"><use href="#i-template"></use></svg><span><b>Starter gallery</b><small>Rules, Welcome, FAQ, Announcements, Roles</small></span></button>
       </div>
     </div>
+    <button id="helpBtn" class="tb" title="Tour &amp; guides"><svg class="ic"><use href="#i-question"></use></svg><span class="t">Guides</span></button>
     <button id="toolsBtn" class="tb" title="Server tools"><svg class="ic"><use href="#i-tools"></use></svg><span class="t">Server tools</span></button>
     <button id="adminBtn" class="tb hidden" title="Approved servers"><svg class="ic"><use href="#i-servers"></use></svg><span class="t">Servers</span></button>
     <button id="logoutBtn" class="tb" title="Log out"><svg class="ic"><use href="#i-logout"></use></svg><span class="t">Log out</span></button>
   </div>
   <div class="wrap">
+    <div id="serverPicker" class="srvgrid hidden"></div>
     <div id="libTools" class="libtools hidden">
       <input id="libSearch" type="search" placeholder="Search messages" aria-label="Search messages" autocomplete="off">
       <select id="libGuild" class="hidden" aria-label="Server"></select>
@@ -109,6 +112,8 @@
       <input id="adminGuildId" placeholder="Server ID (numbers only)" style="max-width:280px">
       <button class="primary" id="adminAddBtn"><svg class="ic"><use href="#i-check"></use></svg>Approve</button>
     </div>
+    <h3>Access requests</h3>
+    <div id="adminRequests"></div>
     <h3>Tried to add the bot</h3>
     <div id="adminPending"></div>
   </div>
@@ -327,6 +332,32 @@
   </div>
 </div>
 
+<div id="galleryOverlay" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="galleryTitle">
+  <div class="modal" style="width:min(640px,100%)">
+    <h2 id="galleryTitle">Starter Template Gallery</h2>
+    <p class="muted">Pick a ready-made layout to customize in the builder.</p>
+    <div id="galleryGrid" class="galgrid"></div>
+    <div class="btnrow" style="margin-top:12px"><button id="galleryClose"><svg class="ic"><use href="#i-close"></use></svg>Close</button></div>
+  </div>
+</div>
+
+<div id="helpOverlay" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="helpTitle">
+  <div class="modal" style="width:min(600px,100%)">
+    <h2 id="helpTitle">Quick Tour &amp; Guides</h2>
+    <div id="helpBody" style="line-height:1.5;font-size:14px">
+      <div class="bcard"><b>1. Pick a Server &amp; Create</b><br><span class="muted">Choose your server at the top of My messages, then click <b>New</b> (Layout, Classic embed, or Starter gallery).</span></div>
+      <div class="bcard"><b>2. Build &amp; Format</b><br><span class="muted">Click parts in the preview or tree to edit. Use the 2-row toolbar for Bold, Links, Headings, and <b>{x} Var</b> to insert live Discord variables like <code>{{usermention}}</code> or <code>{{servername}}</code>.</span></div>
+      <div class="bcard"><b>3. Buttons, Replies, Forms &amp; Pages</b><br><span class="muted">Buttons can open links, grant/toggle roles, show private replies, open pop-up forms, or flip <b>Pages</b>. Test everything in <b>Test</b> mode before posting!</span></div>
+      <div class="bcard"><b>4. Send, Schedule &amp; Sequences</b><br><span class="muted">Use <b>Send</b> to post or update, <b>Schedule</b> for timed/recurring posts, and <b>Server tools</b> for message sequences, templates, and backups.</span></div>
+    </div>
+    <div class="btnrow" style="margin-top:12px">
+      <a href="status.html" style="text-decoration:none"><button type="button">Bot Status</button></a>
+      <a href="../embeds/" style="text-decoration:none"><button type="button">Public Landing</button></a>
+      <button id="helpClose" class="primary">Got it</button>
+    </div>
+  </div>
+</div>
+
 <div id="dialogOverlay" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="dialogTitle">
   <div class="modal" style="width:min(420px,100%)">
     <h2 id="dialogTitle"></h2>
@@ -341,6 +372,6 @@
 
 <div id="testToast" class="ttoast hidden"></div>
 
-<script src="app.js?v=17"></script>
+<script src="app.js?v=18"></script>
 </body>
 </html>

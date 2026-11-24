@@ -2586,6 +2586,7 @@ let libItems = [];
 let libFilter = "all";
 let libQuery = "";
 let libGuild = "";
+try { libGuild = localStorage.getItem("last_guild") || ""; } catch (e) {}
 
 function ago(ts) {
   const s = Math.max(0, Math.floor(Date.now() / 1000 - ts));
@@ -2649,11 +2650,45 @@ function renderLibList() {
     : '<div class="lempty"><b>Nothing matches</b>Try a different word or press All.</div>';
 }
 
+function loadFavGuilds() {
+  try { return new Set(JSON.parse(localStorage.getItem("fav_guilds") || "[]")); }
+  catch (e) { return new Set(); }
+}
+
+function toggleFavGuild(gid) {
+  const favs = loadFavGuilds();
+  if (favs.has(gid)) favs.delete(gid); else favs.add(gid);
+  try { localStorage.setItem("fav_guilds", JSON.stringify(Array.from(favs))); } catch (e) {}
+  renderServerPicker();
+}
+
+function renderServerPicker() {
+  const el = $("serverPicker");
+  if (!el) return;
+  if (guilds.length < 2) { el.classList.add("hidden"); el.innerHTML = ""; return; }
+  el.classList.remove("hidden");
+  const favs = loadFavGuilds();
+  const sorted = guilds.slice().sort((a, b) => (favs.has(b.id) ? 1 : 0) - (favs.has(a.id) ? 1 : 0));
+  el.innerHTML = '<div class="srvcard' + (libGuild === "" ? " on" : "") + '" data-pickguild="">' +
+    '<div class="srvicon">All</div><div class="srvmeta"><b>All servers</b><small>' + libItems.length + ' message(s)</small></div></div>' +
+    sorted.map((g) => {
+      const icon = g.icon_url
+        ? '<img class="srvicon" src="' + esc(g.icon_url) + '" alt="">'
+        : '<div class="srvicon">' + esc((g.name || "?").slice(0, 2).toUpperCase()) + '</div>';
+      const cnt = g.message_count !== undefined ? g.message_count : libItems.filter((m) => String(m.guild_id) === g.id).length;
+      const fav = favs.has(g.id);
+      return '<div class="srvcard' + (libGuild === g.id ? " on" : "") + '" data-pickguild="' + esc(g.id) + '">' +
+        icon + '<div class="srvmeta"><b>' + esc(g.name) + '</b><small>' + cnt + ' msg(s)' +
+        (g.last_edit ? ' &middot; ' + esc(ago(g.last_edit)) : '') + '</small></div>' +
+        '<button type="button" class="srvfav' + (fav ? " on" : "") + '" data-favguild="' + esc(g.id) + '" title="Pin server">' + (fav ? "★" : "☆") + '</button></div>';
+    }).join("");
+}
 function renderLibrary() {
   $("libTools").classList.toggle("hidden", !libItems.length);
   const multi = guilds.length > 1;
   $("libGuild").classList.toggle("hidden", !multi);
   if (multi) $("libGuild").innerHTML = opts([["", "All servers"]].concat(guilds.map((g) => [g.id, g.name])), libGuild);
+  renderServerPicker();
   renderLibChips();
   renderLibList();
 }
@@ -2665,6 +2700,20 @@ $("libSearch").addEventListener("input", () => {
 });
 $("libGuild").addEventListener("change", () => {
   libGuild = $("libGuild").value;
+  try { localStorage.setItem("last_guild", libGuild); } catch (e) {}
+  renderServerPicker();
+  renderLibChips();
+  renderLibList();
+});
+$("serverPicker").addEventListener("click", (e) => {
+  const fav = e.target.closest("[data-favguild]");
+  if (fav) { e.stopPropagation(); toggleFavGuild(fav.dataset.favguild); return; }
+  const card = e.target.closest("[data-pickguild]");
+  if (!card) return;
+  libGuild = card.dataset.pickguild;
+  try { localStorage.setItem("last_guild", libGuild); } catch (e) {}
+  if ($("libGuild")) $("libGuild").value = libGuild;
+  renderServerPicker();
   renderLibChips();
   renderLibList();
 });
@@ -3147,6 +3196,15 @@ async function openAdmin() {
         (g.joined ? "" : " &middot; the bot is not in this server") + '</div></div>' +
         '<button class="small danger" data-rm="' + esc(g.id) + '">' + ic("trash") + "Remove</button></div>").join("")
       : '<p class="muted">None yet.</p>';
+    const reqs = d.requests || [];
+    $("adminRequests").innerHTML = reqs.length
+      ? reqs.map((r) =>
+        '<div class="row"><div class="grow"><b>' + esc(r.guild_name) + '</b><div class="muted">' + esc(r.guild_id) +
+        ' &middot; by ' + esc(r.username) + ' &middot; ' + new Date(r.created_at * 1000).toLocaleString() + '</div></div>' +
+        '<button class="primary small" data-reqok="' + esc(r.id) + '">' + ic("check") + 'Approve</button>' +
+        '<button class="small" data-reqno="' + esc(r.id) + '">' + ic("close") + 'Dismiss</button></div>'
+      ).join("")
+      : '<p class="muted">None.</p>';
     $("adminPending").innerHTML = d.pending.length
       ? d.pending.map((p) =>
         '<div class="row"><div class="grow"><b>' + esc(p.name || "(unknown)") + '</b><div class="muted">' + esc(p.guild_id) +
@@ -3188,6 +3246,23 @@ $("adminAllowed").addEventListener("click", async (e) => {
   }
 });
 
+$("adminRequests").addEventListener("click", async (e) => {
+  const d = btnData(e);
+  try {
+    if (d.reqok) {
+      await api("/admin/requests/" + d.reqok + "/approve", { method: "POST" });
+      notify("Approved server request.", "ok");
+      guilds = [];
+      openAdmin();
+    }
+    if (d.reqno) {
+      await api("/admin/requests/" + d.reqno, { method: "DELETE" });
+      openAdmin();
+    }
+  } catch (err) {
+    if (err.message !== "login") notifyErr(err.message);
+  }
+});
 $("adminPending").addEventListener("click", async (e) => {
   const d = btnData(e);
   try {
@@ -3361,6 +3436,7 @@ async function start() {
     isOwner = !!me.is_owner;
     $("adminBtn").classList.toggle("hidden", !isOwner);
     openLibrary();
+    try { if (!localStorage.getItem("tour_seen")) { localStorage.setItem("tour_seen", "1"); $("helpOverlay").classList.remove("hidden"); } } catch (e) {}
   } catch (e) {
     if (e.message === "login") return;
     show("viewLogin");
@@ -3379,7 +3455,7 @@ document.addEventListener("keydown", (e) => {
     hideAddMenu();
     const fm = $("fmtMore");
     if (fm) fm.classList.add("hidden");
-    for (const id of ["sendOverlay", "toolsOverlay", "histOverlay", "schedOverlay", "emojiOverlay", "rawJsonOverlay"]) {
+    for (const id of ["sendOverlay", "toolsOverlay", "histOverlay", "schedOverlay", "emojiOverlay", "rawJsonOverlay", "galleryOverlay", "helpOverlay"]) {
       if (!$(id).classList.contains("hidden")) { $(id).classList.add("hidden"); if (id === "emojiOverlay") emojiCb = null; }
     }
     return;
@@ -3460,4 +3536,118 @@ $("rawJsonApply").onclick = () => {
   $("rawJsonOverlay").classList.add("hidden");
   notify("Applied raw JSON.", "ok");
 };
+const STARTER_TEMPLATES = [
+  {
+    name: "Server Rules",
+    desc: "Clean rules card with an Accept Rules button.",
+    build: () => ({
+      blocks: [
+        { id: uid(), type: "box", accent: "#5865F2", children: [
+          { id: uid(), type: "text", content: "# Server Rules\n1. Be respectful to everyone.\n2. No spam or self-promotion.\n3. Follow Discord's Terms of Service." },
+          { id: uid(), type: "divider", spacing: "small", line: true },
+          { id: uid(), type: "button_row", buttons: [{ id: uid(), label: "I agree", style: "green", action: { type: "reply", reply_id: "r_rules" }, allowed_roles: [], cooldown: 0, once: false }] }
+        ]}
+      ],
+      replies: [{ id: "r_rules", name: "Agreed", blocks: [{ id: uid(), type: "box", accent: "#57F287", children: [{ id: uid(), type: "text", content: "Thanks {{usermention}}, you're all set!" }] }] }],
+      forms: [], variables: [], pages: []
+    })
+  },
+  {
+    name: "Welcome Message",
+    desc: "Greeting card with server name and member count.",
+    build: () => ({
+      blocks: [
+        { id: uid(), type: "box", accent: "#57F287", children: [
+          { id: uid(), type: "text", content: "# Welcome to {{servername}}!\nWe now have **{{membercount}}** members. Check out the rules and say hi!" }
+        ]}
+      ],
+      replies: [], forms: [], variables: [], pages: []
+    })
+  },
+  {
+    name: "FAQ",
+    desc: "Multi-page FAQ using Pages + Next/Prev buttons.",
+    build: () => ({
+      blocks: [
+        { id: uid(), type: "box", accent: "#1ABC9C", children: [
+          { id: uid(), type: "text", content: "# FAQ — Page 1\n**Q: How do I get roles?**\nUse the self-role buttons in #roles." },
+          { id: uid(), type: "button_row", buttons: [
+            { id: uid(), label: "Prev", style: "grey", action: { type: "page", page_index: -1 }, allowed_roles: [], cooldown: 0, once: false },
+            { id: uid(), label: "Next", style: "blue", action: { type: "page", page_index: -2 }, allowed_roles: [], cooldown: 0, once: false }
+          ]}
+        ]}
+      ],
+      pages: [
+        { id: uid(), name: "Page 2", blocks: [{ id: uid(), type: "box", accent: "#1ABC9C", children: [{ id: uid(), type: "text", content: "# FAQ — Page 2\n**Q: How do I contact staff?**\nClick the Support Info button or message a moderator." }] }], content: "", embeds: [] }
+      ],
+      replies: [], forms: [], variables: []
+    })
+  },
+  {
+    name: "Announcement",
+    desc: "Template with {{event_title}} and {{event_date}} variables.",
+    build: () => ({
+      blocks: [
+        { id: uid(), type: "box", accent: "#FEE75C", children: [
+          { id: uid(), type: "text", content: "# {{event_title}}\nHappening on **{{event_date}}** in {{servername}}!" }
+        ]}
+      ],
+      variables: [
+        { id: uid(), name: "event_title", default: "Community Event" },
+        { id: uid(), name: "event_date", default: "This Friday at 8 PM" }
+      ],
+      replies: [], forms: [], pages: []
+    })
+  },
+  {
+    name: "Self-Roles",
+    desc: "Pick your roles with buttons.",
+    build: () => ({
+      blocks: [
+        { id: uid(), type: "box", accent: "#EB459E", children: [
+          { id: uid(), type: "text", content: "# Pick Your Roles\nClick a button below to toggle a role." },
+          { id: uid(), type: "button_row", buttons: [{ id: uid(), label: "Announcements Ping", style: "blue", action: { type: "role", mode: "toggle", role_id: "" }, allowed_roles: [], cooldown: 0, once: false }] }
+        ]}
+      ],
+      replies: [], forms: [], variables: [], pages: []
+    })
+  },
+  {
+    name: "Support Info",
+    desc: "Helpful info card with a pop-up feedback form.",
+    build: () => ({
+      blocks: [
+        { id: uid(), type: "box", accent: "#E67E22", children: [
+          { id: uid(), type: "text", content: "# Need Help?\nClick below to send a message to the team." },
+          { id: uid(), type: "button_row", buttons: [{ id: uid(), label: "Open Form", style: "blue", action: { type: "form", form_id: "f_help" }, allowed_roles: [], cooldown: 0, once: false }] }
+        ]}
+      ],
+      forms: [{ id: "f_help", name: "Help Form", title: "Contact Staff", channel_id: "", thanks: "Thanks! Staff will review your message.", fields: [{ id: uid(), label: "How can we help?", style: "paragraph", placeholder: "Describe your question...", required: true }] }],
+      replies: [], variables: [], pages: []
+    })
+  }
+];
+
+$("newGalleryBtn").onclick = () => {
+  closeNewMenu();
+  $("galleryGrid").innerHTML = STARTER_TEMPLATES.map((t, i) =>
+    '<div class="galcard"><b>' + esc(t.name) + '</b><p class="muted" style="margin:0;flex:1">' + esc(t.desc) + '</p>' +
+    '<button type="button" class="primary small" data-gal="' + i + '">Use template</button></div>'
+  ).join("");
+  $("galleryOverlay").classList.remove("hidden");
+};
+$("galleryClose").onclick = () => { $("galleryOverlay").classList.add("hidden"); };
+$("galleryOverlay").onclick = (e) => { if (e.target === $("galleryOverlay")) $("galleryOverlay").classList.add("hidden"); };
+$("galleryGrid").addEventListener("click", (e) => {
+  const b = e.target.closest("[data-gal]");
+  if (!b) return;
+  const tpl = STARTER_TEMPLATES[Number(b.dataset.gal)];
+  if (!tpl) return;
+  $("galleryOverlay").classList.add("hidden");
+  openBuilder({ id: null, name: tpl.name, layout: tpl.build() });
+});
+
+$("helpBtn").onclick = () => { $("helpOverlay").classList.remove("hidden"); };
+$("helpClose").onclick = () => { $("helpOverlay").classList.add("hidden"); };
+$("helpOverlay").onclick = (e) => { if (e.target === $("helpOverlay")) $("helpOverlay").classList.add("hidden"); };
 start();

@@ -317,3 +317,16 @@ label{display:block;font-size:12px;color:var(--muted);margin:10px 0 4px;text-tra
 .fmtvar button{width:100%;justify-content:space-between;text-align:left;background:transparent;border:0;padding:6px 8px;border-radius:8px;font-size:12px;display:flex;gap:8px}
 .fmtvar button:hover{background:var(--panel2)}
 .fmtvar button span.muted{font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* ----- Phase 4: Server picker & starter gallery ----- */
+.srvgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px;margin-bottom:14px}
+.srvcard{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--panel);border:1px solid var(--line);border-radius:12px;cursor:pointer;text-align:left;transition:border-color .12s}
+.srvcard:hover{border-color:var(--ink)}
+.srvcard.on{border-color:var(--ink);box-shadow:0 0 0 2px rgba(43,34,24,.15)}
+.srvicon{width:36px;height:36px;border-radius:50%;object-fit:cover;background:var(--panel2);display:flex;align-items:center;justify-content:center;font-weight:700;flex:none}
+.srvmeta{min-width:0;flex:1}
+.srvmeta b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:14px}
+.srvmeta small{color:var(--muted);font-size:12px}
+.srvfav{background:transparent;border:0;padding:4px;min-height:auto;font-size:16px;color:var(--muted)}
+.srvfav.on{color:#d99a00}
+.galgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px;margin-top:10px}
+.galcard{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:6px}
