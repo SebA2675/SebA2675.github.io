@@ -2562,7 +2562,8 @@ $("loginBtn").onclick = () => {
   try { localStorage.setItem("login_nonce", n); } catch (e) {}
   location.href = API_URL + "/auth/login?n=" + n;
 };
-$("logoutBtn").onclick = () => {
+$("logoutBtn").onclick = async () => {
+  try { await api("/logout", { method: "POST" }); } catch (e) {}
   clearToken();
   emojiData = null;
   guilds = [];
