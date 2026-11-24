@@ -9,7 +9,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="logo.png">
 <title>Embed Dashboard</title>
-<link rel="stylesheet" href="styles.css?v=22">
+<link rel="stylesheet" href="styles.css?v=23">
 </head>
 <body>
 
@@ -81,6 +81,7 @@
       </div>
     </div>
     <button id="helpBtn" class="tb" title="Tour &amp; guides"><svg class="ic"><use href="#i-question"></use></svg><span class="t">Guides</span></button>
+    <button id="autoBtn" class="tb" title="Automation"><svg class="ic"><use href="#i-schedule"></use></svg><span class="t">Automation</span></button>
     <button id="toolsBtn" class="tb" title="Server tools"><svg class="ic"><use href="#i-tools"></use></svg><span class="t">Server tools</span></button>
     <button id="adminBtn" class="tb hidden" title="Approved servers"><svg class="ic"><use href="#i-servers"></use></svg><span class="t">Servers</span></button>
     <button id="logoutBtn" class="tb" title="Log out"><svg class="ic"><use href="#i-logout"></use></svg><span class="t">Log out</span></button>
@@ -402,6 +403,62 @@
   </div>
 </div>
 
+<div id="autoOverlay" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="autoTitle">
+  <div class="modal" style="width:min(660px,100%)">
+    <h2 id="autoTitle">Server Automation</h2>
+    <label>Server</label><select id="autoGuild"></select>
+    <p id="autoStatus" class="muted" style="min-height:20px;margin:6px 0"></p>
+
+    <div class="bcard">
+      <h3 style="margin-top:0">Welcome &amp; Goodbye</h3>
+      <label style="text-transform:none;display:flex;gap:8px;align-items:center;letter-spacing:0"><input type="checkbox" id="autoWelOn"> Enable Welcome message</label>
+      <label>Welcome channel</label><select id="autoWelCh"></select>
+      <label>Welcome saved message</label><select id="autoWelMsg"></select>
+      <label style="text-transform:none;display:flex;gap:8px;align-items:center;letter-spacing:0;margin-top:10px"><input type="checkbox" id="autoByeOn"> Enable Goodbye message</label>
+      <label>Goodbye channel</label><select id="autoByeCh"></select>
+      <label>Goodbye saved message</label><select id="autoByeMsg"></select>
+      <button class="primary small" id="autoSaveBtn" style="margin-top:10px"><svg class="ic"><use href="#i-save"></use></svg>Save Welcome/Goodbye</button>
+    </div>
+
+    <div class="bcard">
+      <h3 style="margin-top:0">Keyword Auto-Replies</h3>
+      <div id="autoKwList"></div>
+      <div class="btnrow" style="margin-top:8px">
+        <input id="kwPhrase" maxlength="100" placeholder="Trigger phrase" style="flex:1;min-width:130px">
+        <select id="kwMatch" style="width:auto"><option value="contains">Contains</option><option value="exact">Exact</option><option value="starts">Starts with</option></select>
+        <select id="kwMsg" style="flex:1;min-width:130px"></select>
+        <button class="primary small" id="kwAddBtn"><svg class="ic"><use href="#i-plus"></use></svg>Add</button>
+      </div>
+    </div>
+
+    <div class="bcard">
+      <h3 style="margin-top:0">RSS / YouTube / Reddit Feeds</h3>
+      <p class="muted">Template messages can use <code>{{title}}</code>, <code>{{link}}</code>, and <code>{{author}}</code>.</p>
+      <div id="autoFeedList"></div>
+      <div class="btnrow" style="margin-top:8px">
+        <select id="feedKind" style="width:auto"><option value="rss">RSS</option><option value="youtube">YouTube</option><option value="reddit">Reddit</option></select>
+        <input id="feedUrl" placeholder="https://..." style="flex:2;min-width:160px">
+        <select id="feedCh" style="flex:1;min-width:120px"></select>
+        <select id="feedMsg" style="flex:1;min-width:120px"></select>
+        <button class="primary small" id="feedAddBtn"><svg class="ic"><use href="#i-plus"></use></svg>Add</button>
+      </div>
+    </div>
+
+    <div class="bcard">
+      <h3 style="margin-top:0">Sticky Messages</h3>
+      <div id="autoStickyList"></div>
+      <div class="btnrow" style="margin-top:8px">
+        <select id="stickyCh" style="flex:1;min-width:130px"></select>
+        <select id="stickyMsg" style="flex:1;min-width:130px"></select>
+        <input id="stickyDelay" type="number" min="3" max="60" value="5" style="width:70px" title="Delay seconds">
+        <button class="primary small" id="stickyAddBtn"><svg class="ic"><use href="#i-plus"></use></svg>Set sticky</button>
+      </div>
+    </div>
+
+    <div class="btnrow" style="margin-top:12px"><button id="autoClose"><svg class="ic"><use href="#i-close"></use></svg>Close</button></div>
+  </div>
+</div>
+
 <div id="dialogOverlay" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="dialogTitle">
   <div class="modal" style="width:min(420px,100%)">
     <h2 id="dialogTitle"></h2>
@@ -416,6 +473,6 @@
 
 <div id="testToast" class="ttoast hidden"></div>
 
-<script src="app.js?v=22"></script>
+<script src="app.js?v=23"></script>
 </body>
 </html>

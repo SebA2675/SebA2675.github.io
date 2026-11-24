@@ -3618,7 +3618,7 @@ document.addEventListener("keydown", (e) => {
     hideAddMenu();
     const fm = $("fmtMore");
     if (fm) fm.classList.add("hidden");
-    for (const id of ["sendOverlay", "toolsOverlay", "histOverlay", "schedOverlay", "emojiOverlay", "rawJsonOverlay", "galleryOverlay", "helpOverlay", "srvOverlay", "respOverlay"]) {
+    for (const id of ["sendOverlay", "toolsOverlay", "histOverlay", "schedOverlay", "emojiOverlay", "rawJsonOverlay", "galleryOverlay", "helpOverlay", "srvOverlay", "respOverlay", "autoOverlay"]) {
       if (!$(id).classList.contains("hidden")) { $(id).classList.add("hidden"); if (id === "emojiOverlay") emojiCb = null; }
     }
     return;
@@ -3886,5 +3886,157 @@ $("respList").addEventListener("click", async (e) => {
   } catch (err) {
     if (err.message !== "login") notifyErr(err.message);
   }
+});
+/* ---------- Automation (Phase 7) ---------- */
+let autoChans = [];
+async function loadAutomation() {
+  const gid = $("autoGuild").value;
+  if (!gid) return;
+  $("autoStatus").textContent = "Loading...";
+  try {
+    const [data, chList] = await Promise.all([
+      api("/guilds/" + gid + "/automation"),
+      api("/guilds/" + gid + "/channels"),
+    ]);
+    autoChans = chList;
+    const chOpts = '<option value="">Choose channel...</option>' +
+      chList.filter((c) => c.type !== "forum").map((c) => '<option value="' + esc(c.id) + '">#' + esc(c.name) + "</option>").join("");
+    const gMsgs = libItems.filter((m) => String(m.guild_id) === gid);
+    const msgOpts = '<option value="0">Choose saved message...</option>' +
+      gMsgs.map((m) => '<option value="' + esc(m.id) + '">' + esc(m.name) + "</option>").join("");
+    const msgName = (id) => { const f = gMsgs.find((m) => m.id === id); return f ? f.name : "Msg #" + id; };
+    const chName = (id) => { const c = chList.find((x) => x.id === String(id)); return c ? "#" + c.name : "#" + id; };
+
+    $("autoWelCh").innerHTML = chOpts;
+    $("autoByeCh").innerHTML = chOpts;
+    $("feedCh").innerHTML = chOpts;
+    $("stickyCh").innerHTML = chOpts;
+    $("autoWelMsg").innerHTML = msgOpts;
+    $("autoByeMsg").innerHTML = msgOpts;
+    $("kwMsg").innerHTML = msgOpts;
+    $("feedMsg").innerHTML = msgOpts;
+    $("stickyMsg").innerHTML = msgOpts;
+
+    const st = data.settings || {};
+    $("autoWelOn").checked = !!st.welcome_enabled;
+    $("autoWelCh").value = st.welcome_channel_id || "";
+    $("autoWelMsg").value = String(st.welcome_message_id || 0);
+    $("autoByeOn").checked = !!st.goodbye_enabled;
+    $("autoByeCh").value = st.goodbye_channel_id || "";
+    $("autoByeMsg").value = String(st.goodbye_message_id || 0);
+
+    $("autoKwList").innerHTML = (data.keywords || []).length
+      ? data.keywords.map((k) =>
+        '<div class="mrow"><div class="grow"><b>' + esc(k.phrase) + '</b> <span class="badge">' + esc(k.match_type) + '</span>' +
+        '<div class="muted">Replies with: ' + esc(msgName(k.message_id)) + '</div></div>' +
+        '<button class="small ib danger" data-rmkw="' + esc(k.id) + '">' + ic("trash") + "</button></div>"
+      ).join("")
+      : '<p class="muted">No keyword rules yet.</p>';
+
+    $("autoFeedList").innerHTML = (data.feeds || []).length
+      ? data.feeds.map((f) =>
+        '<div class="mrow"><div class="grow"><b>' + esc(f.kind.toUpperCase()) + '</b> &rarr; ' + esc(chName(f.channel_id)) +
+        '<div class="muted">' + esc(f.url) + (f.last_error ? ' <span style="color:var(--bad)">(' + esc(f.last_error) + ')</span>' : '') + '</div></div>' +
+        '<button class="small ib danger" data-rmfeed="' + esc(f.id) + '">' + ic("trash") + "</button></div>"
+      ).join("")
+      : '<p class="muted">No feeds yet.</p>';
+
+    $("autoStickyList").innerHTML = (data.stickies || []).length
+      ? data.stickies.map((s) =>
+        '<div class="mrow"><div class="grow"><b>' + esc(chName(s.channel_id)) + '</b> &rarr; ' + esc(msgName(s.message_id)) +
+        '<div class="muted">Delay: ' + s.delay_seconds + 's</div></div>' +
+        '<button class="small ib danger" data-rmsticky="' + esc(s.id) + '">' + ic("trash") + "</button></div>"
+      ).join("")
+      : '<p class="muted">No sticky messages yet.</p>';
+
+    $("autoStatus").textContent = "";
+  } catch (e) {
+    if (e.message !== "login") $("autoStatus").textContent = "Failed: " + e.message;
+  }
+}
+
+$("autoBtn").onclick = async () => {
+  await loadGuilds();
+  if (!guilds.length) { notifyErr("No server available."); return; }
+  $("autoGuild").innerHTML = opts(guilds.map((g) => [g.id, g.name]), libGuild || guilds[0].id);
+  $("autoOverlay").classList.remove("hidden");
+  loadAutomation();
+};
+$("autoGuild").onchange = loadAutomation;
+$("autoClose").onclick = () => { $("autoOverlay").classList.add("hidden"); };
+$("autoOverlay").onclick = (e) => { if (e.target === $("autoOverlay")) $("autoOverlay").classList.add("hidden"); };
+
+$("autoSaveBtn").onclick = async () => {
+  const gid = $("autoGuild").value;
+  $("autoStatus").textContent = "Saving...";
+  try {
+    await api("/guilds/" + gid + "/automation", {
+      method: "PUT",
+      body: JSON.stringify({
+        welcome_enabled: $("autoWelOn").checked,
+        welcome_channel_id: $("autoWelCh").value,
+        welcome_message_id: Number($("autoWelMsg").value || 0),
+        goodbye_enabled: $("autoByeOn").checked,
+        goodbye_channel_id: $("autoByeCh").value,
+        goodbye_message_id: Number($("autoByeMsg").value || 0),
+      }),
+    });
+    $("autoStatus").textContent = "Saved Welcome & Goodbye settings.";
+  } catch (e) { if (e.message !== "login") $("autoStatus").textContent = "Failed: " + e.message; }
+};
+
+$("kwAddBtn").onclick = async () => {
+  const gid = $("autoGuild").value;
+  const phrase = $("kwPhrase").value.trim();
+  const message_id = Number($("kwMsg").value || 0);
+  if (!phrase || !message_id) { $("autoStatus").textContent = "Enter a phrase and choose a message."; return; }
+  try {
+    await api("/guilds/" + gid + "/keywords", {
+      method: "POST",
+      body: JSON.stringify({ phrase, match_type: $("kwMatch").value, message_id, cooldown: 10 }),
+    });
+    $("kwPhrase").value = "";
+    loadAutomation();
+  } catch (e) { if (e.message !== "login") $("autoStatus").textContent = "Failed: " + e.message; }
+};
+
+$("feedAddBtn").onclick = async () => {
+  const gid = $("autoGuild").value;
+  const url = $("feedUrl").value.trim();
+  const channel_id = $("feedCh").value;
+  const message_id = Number($("feedMsg").value || 0);
+  if (!url || !channel_id || !message_id) { $("autoStatus").textContent = "Fill in URL, channel, and template message."; return; }
+  try {
+    await api("/guilds/" + gid + "/feeds", {
+      method: "POST",
+      body: JSON.stringify({ kind: $("feedKind").value, url, channel_id, message_id }),
+    });
+    $("feedUrl").value = "";
+    loadAutomation();
+  } catch (e) { if (e.message !== "login") $("autoStatus").textContent = "Failed: " + e.message; }
+};
+
+$("stickyAddBtn").onclick = async () => {
+  const gid = $("autoGuild").value;
+  const channel_id = $("stickyCh").value;
+  const message_id = Number($("stickyMsg").value || 0);
+  const delay_seconds = Math.max(3, Math.min(60, parseInt($("stickyDelay").value, 10) || 5));
+  if (!channel_id || !message_id) { $("autoStatus").textContent = "Choose a channel and message."; return; }
+  try {
+    await api("/guilds/" + gid + "/stickies", {
+      method: "POST",
+      body: JSON.stringify({ channel_id, message_id, delay_seconds }),
+    });
+    loadAutomation();
+  } catch (e) { if (e.message !== "login") $("autoStatus").textContent = "Failed: " + e.message; }
+};
+
+$("autoOverlay").addEventListener("click", async (e) => {
+  const d = btnData(e);
+  try {
+    if (d.rmkw) { await api("/keywords/" + d.rmkw, { method: "DELETE" }); loadAutomation(); }
+    if (d.rmfeed) { await api("/feeds/" + d.rmfeed, { method: "DELETE" }); loadAutomation(); }
+    if (d.rmsticky) { await api("/stickies/" + d.rmsticky, { method: "DELETE" }); loadAutomation(); }
+  } catch (err) { if (err.message !== "login") $("autoStatus").textContent = "Failed: " + err.message; }
 });
 start();
