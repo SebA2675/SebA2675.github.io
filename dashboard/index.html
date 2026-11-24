@@ -9,7 +9,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="logo.png">
 <title>Embed Dashboard</title>
-<link rel="stylesheet" href="styles.css?v=23">
+<link rel="stylesheet" href="styles.css?v=24">
 </head>
 <body>
 
@@ -291,6 +291,37 @@
       <input id="whNewName" maxlength="80" placeholder="New webhook name" style="flex:1;min-width:150px">
       <button class="primary small" id="whCreateBtn"><svg class="ic"><use href="#i-plus"></use></svg>Create webhook</button>
     </div>
+    <h3>Brand Kit</h3>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <input type="color" id="bkColor" value="#5865F2" style="width:48px;height:36px;padding:2px">
+      <input id="bkFooter" maxlength="300" placeholder="Default footer text" style="flex:1;min-width:160px">
+      <button class="primary small" id="bkSaveBtn">Save Brand Kit</button>
+    </div>
+
+    <h3>Editor Access (Teamwork)</h3>
+    <p class="muted">Grant trusted members dashboard access for this server without giving them Discord Administrator.</p>
+    <div id="toolsEditors"></div>
+    <div class="btnrow" style="margin-top:8px">
+      <input id="edUserId" placeholder="Discord User ID (numbers only)" style="flex:1;min-width:150px">
+      <button class="primary small" id="edAddBtn"><svg class="ic"><use href="#i-plus"></use></svg>Add editor</button>
+    </div>
+
+    <h3>Bulk Search &amp; Replace</h3>
+    <div class="btnrow">
+      <input id="brFind" placeholder="Find text (e.g. old link)" style="flex:1;min-width:140px">
+      <input id="brReplace" placeholder="Replace with" style="flex:1;min-width:140px">
+      <button class="small" id="brRunBtn">Replace all</button>
+    </div>
+
+    <h3>Trash (30-day restore)</h3>
+    <div id="toolsTrash"></div>
+
+    <h3>Recent Activity Log</h3>
+    <div id="toolsActivity" style="max-height:180px;overflow:auto"></div>
+
+    <h3>Data Rights</h3>
+    <button class="small danger" id="wipeGuildBtn"><svg class="ic"><use href="#i-trash"></use></svg>Delete all server data</button>
+
     <div class="btnrow" style="margin-top:10px"><button id="toolsClose"><svg class="ic"><use href="#i-close"></use></svg>Close</button></div>
   </div>
 </div>
@@ -473,6 +504,6 @@
 
 <div id="testToast" class="ttoast hidden"></div>
 
-<script src="app.js?v=23"></script>
+<script src="app.js?v=24"></script>
 </body>
 </html>

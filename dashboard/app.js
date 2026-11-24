@@ -2885,9 +2885,10 @@ $("toolsBtn").onclick = async () => {
   loadToolsSequences();
   loadToolsPersonas();
   loadToolsWebhooks();
+  loadToolsPhase8();
 };
 
-$("toolsGuild").onchange = () => { toolsStatus(""); loadToolsTemplates(); loadToolsSequences(); loadToolsPersonas(); loadToolsWebhooks(); };
+$("toolsGuild").onchange = () => { toolsStatus(""); loadToolsTemplates(); loadToolsSequences(); loadToolsPersonas(); loadToolsWebhooks(); loadToolsPhase8(); };
 $("toolsClose").onclick = () => { $("toolsOverlay").classList.add("hidden"); };
 $("toolsOverlay").onclick = (e) => { if (e.target === $("toolsOverlay")) $("toolsOverlay").classList.add("hidden"); };
 
@@ -4038,5 +4039,108 @@ $("autoOverlay").addEventListener("click", async (e) => {
     if (d.rmfeed) { await api("/feeds/" + d.rmfeed, { method: "DELETE" }); loadAutomation(); }
     if (d.rmsticky) { await api("/stickies/" + d.rmsticky, { method: "DELETE" }); loadAutomation(); }
   } catch (err) { if (err.message !== "login") $("autoStatus").textContent = "Failed: " + err.message; }
+});
+/* ---------- Phase 8: Brand Kit, Editors, Bulk Replace, Trash, Activity, Data Rights ---------- */
+async function loadToolsPhase8() {
+  const gid = $("toolsGuild").value;
+  if (!gid) return;
+  try {
+    const [cfg, eds, trash, act] = await Promise.all([
+      api("/guilds/" + gid + "/settings"),
+      api("/guilds/" + gid + "/editors"),
+      api("/guilds/" + gid + "/trash"),
+      api("/guilds/" + gid + "/activity"),
+    ]);
+    $("bkColor").value = /^#[0-9a-f]{6}$/i.test(cfg.default_color || "") ? cfg.default_color : "#5865F2";
+    $("bkFooter").value = cfg.default_footer || "";
+
+    $("toolsEditors").innerHTML = eds.length
+      ? eds.map((e) =>
+        '<div class="mrow"><div class="grow"><b>User ' + esc(e.user_id) + '</b></div>' +
+        '<button class="small ib danger" data-rmed="' + esc(e.user_id) + '">' + ic("trash") + "</button></div>"
+      ).join("")
+      : '<p class="muted">Admins only (no extra editors added).</p>';
+
+    $("toolsTrash").innerHTML = trash.length
+      ? trash.map((t) =>
+        '<div class="mrow"><div class="grow"><b>' + esc(t.name) + '</b><div class="muted">Deleted ' + esc(ago(t.deleted_at)) + '</div></div>' +
+        '<button class="small primary" data-restoremsg="' + esc(t.id) + '">Restore</button>' +
+        '<button class="small ib danger" data-purgemsg="' + esc(t.id) + '" title="Delete forever">' + ic("trash") + "</button></div>"
+      ).join("")
+      : '<p class="muted">Trash is empty.</p>';
+
+    $("toolsActivity").innerHTML = act.length
+      ? act.slice(0, 25).map((a) =>
+        '<div style="font-size:12px;padding:4px 0;border-bottom:1px solid var(--line)"><b>' + esc(a.action) + '</b>: ' +
+        esc(a.detail) + ' <span class="muted">(' + esc(ago(a.created_at)) + ')</span></div>'
+      ).join("")
+      : '<p class="muted">No activity logged yet.</p>';
+  } catch (e) {
+    if (e.message !== "login") toolsStatus("Failed loading management tools: " + e.message);
+  }
+}
+
+$("bkSaveBtn").onclick = async () => {
+  const gid = $("toolsGuild").value;
+  try {
+    await api("/guilds/" + gid + "/settings", {
+      method: "PUT",
+      body: JSON.stringify({ default_color: $("bkColor").value, default_footer: $("bkFooter").value.trim() }),
+    });
+    toolsStatus("Brand Kit saved.");
+    loadToolsPhase8();
+  } catch (e) { if (e.message !== "login") toolsStatus("Failed: " + e.message); }
+};
+
+$("edAddBtn").onclick = async () => {
+  const gid = $("toolsGuild").value;
+  const uid = $("edUserId").value.trim();
+  if (!/^\d+$/.test(uid)) { toolsStatus("User ID must be numbers only."); return; }
+  try {
+    await api("/guilds/" + gid + "/editors", { method: "POST", body: JSON.stringify({ user_id: uid }) });
+    $("edUserId").value = "";
+    toolsStatus("Editor added.");
+    loadToolsPhase8();
+  } catch (e) { if (e.message !== "login") toolsStatus("Failed: " + e.message); }
+};
+
+$("brRunBtn").onclick = async () => {
+  const gid = $("toolsGuild").value;
+  const find = $("brFind").value;
+  if (!find) { toolsStatus("Enter text to find."); return; }
+  if (!await uiConfirm('Replace "' + find + '" across all saved messages in this server?', { title: "Bulk Search & Replace", okText: "Replace all" })) return;
+  try {
+    const r = await api("/guilds/" + gid + "/bulk-replace", {
+      method: "POST",
+      body: JSON.stringify({ find, replace: $("brReplace").value }),
+    });
+    toolsStatus("Updated " + r.updated + " message(s).");
+    loadToolsPhase8();
+    openLibrary();
+  } catch (e) { if (e.message !== "login") toolsStatus("Failed: " + e.message); }
+};
+
+$("toolsOverlay").addEventListener("click", async (e) => {
+  const d = btnData(e);
+  const gid = $("toolsGuild").value;
+  try {
+    if (d.rmed) { await api("/guilds/" + gid + "/editors/" + d.rmed, { method: "DELETE" }); loadToolsPhase8(); }
+    if (d.restoremsg) { await api("/messages/" + d.restoremsg + "/restore", { method: "POST" }); toolsStatus("Message restored!"); loadToolsPhase8(); openLibrary(); }
+    if (d.purgemsg && await uiConfirm("Permanently delete this message? This cannot be undone.", { title: "Purge message", okText: "Delete forever", danger: true })) {
+      await api("/messages/" + d.purgemsg + "/purge", { method: "DELETE" });
+      loadToolsPhase8();
+    }
+  } catch (err) { if (err.message !== "login") toolsStatus("Failed: " + err.message); }
+});
+
+$("wipeGuildBtn").onclick = async () => {
+  const gid = $("toolsGuild").value;
+  if (!await uiConfirm("Delete ALL saved messages, templates, schedules, and settings for this server? This cannot be undone.", { title: "Delete all server data", okText: "Delete everything", danger: true })) return;
+  try {
+    await api("/guilds/" + gid + "/data", { method: "DELETE" });
+    $("toolsOverlay").classList.add("hidden");
+    notify("All data deleted for that server.", "ok");
+    openLibrary();
+  } catch (e) { if (e.message !== "login") toolsStatus("Failed: " + e.message); }
 });
 start();
