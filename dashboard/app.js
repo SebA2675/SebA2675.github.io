@@ -614,17 +614,19 @@ function growAllTextareas() {
 function fmtBar() {
   const b = (k, t, l) => '<button type="button" class="small" data-act2="fmt" data-fmt="' + k + '" title="' + t + '">' + l + "</button>";
   return '<div class="fmtbar" role="toolbar" aria-label="Text formatting">' +
+    '<div class="fmtrow">' +
     b("bold", "Bold", "<b>B</b>") +
     b("italic", "Italic", "<i>I</i>") +
     b("underline", "Underline", "<u>U</u>") +
     b("strike", "Strikethrough", "<s>S</s>") +
     b("code", "Inline code", "&lt;&gt;") +
     b("link", "Link", "Link") +
+    '</div><div class="fmtrow">' +
     b("h1", "Big heading", "H1") +
     b("h2", "Heading", "H2") +
     b("spoiler", "Spoiler", "|| Spoiler") +
     b("small", "Small text", "-# Small") +
-    '<div class="fmtvar-wrap"><button type="button" class="small" data-act2="fmtvar" title="Insert variable" aria-label="Insert variable" aria-expanded="false">{x} Variables</button>' +
+    '<div class="fmtvar-wrap"><button type="button" class="small" data-act2="fmtvar" title="Insert variable" aria-label="Insert variable" aria-expanded="false">{x} Var</button>' +
     '<div id="fmtVarMenu" class="fmtvar hidden">' +
     (((cur && cur.layout && cur.layout.variables) || []).length
       ? '<div class="fvh">Custom variables</div>' + cur.layout.variables.map((v) =>
@@ -637,7 +639,7 @@ function fmtBar() {
         '<button type="button" class="small" data-act2="insertvar" data-vname="' + esc(k) + '"><b>' + esc(k) + '</b><span class="muted">' + esc(desc) + '</span></button>'
       ).join("")
     ).join("") +
-    "</div></div></div>";
+    "</div></div></div></div>";
 }
 
 function formatText(kind) {

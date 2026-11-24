@@ -20,8 +20,8 @@ input,textarea,select{width:100%;background:#fffdf7;color:var(--text);border:1px
 input:focus,textarea:focus,select:focus{outline:2px solid rgba(43,34,24,.25);outline-offset:1px}
 input[type=checkbox]{width:auto}
 textarea{min-height:84px;resize:vertical;overflow-y:hidden}
-.fmtbar{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:6px 0;position:relative}
-.fmtbar button{padding:6px 10px;min-width:34px;min-height:32px;justify-content:center}
+.fmtbar{display:flex;flex-direction:column;gap:5px;margin:6px 0;position:relative}.fmtrow{display:flex;flex-wrap:wrap;align-items:center;gap:5px}
+.fmtbar button{padding:4px 8px;min-width:30px;min-height:28px;justify-content:center}
 .fmtbar button[data-fmt]{font-family:ui-monospace,SFMono-Regular,Consolas,monospace}
 .fmtmore-wrap{position:relative;margin-left:auto}
 .fmtmore{position:absolute;right:0;top:calc(100% + 4px);z-index:35;min-width:148px;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:4px;box-shadow:0 8px 20px rgba(43,34,24,.22);display:flex;flex-direction:column;gap:2px}
