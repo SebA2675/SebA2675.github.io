@@ -402,22 +402,45 @@ function testRun(a) {
   }
   if (a.type === "page") {
     const pages = cur.layout.pages || [];
-    if (!pages.length) { toast("No pages defined yet."); return; }
-    const req = Number(a.page_index || 0);
-    if (req === -2) testPageIdx = (testPageIdx + 1) % pages.length;
-    else if (req === -1) testPageIdx = (testPageIdx - 1 + pages.length) % pages.length;
-    else testPageIdx = Math.max(0, Math.min(req, pages.length - 1));
-    const p = pages[testPageIdx];
+    const total = 1 + pages.length;
+    if (total <= 1) { toast("Add a page with + Page first."); return; }
+    const req = Number(a.page_index ?? -2);
+    if (req === -2) testPageIdx = (testPageIdx + 1) % total;
+    else if (req === -1) testPageIdx = (testPageIdx - 1 + total) % total;
+    else testPageIdx = Math.max(0, Math.min(req, total - 1));
     const oldBlocks = cur.layout.blocks;
     const oldContent = cur.layout.content;
     const oldEmbeds = cur.layout.embeds;
-    if (isClassic()) { cur.layout.content = p.content || ""; cur.layout.embeds = p.embeds || []; }
-    else cur.layout.blocks = p.blocks || [];
+    if (testPageIdx > 0) {
+      const p = pages[testPageIdx - 1];
+      if (isClassic()) {
+        cur.layout.content = p.content || "";
+        cur.layout.embeds = p.embeds || [];
+      } else {
+        const hasNav = (blks) => blks.some((b) =>
+          (b.type === "button_row" && b.buttons.some((x) => x.action && x.action.type === "page")) ||
+          (b.type === "dropdown" && b.options.some((o) => o.action && o.action.type === "page")) ||
+          (b.type === "box" && hasNav(b.children || []))
+        );
+        const navRows = (blks) => {
+          let r = [];
+          blks.forEach((b) => {
+            if (b.type === "button_row" && b.buttons.some((x) => x.action && x.action.type === "page")) r.push(b);
+            else if (b.type === "dropdown" && b.options.some((o) => o.action && o.action.type === "page")) r.push(b);
+            else if (b.type === "box") r = r.concat(navRows(b.children || []));
+          });
+          return r;
+        };
+        const pb = (p.blocks || []).slice();
+        if (!hasNav(pb)) pb.push(...navRows(oldBlocks));
+        cur.layout.blocks = pb;
+      }
+    }
     $("preview").innerHTML = isClassic() ? renderClassicPreview() : cur.layout.blocks.map(renderBlock).join("");
     cur.layout.blocks = oldBlocks;
     cur.layout.content = oldContent;
     cur.layout.embeds = oldEmbeds;
-    toast("Page " + (testPageIdx + 1) + " / " + pages.length);
+    toast("Page " + (testPageIdx + 1) + " / " + total);
   }
 }
 
@@ -836,7 +859,7 @@ function activeBlocks() {
 function addPage() {
   if (!Array.isArray(cur.layout.pages)) cur.layout.pages = [];
   if (cur.layout.pages.length >= 25) { toast("Max 25 pages."); return; }
-  const idx = cur.layout.pages.length + 1;
+  const idx = cur.layout.pages.length + 2;
   const p = { id: uid(), name: "Page " + idx, blocks: [], content: "", embeds: [] };
   if (!isClassic()) {
     const box = newBlock("box");
@@ -1749,7 +1772,7 @@ function actionExtra(a, p, i) {
   if (a.type === "page") {
     const pages = cur.layout.pages || [];
     if (!pages.length) return '<p class="muted">Add a page first with the "+ Page" tab above the tree.</p>';
-    const list = [["-2", "Next page"], ["-1", "Previous page"]].concat(pages.map((pg, idx) => [String(idx), (idx + 1) + ". " + (pg.name || "Page")]));
+    const list = [["-2", "Next page"], ["-1", "Previous page"], ["0", "1. Main message"]].concat(pages.map((pg, idx) => [String(idx + 1), (idx + 2) + ". " + (pg.name || "Page")]));
     return '<label>Page to show</label><select data-f="' + p + 'page" data-i="' + i + '">' + opts(list, String(a.page_index ?? -2)) + "</select>";
   }
   return "";
