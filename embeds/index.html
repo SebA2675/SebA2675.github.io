@@ -3,71 +3,77 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self' 'unsafe-inline'; img-src 'self'; base-uri 'none'; form-action 'none'">
-<meta name="theme-color" content="#f5efe1">
-<link rel="icon" href="../dashboard/logo.png">
-<title>Griedon Embeds — Info &amp; Bot Guide</title>
-<link rel="stylesheet" href="../dashboard/styles.css?v=18">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' https:; connect-src https://h5nngnplb6.apps.bot-hosting.cloud; base-uri 'none'; form-action 'none'">
+<meta name="theme-color" content="#0b0c10">
+<link rel="icon" href="../dashboard/logo.jpg">
+<title>9NATION EMBEDS — Create. Customize. Stand Out.</title>
+<link rel="stylesheet" href="../dashboard/styles.css?v=29">
 </head>
 <body>
-<div class="wrap" style="max-width:820px;padding:32px 16px">
-  <div class="bcard" style="text-align:center;padding:28px 20px">
-    <img src="../dashboard/logo.png" alt="Griedon Embeds" class="logo big" style="margin:0 auto 10px">
-    <h1 style="margin:6px 0">Griedon Embeds</h1>
-    <p class="muted" style="font-size:15px;max-width:580px;margin:8px auto 18px;line-height:1.5">
-      A private, free web dashboard for designing, scheduling, and managing rich Discord messages — supporting both <b>Components V2 Layouts</b> and <b>Classic Embeds</b>.
-    </p>
-    <div class="btnrow" style="justify-content:center">
-      <a href="../dashboard/" style="text-decoration:none"><button class="primary" type="button">Open Dashboard / Log in</button></a>
-      <a href="../dashboard/status.html" style="text-decoration:none"><button type="button">Bot Status</button></a>
+<header class="nav">
+  <div class="nav-in">
+    <a class="brand" href="./"><img src="../dashboard/logo.jpg" alt="9NATION" class="logo"><span>9NATION <b>EMBEDS</b></span></a>
+    <nav class="nav-links">
+      <a href="#guide">Guide</a>
+      <a href="../dashboard/status.html">Status</a>
+      <a href="../dashboard/about.html">About</a>
+    </nav>
+    <div class="nav-right">
+      <a href="../dashboard/" style="text-decoration:none"><button class="primary" type="button">Sign in with Discord</button></a>
     </div>
   </div>
+</header>
 
-  <div class="bcard" style="margin-top:16px;padding:20px;line-height:1.55">
-    <h2 style="margin-top:0">How to Get Started</h2>
-    <ol style="padding-left:20px;margin:8px 0">
-      <li><b>Add the App:</b> Click <b>Add App</b> on the bot's Discord profile to invite it to your server.</li>
-      <li><b>Get Approved:</b> The bot is currently invite-only. Join the support server and ask the owner to approve your server request.</li>
-      <li><b>Log In:</b> Open the <a href="../dashboard/">Dashboard</a> and sign in with Discord (only server Administrators can access their server's messages).</li>
-    </ol>
-  </div>
-
-  <div class="bcard" style="margin-top:16px;padding:20px;line-height:1.55">
-    <h2 style="margin-top:0">Features &amp; Bot Guide</h2>
-    <div class="galgrid" style="margin-top:12px">
-      <div class="galcard">
-        <b>Components V2 &amp; Classic Embeds</b>
-        <span class="muted">Build modern layouts with Boxes, Sections, Image Galleries, Dividers, Button Rows, and Dropdowns — or classic embeds (up to 10 per message).</span>
+<main class="wrap" style="max-width:1060px;padding:36px 20px">
+  <section class="hero">
+    <div class="hero-left">
+      <div id="livePill" class="pill"><span class="pdot"></span><span id="liveText">Checking bot status...</span></div>
+      <h1 class="hero-title">Your server's <span>embed &amp; layout</span> studio.</h1>
+      <p class="muted" style="font-size:16px;line-height:1.6;max-width:520px;margin:0 0 22px">
+        Create, customize, and stand out. Design Discord Components V2 layouts and classic embeds with live variables, buttons, forms, schedules, and automation — all from one clean dashboard.
+      </p>
+      <div class="btnrow">
+        <a href="../dashboard/" style="text-decoration:none"><button class="primary" type="button" style="padding:11px 18px;font-size:15px">Open Dashboard</button></a>
+        <a href="../dashboard/status.html" style="text-decoration:none"><button type="button" style="padding:11px 18px;font-size:15px">Live Status</button></a>
       </div>
-      <div class="galcard">
-        <b>Interactive Buttons &amp; Dropdowns</b>
-        <span class="muted">Attach Link buttons, Role toggles/add/remove, Private Replies, Pop-up Forms (up to 5 questions), and Cooldown / Once-per-person rules.</span>
-      </div>
-      <div class="galcard">
-        <b>Permanent Discord Variables</b>
-        <span class="muted">Use the <b>{x} Var</b> picker in the formatting toolbar to insert live placeholders like <code>{{usermention}}</code>, <code>{{servername}}</code>, <code>{{membercount}}</code>, and <code>{{date}}</code>.</span>
-      </div>
-      <div class="galcard">
-        <b>Paginated Embeds</b>
-        <span class="muted">Add extra pages with <b>+ Page</b> and wire Next / Previous / Page buttons so members can flip pages right inside Discord.</span>
-      </div>
-      <div class="galcard">
-        <b>Scheduling &amp; Sequences</b>
-        <span class="muted">Schedule one-time, daily, or weekly posts/updates in your timezone, or group saved messages into a <b>Sequence</b> to post in order.</span>
-      </div>
-      <div class="galcard">
-        <b>Webhooks, Templates &amp; Backups</b>
-        <span class="muted">Post under custom webhook names &amp; avatars, reuse templates from the Starter Gallery, edit Raw JSON, and export/import full server backups.</span>
+      <div class="hero-stats">
+        <div><b id="stSrv">—</b><span>Servers</span></div>
+        <div><b id="stPing">—</b><span>Gateway ping</span></div>
+        <div><b id="stUp">—</b><span>Uptime</span></div>
       </div>
     </div>
-  </div>
+    <div class="hero-right">
+      <img src="banner.jpg" alt="9NATION EMBEDS" style="width:100%;border-radius:16px;border:1px solid var(--line);box-shadow:0 20px 50px rgba(0,0,0,.45)">
+    </div>
+  </section>
 
-  <p class="muted" style="text-align:center;margin-top:20px">
+  <section id="guide" style="margin-top:44px">
+    <h2 style="font-size:22px;margin-bottom:6px">How to Get Started</h2>
+    <p class="muted" style="margin-bottom:16px">Three quick steps to start building messages for your Discord server.</p>
+    <div class="galgrid" style="grid-template-columns:repeat(auto-fit,minmax(240px,1fr))">
+      <div class="bcard"><b>1. Add the App</b><p class="muted" style="margin:6px 0 0">Click <b>Add App</b> on the bot's Discord profile to invite it to your server.</p></div>
+      <div class="bcard"><b>2. Get Approved</b><p class="muted" style="margin:6px 0 0">Currently invite-only. Join our support server and ask to approve your server.</p></div>
+      <div class="bcard"><b>3. Log In &amp; Build</b><p class="muted" style="margin:6px 0 0">Open the <a href="../dashboard/">Dashboard</a> and sign in with Discord (Admins &amp; Editors).</p></div>
+    </div>
+  </section>
+
+  <section style="margin-top:36px">
+    <h2 style="font-size:22px;margin-bottom:14px">Everything Included</h2>
+    <div class="galgrid">
+      <div class="bcard"><b>Components V2 &amp; Classic Embeds</b><p class="muted" style="margin:6px 0 0">Boxes, sections, image galleries, button rows, dropdowns, or up to 10 classic embeds.</p></div>
+      <div class="bcard"><b>Permanent Variables</b><p class="muted" style="margin:6px 0 0">Insert <code>{{usermention}}</code>, <code>{{servername}}</code>, <code>{{membercount}}</code>, and custom variables with 1 click.</p></div>
+      <div class="bcard"><b>Forms, Roles &amp; Pages</b><p class="muted" style="margin:6px 0 0">Pop-up forms with CSV export &amp; Accept/Deny, self-role wizards, and paginated multi-page embeds.</p></div>
+      <div class="bcard"><b>Automation &amp; Schedules</b><p class="muted" style="margin:6px 0 0">Welcome/Goodbye, Keyword auto-replies, RSS/YT/Reddit feeds, Sticky messages, and <code>/faq</code> commands.</p></div>
+    </div>
+  </section>
+
+  <footer class="muted" style="text-align:center;margin-top:44px;padding-top:20px;border-top:1px solid var(--line);font-size:13px">
     <a href="../dashboard/about.html">About</a> &middot;
     <a href="../dashboard/privacy.html">Privacy</a> &middot;
     <a href="../dashboard/terms.html">Terms</a> &middot;
     <a href="../dashboard/status.html">Status</a>
-  </p>
-</div>
+  </footer>
+</main>
+<script src="landing.js?v=29"></script>
 </body>
 </html>
