@@ -1908,7 +1908,7 @@ function renderSettingsBody() {
     const used = extractUsedVars();
     const defined = new Set(vars.map((v) => v.name));
     const missing = used.filter((n) => !defined.has(n));
-    el.innerHTML = '<p class="muted">Use <code>{{name}}</code> in any text, title, description, or button label. URLs are never substituted.</p>' +
+    el.innerHTML = '<div class="info-bar"><svg class="ic"><use href="#i-info"></use></svg><span>Use <code>{{name}}</code> in any text, title, description, or button label. URLs are never substituted.</span></div>' +
       (missing.length ? '<div class="bcard"><b>Detected in message:</b><div class="btnrow" style="margin-top:6px">' +
         missing.map((n) => '<button type="button" class="small" data-act2="addvarnamed" data-vname="' + esc(n) + '">' + ic("plus") + '{{' + esc(n) + '}}</button>').join("") +
         '</div></div>' : '') +
@@ -1919,7 +1919,7 @@ function renderSettingsBody() {
         '<input data-f="vdefault" data-i="' + i + '" maxlength="2000" value="' + esc(v.default || "") + '">' +
         '<button type="button" class="small danger" data-act2="delvar" data-i="' + i + '" style="margin-top:8px">' + ic("trash") + 'Remove</button></div>'
       ).join("") +
-      (vars.length < 20 ? '<button type="button" class="small" data-act2="addvar">' + ic("plus") + 'Add variable</button>' : '<p class="muted">Max 20 variables reached.</p>') + '<h3 style="margin-top:16px">Permanent Discord variables</h3><p class="muted">Click any variable to copy it. These fill in automatically when posted or when a user clicks a reply button.</p>' + BUILTIN_VARS.map(([grp, items]) => '<div class="bcard"><b>' + esc(grp) + '</b><div style="margin-top:6px;display:flex;flex-direction:column;gap:4px">' + items.map(([k, desc]) => '<button type="button" class="small" data-act2="copyvar" data-vname="' + esc(k) + '" style="justify-content:space-between"><span><b>{{' + esc(k) + '}}</b></span><span class="muted">' + esc(desc) + '</span></button>').join("") + '</div></div>').join("");
+      (vars.length < 20 ? '<button type="button" class="small" data-act2="addvar">' + ic("plus") + 'Add variable</button>' : '<div class="warn-bar"><svg class="ic"><use href="#i-info"></use></svg><span>Max 20 variables reached.</span></div>') + '<h3 style="margin-top:16px">Permanent Discord variables</h3><div class="info-bar"><svg class="ic"><use href="#i-info"></use></svg><span>Click any variable to copy it. These fill in automatically when posted or clicked.</span></div>' + BUILTIN_VARS.map(([grp, items]) => '<div class="bcard"><b>' + esc(grp) + '</b><div style="margin-top:6px;display:flex;flex-direction:column;gap:4px">' + items.map(([k, desc]) => '<button type="button" class="small" data-act2="copyvar" data-vname="' + esc(k) + '" style="justify-content:space-between"><span><b>{{' + esc(k) + '}}</b></span><span class="muted">' + esc(desc) + '</span></button>').join("") + '</div></div>').join("");
     return;
   }
   const form = activeForm();
@@ -1931,14 +1931,14 @@ function renderSettingsBody() {
     const pg = activePage();
     if (r) {
       el.innerHTML = '<label>Reply name</label><input data-f="rname" value="' + esc(r.name) + '">' +
-        '<p class="muted">Only the person who clicks the button sees this reply.</p>' +
+        '<div class="info-bar"><svg class="ic"><use href="#i-info"></use></svg><span>Only the person who clicks the button sees this private reply.</span></div>' +
         '<button class="small danger" data-act2="delreply">' + ic("trash") + "Delete this reply</button>";
     } else if (pg) {
       el.innerHTML = '<label>Page name</label><input data-f="pname" value="' + esc(pg.name) + '">' +
-        '<p class="muted">Use a button or dropdown with "Go to page" to switch pages in Discord.</p>' +
+        '<div class="info-bar"><svg class="ic"><use href="#i-info"></use></svg><span>Use a button or dropdown with "Go to page" to switch pages in Discord.</span></div>' +
         '<button class="small danger" data-act2="delpage">' + ic("trash") + "Delete this page</button>";
     } else {
-      el.innerHTML = '<p class="muted">Select a part in the tree to edit it.</p>';
+      el.innerHTML = '<div class="info-bar"><svg class="ic"><use href="#i-info"></use></svg><span>Click any part in the preview or Message tree to edit its text, links, colours, and actions.</span></div>';
     }
     return;
   }

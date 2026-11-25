@@ -36,7 +36,7 @@ textarea{min-height:84px;resize:vertical;overflow-y:hidden}
 .fmtmore{position:absolute;right:0;top:calc(100% + 4px);z-index:35;min-width:148px;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:4px;box-shadow:0 10px 26px rgba(0,0,0,.35);display:flex;flex-direction:column;gap:2px}
 .fmtmore button{justify-content:flex-start;background:transparent;border:0;width:100%;padding:6px 10px;font-family:inherit}
 .fmtmore button:hover{background:var(--panel2)}
-label{display:block;font-size:12px;color:var(--muted);margin:10px 0 4px;text-transform:uppercase;letter-spacing:.04em}
+label{display:block;font-size:13px;font-weight:600;color:var(--ink);margin:12px 0 5px}
 .hidden{display:none!important}
 .center{min-height:100vh;display:grid;place-items:center;padding:16px}
 .card{background:var(--panel);border:1px solid var(--line);padding:32px;border-radius:20px;width:min(420px,100%);text-align:center;box-shadow:0 20px 50px rgba(0,0,0,.28)}
@@ -418,6 +418,8 @@ label{display:block;font-size:12px;color:var(--muted);margin:10px 0 4px;text-tra
 .stat-box b{font-size:24px;color:var(--ink)}
 .info-bar{display:flex;align-items:center;gap:9px;padding:9px 13px;border-radius:10px;background:var(--panel2);border:1px solid var(--line);color:var(--muted);font-size:13px;line-height:1.45;margin:8px 0 14px}
 .info-bar .ic{width:16px;height:16px;color:var(--accent);flex:none}
+.warn-bar{display:flex;align-items:center;gap:9px;padding:9px 13px;border-radius:10px;background:var(--warnbg);border:1px solid rgba(245,158,11,.35);color:var(--warn);font-size:13px;line-height:1.45;margin:8px 0 12px}
+.warn-bar .ic{width:16px;height:16px;flex:none}
 .ws-title-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .ws-title-row .ic{width:24px;height:24px;color:var(--accent)}
 .srv-pill{display:inline-flex;align-items:center;gap:6px;padding:4px 11px;border-radius:999px;background:var(--panel2);border:1px solid var(--line);font-size:12px;font-weight:600;color:var(--ink)}

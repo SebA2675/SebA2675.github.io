@@ -9,7 +9,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="logo.jpg">
 <title>9NATION EMBEDS — Dashboard</title>
-<link rel="stylesheet" href="styles.css?v=37">
+<link rel="stylesheet" href="styles.css?v=38">
 </head>
 <body>
 
@@ -432,10 +432,11 @@
         <span style="display:inline-flex;align-items:center;gap:6px"><svg class="ic" style="width:16px;height:16px"><use href="#i-tree"></use></svg><b id="treeTitle">Message tree</b></span>
         <svg class="ic" id="treeCollapseIc" style="width:15px;height:15px"><use href="#i-down"></use></svg>
       </button>
-      <div class="muted" id="treeHint" style="font-size:12px">Drag rows to reorder, or use the arrows.</div>
+      <div class="info-bar" id="treeHint" style="margin:6px 0 8px"><svg class="ic"><use href="#i-info"></use></svg><span>Drag rows to reorder, or use the arrows to move parts.</span></div>
       <div id="tree" style="margin-top:8px"></div>
       <div id="blockPalette">
-        <div class="muted" style="margin-top:8px">Add a part (goes inside a selected Box):</div>
+        <div class="ws-title-row" style="margin-top:14px"><svg class="ic" style="width:16px;height:16px"><use href="#i-plus"></use></svg><b style="font-size:14px;color:var(--ink)">Add a part</b></div>
+        <div class="info-bar" style="margin:6px 0 8px"><svg class="ic"><use href="#i-info"></use></svg><span>Click a part below to add it inside a selected Box or at the bottom.</span></div>
         <div class="palette">
           <button class="small" data-add="text"><svg class="ic"><use href="#i-text"></use></svg>Text</button>
           <button class="small" data-add="section"><svg class="ic"><use href="#i-section"></use></svg>Text + side</button>
@@ -485,7 +486,7 @@
       </div>
     </div>
     <div class="col pane-settings">
-      <b>Settings</b>
+      <div class="ws-title-row" style="margin-bottom:8px"><svg class="ic" style="width:18px;height:18px"><use href="#i-tools"></use></svg><b style="font-size:16px;color:var(--ink)">Part Settings</b></div>
       <div id="settings" style="margin-top:6px"></div>
     </div>
   </div>
@@ -704,6 +705,6 @@
 
 <div id="testToast" class="ttoast hidden"></div>
 
-<script src="app.js?v=37"></script>
+<script src="app.js?v=38"></script>
 </body>
 </html>
