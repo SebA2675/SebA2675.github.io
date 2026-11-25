@@ -25,12 +25,19 @@ if (location.hash.startsWith("#token=")) {
   history.replaceState(null, "", location.pathname);
 }
 
+function closeMobMenu() {
+  if ($("wsSidebar")) $("wsSidebar").classList.remove("mob-open");
+  if ($("mobBackdrop")) $("mobBackdrop").classList.remove("open");
+}
+
 function show(name) {
   for (const v of ["viewLogin", "viewServers", "viewLibrary", "viewBuilder", "viewAdmin"]) {
     if ($(v)) $(v).classList.toggle("hidden", v !== name);
   }
   const nav = $("appNav");
   if (nav) nav.classList.toggle("hidden", name === "viewLogin" || name === "viewBuilder");
+  if ($("mobMenuBtn")) $("mobMenuBtn").classList.toggle("hidden", name !== "viewLibrary");
+  closeMobMenu();
   if ($("navServersBtn")) $("navServersBtn").classList.toggle("on", name === "viewServers");
   if ($("navAdminBtn")) $("navAdminBtn").classList.toggle("on", name === "viewAdmin");
 }
@@ -4633,6 +4640,16 @@ function initAppearance() {
       if (useEl) useEl.setAttribute("href", collapsed ? "#i-up" : "#i-down");
     };
   }
+  if ($("mobMenuBtn")) {
+    $("mobMenuBtn").onclick = () => {
+      const open = $("wsSidebar").classList.toggle("mob-open");
+      if ($("mobBackdrop")) $("mobBackdrop").classList.toggle("open", open);
+    };
+  }
+  if ($("mobBackdrop")) $("mobBackdrop").onclick = closeMobMenu;
+  if ($("wsSidebar")) $("wsSidebar").addEventListener("click", (e) => {
+    if (e.target.closest("button")) closeMobMenu();
+  });
 }
 initAppearance();
 start();

@@ -9,7 +9,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="logo.jpg">
 <title>9NATION EMBEDS — Dashboard</title>
-<link rel="stylesheet" href="styles.css?v=39">
+<link rel="stylesheet" href="styles.css?v=40">
 </head>
 <body>
 
@@ -54,6 +54,7 @@
 <symbol id="i-mail" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></symbol>
 <symbol id="i-code" viewBox="0 0 24 24"><path d="M8 9l-4 3 4 3M16 9l4 3-4 3M13 6l-2 12"/></symbol>
 <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 16v-4M12 8h.01"/></symbol>
+<symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></symbol>
 </defs></svg>
 
 <div id="toasts" aria-live="polite"></div>
@@ -71,7 +72,10 @@
 
 <header class="nav hidden" id="appNav">
   <div class="nav-in">
-    <a class="brand" href="../"><img src="logo.jpg" alt="9NATION" class="logo"><span>9NATION <b>EMBEDS</b></span></a>
+    <div style="display:flex;align-items:center;gap:8px">
+      <button type="button" id="mobMenuBtn" class="ib mob-only hidden" aria-label="Open server menu"><svg class="ic"><use href="#i-menu"></use></svg></button>
+      <a class="brand" href="../"><img src="logo.jpg" alt="9NATION" class="logo"><span>9NATION <b>EMBEDS</b></span></a>
+    </div>
     <nav class="nav-links">
       <a href="#" id="navServersBtn"><svg class="ic"><use href="#i-servers"></use></svg>My servers</a>
       <a href="../#features"><svg class="ic"><use href="#i-template"></use></svg>Features</a>
@@ -147,8 +151,9 @@
 </div>
 
 <div id="viewLibrary" class="hidden">
+  <div id="mobBackdrop" class="mob-backdrop"></div>
   <div class="ws">
-    <aside class="sidebar">
+    <aside class="sidebar" id="wsSidebar">
       <button type="button" id="srvPickBtn" class="sb-srv"></button>
       <select id="libGuild" class="hidden" aria-label="Server" style="display:none"></select>
       <div class="sb-sec">Server Workspace</div>
@@ -705,6 +710,6 @@
 
 <div id="testToast" class="ttoast hidden"></div>
 
-<script src="app.js?v=38"></script>
+<script src="app.js?v=40"></script>
 </body>
 </html>
