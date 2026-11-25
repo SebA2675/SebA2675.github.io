@@ -26,9 +26,13 @@ if (location.hash.startsWith("#token=")) {
 }
 
 function show(name) {
-  for (const v of ["viewLogin", "viewLibrary", "viewBuilder", "viewAdmin"]) {
-    $(v).classList.toggle("hidden", v !== name);
+  for (const v of ["viewLogin", "viewServers", "viewLibrary", "viewBuilder", "viewAdmin"]) {
+    if ($(v)) $(v).classList.toggle("hidden", v !== name);
   }
+  const nav = $("appNav");
+  if (nav) nav.classList.toggle("hidden", name === "viewLogin" || name === "viewBuilder");
+  if ($("navServersBtn")) $("navServersBtn").classList.toggle("on", name === "viewServers");
+  if ($("navAdminBtn")) $("navAdminBtn").classList.toggle("on", name === "viewAdmin");
 }
 
 async function api(path, opts = {}) {
@@ -2699,12 +2703,12 @@ function srvIconHtml(g, size) {
 function renderServerPicker() {
   const btn = $("srvPickBtn");
   if (!btn) return;
-  if (guilds.length < 2) { btn.classList.add("hidden"); return; }
+  const g = libGuild ? guilds.find((x) => x.id === libGuild) : guilds[0];
+  if (!g) { btn.classList.add("hidden"); return; }
   btn.classList.remove("hidden");
-  const g = libGuild ? guilds.find((x) => x.id === libGuild) : null;
-  btn.innerHTML = srvIconHtml(g, 22) +
-    '<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(g ? g.name : "All servers") + '</span>' +
-    '<span style="margin-left:auto;opacity:.6">&#9662;</span>';
+  btn.innerHTML = srvIconHtml(g, 24) +
+    '<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600;flex:1">' + esc(g.name) + '</span>' +
+    '<span style="font-size:11px;color:var(--muted)">Switch</span>';
 }
 
 function drawServerModal() {
@@ -2731,13 +2735,56 @@ function drawServerModal() {
   listEl.innerHTML = html || '<p class="muted">No matching servers.</p>';
 }
 function renderLibrary() {
-  $("libTools").classList.toggle("hidden", !libItems.length);
-  const multi = guilds.length > 1;
-  $("libGuild").classList.toggle("hidden", !multi);
-  if (multi) $("libGuild").innerHTML = opts([["", "All servers"]].concat(guilds.map((g) => [g.id, g.name])), libGuild);
+  if (!libGuild && guilds.length) libGuild = guilds[0].id;
+  const g = guilds.find((x) => x.id === libGuild);
+  if ($("wsTitle")) $("wsTitle").textContent = g ? ("Messages — " + g.name) : "Messages";
+  const srvItems = libItems.filter((m) => !libGuild || String(m.guild_id) === libGuild);
+  $("libTools").classList.toggle("hidden", !srvItems.length);
+  if ($("libGuild")) {
+    $("libGuild").innerHTML = opts(guilds.map((x) => [x.id, x.name]), libGuild);
+    $("libGuild").value = libGuild;
+  }
   renderServerPicker();
   renderLibChips();
   renderLibList();
+}
+
+function renderSrvHub() {
+  const grid = $("srvHubGrid");
+  if (!grid) return;
+  const q = ($("hubSrvSearch") && $("hubSrvSearch").value || "").trim().toLowerCase();
+  const list = guilds.filter((g) => !q || g.name.toLowerCase().includes(q) || g.id.includes(q));
+  if (!list.length) {
+    grid.innerHTML = '<div class="lempty"><b>No servers found</b><p>Make sure the bot is in your server and approved by the bot owner.</p></div>';
+    return;
+  }
+  grid.innerHTML = list.map((g) => {
+    const cnt = g.message_count !== undefined ? g.message_count : libItems.filter((m) => String(m.guild_id) === g.id).length;
+    return '<div class="srv-card-lg">' +
+      '<div class="srv-card-top">' + srvIconHtml(g, 44) +
+      '<div class="srvmeta"><b>' + esc(g.name) + '</b><small>' + cnt + ' message(s)' +
+      (g.last_edit ? ' &middot; ' + esc(ago(g.last_edit)) : '') + '</small></div></div>' +
+      '<div class="srv-card-acts">' +
+      '<button type="button" class="primary" data-hubopen="' + esc(g.id) + '">Open dashboard</button>' +
+      '<button type="button" class="ib" data-hubauto="' + esc(g.id) + '" title="Automation">' + ic("schedule") + '</button>' +
+      '<button type="button" class="ib" data-hubtools="' + esc(g.id) + '" title="Server tools">' + ic("tools") + '</button>' +
+      '</div></div>';
+  }).join("");
+}
+
+async function openServers() {
+  clearTimeout(autosaveTimer);
+  show("viewServers");
+  const grid = $("srvHubGrid");
+  if (grid) grid.innerHTML = '<div class="skel-card"></div>'.repeat(3);
+  try {
+    await loadGuilds();
+    libItems = await api("/messages");
+    if ($("srvHeroSub")) $("srvHeroSub").textContent = guilds.length + " server(s) available — each server has its own independent messages, automation, and tools.";
+    renderSrvHub();
+  } catch (e) {
+    if (e.message !== "login" && grid) grid.innerHTML = '<p class="muted">Could not load servers: ' + esc(e.message) + '</p>';
+  }
 }
 
 $("libSearch").addEventListener("input", () => {
@@ -2752,12 +2799,16 @@ $("libGuild").addEventListener("change", () => {
   renderLibChips();
   renderLibList();
 });
-$("srvPickBtn").onclick = () => {
-  $("srvSearch").value = "";
-  drawServerModal();
-  $("srvOverlay").classList.remove("hidden");
-  $("srvSearch").focus();
-};
+$("srvPickBtn").onclick = () => openServers();
+if ($("hubSrvSearch")) $("hubSrvSearch").oninput = renderSrvHub;
+if ($("srvHubGrid")) $("srvHubGrid").addEventListener("click", async (e) => {
+  const d = btnData(e);
+  const gid = d.hubopen || d.hubauto || d.hubtools;
+  if (!gid) return;
+  await openLibrary(gid);
+  if (d.hubauto && $("autoBtn")) $("autoBtn").click();
+  if (d.hubtools && $("toolsBtn")) $("toolsBtn").click();
+});
 $("srvSearch").oninput = drawServerModal;
 $("srvClose").onclick = () => { $("srvOverlay").classList.add("hidden"); };
 $("srvOverlay").onclick = (e) => { if (e.target === $("srvOverlay")) $("srvOverlay").classList.add("hidden"); };
@@ -2782,14 +2833,20 @@ $("libChips").addEventListener("click", (e) => {
   renderLibList();
 });
 
-async function openLibrary() {
+async function openLibrary(gid) {
   clearTimeout(autosaveTimer);
+  if (gid) {
+    libGuild = String(gid);
+    try { localStorage.setItem("last_guild", libGuild); } catch (e) {}
+  }
   show("viewLibrary");
   $("list").innerHTML = '<div class="skel-card"></div>'.repeat(6);
   try {
     await loadGuilds();
     libItems = await api("/messages");
-    if (libGuild && !guilds.some((g) => g.id === libGuild)) libGuild = "";
+    if (!libGuild || !guilds.some((g) => g.id === libGuild)) {
+      libGuild = (guilds[0] && guilds[0].id) || "";
+    }
     renderLibrary();
   } catch (e) {
     if (e.message !== "login") $("list").innerHTML = '<p class="muted">Could not load: ' + esc(e.message) + "</p>";
@@ -3324,25 +3381,39 @@ $("schedClose").onclick = () => { $("schedOverlay").classList.add("hidden"); };
 $("schedOverlay").onclick = (e) => { if (e.target === $("schedOverlay")) $("schedOverlay").classList.add("hidden"); };
 
 /* ---------- Admin page (owner only) ---------- */
+let adminDataCache = null;
+function renderAdminAllowed() {
+  if (!adminDataCache) return;
+  const q = ($("adminSearch") && $("adminSearch").value || "").trim().toLowerCase();
+  const list = (adminDataCache.allowed || []).filter((g) => !q || (g.name || "").toLowerCase().includes(q) || g.id.includes(q));
+  $("adminAllowed").innerHTML = list.length
+    ? list.map((g) =>
+      '<div class="row"><div class="grow"><b>' + esc(g.name || "(unknown)") + '</b><div class="muted">' + esc(g.id) +
+      (g.joined ? "" : " &middot; bot not in server") + '</div></div>' +
+      (g.joined ? '<button class="small" data-admopen="' + esc(g.id) + '">Open</button>' : '') +
+      '<button class="small danger" data-rm="' + esc(g.id) + '">' + ic("trash") + "Remove</button></div>").join("")
+    : '<p class="muted">No matching approved servers.</p>';
+}
+
 async function openAdmin() {
   show("viewAdmin");
   $("adminAllowed").innerHTML = '<p class="muted">Loading...</p>';
   $("adminPending").innerHTML = "";
   try {
     const d = await api("/admin/servers");
+    adminDataCache = d;
     const st = d.storage || { size_bytes: 0, counts: {} };
+    const reqs = d.requests || [];
+    if ($("admStatSrv")) $("admStatSrv").textContent = String((d.allowed || []).length);
+    if ($("admStatReq")) $("admStatReq").textContent = String(reqs.length + (d.pending || []).length);
+    if ($("admStatMsg")) $("admStatMsg").textContent = String(st.counts.messages || 0);
+    if ($("admStatSched")) $("admStatSched").textContent = String((st.counts.schedules || 0) + (st.counts.templates || 0));
     const kb = st.size_bytes / 1024;
     $("adminStorage").textContent = "Database: " + (kb >= 1024 ? (kb / 1024).toFixed(1) + " MB" : Math.round(kb) + " KB") +
       " of about 512 MB on the free host. Messages: " + (st.counts.messages || 0) +
       ", saved versions: " + (st.counts.versions || 0) + ", schedules: " + (st.counts.schedules || 0) +
       ", templates: " + (st.counts.templates || 0) + ".";
-    $("adminAllowed").innerHTML = d.allowed.length
-      ? d.allowed.map((g) =>
-        '<div class="row"><div class="grow"><b>' + esc(g.name || "(unknown)") + '</b><div class="muted">' + esc(g.id) +
-        (g.joined ? "" : " &middot; the bot is not in this server") + '</div></div>' +
-        '<button class="small danger" data-rm="' + esc(g.id) + '">' + ic("trash") + "Remove</button></div>").join("")
-      : '<p class="muted">None yet.</p>';
-    const reqs = d.requests || [];
+    renderAdminAllowed();
     $("adminRequests").innerHTML = reqs.length
       ? reqs.map((r) =>
         '<div class="row"><div class="grow"><b>' + esc(r.guild_name) + '</b><div class="muted">' + esc(r.guild_id) +
@@ -3364,7 +3435,8 @@ async function openAdmin() {
 }
 
 $("adminBtn").onclick = openAdmin;
-$("adminBack").onclick = () => openLibrary();
+$("adminBack").onclick = () => openServers();
+if ($("adminSearch")) $("adminSearch").oninput = renderAdminAllowed;
 
 $("adminAddBtn").onclick = async () => {
   const id = $("adminGuildId").value.trim();
@@ -3380,7 +3452,9 @@ $("adminAddBtn").onclick = async () => {
 };
 
 $("adminAllowed").addEventListener("click", async (e) => {
-  const id = btnData(e).rm;
+  const d = btnData(e);
+  if (d.admopen) { openLibrary(d.admopen); return; }
+  const id = d.rm;
   if (!id) return;
   if (!await uiConfirm("Remove this server? The bot will leave it right away and its administrators lose access.", { title: "Remove server", okText: "Remove", danger: true })) return;
   try {
@@ -3618,10 +3692,20 @@ async function start() {
     const me = await api("/me");
     isOwner = !!me.is_owner;
     $("adminBtn").classList.toggle("hidden", !isOwner);
+    if ($("navAdminBtn")) $("navAdminBtn").classList.toggle("hidden", !isOwner);
+    if ($("umOwnerBtn")) $("umOwnerBtn").classList.toggle("hidden", !isOwner);
+    if ($("srvOwnerBtn")) $("srvOwnerBtn").classList.toggle("hidden", !isOwner);
     const uname = me.global_name || me.username || "Account";
+    const init = uname.slice(0, 2).toUpperCase();
     if ($("umName")) $("umName").textContent = uname;
-    if ($("umAv")) $("umAv").textContent = uname.slice(0, 2).toUpperCase();
-    openLibrary();
+    if ($("umFullName")) $("umFullName").textContent = uname;
+    if ($("umRoleBadge")) $("umRoleBadge").textContent = isOwner ? "Bot Owner" : "Member";
+    if ($("umAv")) $("umAv").textContent = init;
+    if ($("srvHeroAv")) $("srvHeroAv").textContent = init;
+    const hr = new Date().getHours();
+    const greet = hr < 12 ? "Good morning" : hr < 18 ? "Good afternoon" : "Good evening";
+    if ($("srvHeroTitle")) $("srvHeroTitle").textContent = greet + ", " + uname;
+    await openServers();
     try { if (!localStorage.getItem("tour_seen")) { localStorage.setItem("tour_seen", "1"); $("helpOverlay").classList.remove("hidden"); } } catch (e) {}
   } catch (e) {
     if (e.message === "login") return;
@@ -4434,17 +4518,21 @@ $("rwGenBtn").onclick = () => {
 };
 function initAppearance() {
   const apply = (theme, accent) => {
-    if (theme === "light") document.documentElement.setAttribute("data-theme", "light");
+    if (theme === "dark") document.documentElement.setAttribute("data-theme", "dark");
     else document.documentElement.removeAttribute("data-theme");
     document.documentElement.style.setProperty("--accent", accent);
-    try { localStorage.setItem("ui_theme", theme); localStorage.setItem("ui_accent", accent); } catch (e) {}
-    if ($("themeDarkBtn")) $("themeDarkBtn").classList.toggle("on", theme !== "light");
-    if ($("themeLightBtn")) $("themeLightBtn").classList.toggle("on", theme === "light");
+    try { localStorage.setItem("ui_theme_v2", theme); localStorage.setItem("ui_accent", accent); } catch (e) {}
+    if ($("themeDarkBtn")) $("themeDarkBtn").classList.toggle("on", theme === "dark");
+    if ($("themeLightBtn")) $("themeLightBtn").classList.toggle("on", theme !== "dark");
     document.querySelectorAll("#umDots .um-dot").forEach((b) => b.classList.toggle("on", b.dataset.acc === accent));
   };
-  let t = "dark", a = "#8b5cf6";
-  try { t = localStorage.getItem("ui_theme") || "dark"; a = localStorage.getItem("ui_accent") || "#8b5cf6"; } catch (e) {}
+  let t = "light", a = "#8b5cf6";
+  try { t = localStorage.getItem("ui_theme_v2") || "light"; a = localStorage.getItem("ui_accent") || "#8b5cf6"; } catch (e) {}
   apply(t, a);
+  const closeUm = () => {
+    if ($("umDrop")) $("umDrop").classList.add("hidden");
+    if ($("umBtn")) $("umBtn").setAttribute("aria-expanded", "false");
+  };
   if ($("umBtn") && $("umDrop")) {
     $("umBtn").onclick = (e) => {
       e.stopPropagation();
@@ -4452,17 +4540,24 @@ function initAppearance() {
       $("umBtn").setAttribute("aria-expanded", String(!open));
     };
     document.addEventListener("click", (e) => {
-      if (!e.target.closest("#userMenuWrap")) {
-        $("umDrop").classList.add("hidden");
-        $("umBtn").setAttribute("aria-expanded", "false");
-      }
+      if (!e.target.closest("#userMenuWrap")) closeUm();
     });
   }
   if ($("themeDarkBtn")) $("themeDarkBtn").onclick = () => { try { a = localStorage.getItem("ui_accent") || "#8b5cf6"; } catch (e) {} apply("dark", a); };
   if ($("themeLightBtn")) $("themeLightBtn").onclick = () => { try { a = localStorage.getItem("ui_accent") || "#8b5cf6"; } catch (e) {} apply("light", a); };
   document.querySelectorAll("#umDots .um-dot").forEach((b) => {
-    b.onclick = () => { try { t = localStorage.getItem("ui_theme") || "dark"; } catch (e) {} apply(t, b.dataset.acc); };
+    b.onclick = () => { try { t = localStorage.getItem("ui_theme_v2") || "light"; } catch (e) {} apply(t, b.dataset.acc); };
   });
+  const syncPvBtn = () => {
+    if ($("umPvBtn")) $("umPvBtn").textContent = pvLight ? "Discord Light" : "Discord Dark";
+  };
+  syncPvBtn();
+  if ($("umPvBtn")) $("umPvBtn").onclick = () => { pvLight = !pvLight; applyPv(); syncPvBtn(); };
+  if ($("navServersBtn")) $("navServersBtn").onclick = (e) => { e.preventDefault(); closeUm(); openServers(); };
+  if ($("umServersBtn")) $("umServersBtn").onclick = () => { closeUm(); openServers(); };
+  if ($("navAdminBtn")) $("navAdminBtn").onclick = (e) => { e.preventDefault(); closeUm(); openAdmin(); };
+  if ($("umOwnerBtn")) $("umOwnerBtn").onclick = () => { closeUm(); openAdmin(); };
+  if ($("srvOwnerBtn")) $("srvOwnerBtn").onclick = () => { closeUm(); openAdmin(); };
 }
 initAppearance();
 start();

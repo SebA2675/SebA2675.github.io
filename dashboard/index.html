@@ -4,12 +4,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' https: data:; connect-src https://h5nngnplb6.apps.bot-hosting.cloud; font-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
-<meta name="theme-color" content="#0b0c10">
+<meta name="theme-color" content="#f8fafc">
 <link rel="icon" href="logo.jpg">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="logo.jpg">
 <title>9NATION EMBEDS — Dashboard</title>
-<link rel="stylesheet" href="styles.css?v=29">
+<link rel="stylesheet" href="styles.css?v=30">
 </head>
 <body>
 
@@ -68,59 +68,93 @@
   </div>
 </div>
 
-<div id="viewLibrary" class="hidden">
-  <header class="nav">
-    <div class="nav-in">
-      <a class="brand" href="../embeds/"><img src="logo.jpg" alt="9NATION" class="logo"><span>9NATION <b>EMBEDS</b></span></a>
-      <nav class="nav-links">
-        <a href="./" class="on">Dashboard</a>
-        <a href="../embeds/">Guide</a>
-        <a href="status.html">Status</a>
-        <a href="about.html">About</a>
-      </nav>
-      <div class="nav-right">
-        <div class="usermenu" id="userMenuWrap">
-          <button type="button" class="um-btn" id="umBtn" aria-haspopup="true" aria-expanded="false">
-            <span class="um-av" id="umAv">9N</span>
-            <span id="umName">Account</span>
-            <svg class="ic" style="width:14px;height:14px"><use href="#i-down"></use></svg>
-          </button>
-          <div class="um-drop hidden" id="umDrop">
-            <div class="um-head">Appearance &amp; Account</div>
-            <div class="um-row">
-              <span>Theme</span>
-              <div class="um-seg">
-                <button type="button" id="themeDarkBtn">Dark</button>
-                <button type="button" id="themeLightBtn">Light</button>
-              </div>
+<header class="nav hidden" id="appNav">
+  <div class="nav-in">
+    <a class="brand" href="../"><img src="logo.jpg" alt="9NATION" class="logo"><span>9NATION <b>EMBEDS</b></span></a>
+    <nav class="nav-links">
+      <a href="#" id="navServersBtn">My servers</a>
+      <a href="../#features">Features</a>
+      <a href="status.html">Status</a>
+      <a href="#" id="navAdminBtn" class="hidden">Owner Panel</a>
+    </nav>
+    <div class="nav-right">
+      <div class="usermenu" id="userMenuWrap">
+        <button type="button" class="um-btn" id="umBtn" aria-haspopup="true" aria-expanded="false">
+          <span class="um-av" id="umAv">9N</span>
+          <span id="umName">Account</span>
+          <svg class="ic" style="width:14px;height:14px"><use href="#i-down"></use></svg>
+        </button>
+        <div class="um-drop hidden" id="umDrop">
+          <div class="um-head"><span id="umFullName">Account</span><span class="um-badge" id="umRoleBadge">Member</span></div>
+          <div class="um-row">
+            <span>Theme</span>
+            <div class="um-seg">
+              <button type="button" id="themeLightBtn">Light</button>
+              <button type="button" id="themeDarkBtn">Dark</button>
             </div>
-            <div class="um-row">
-              <span>Colour</span>
-              <div class="um-dots" id="umDots">
-                <button type="button" class="um-dot" data-acc="#8b5cf6" style="background:#8b5cf6" title="Violet"></button>
-                <button type="button" class="um-dot" data-acc="#d96b27" style="background:#d96b27" title="Amber"></button>
-                <button type="button" class="um-dot" data-acc="#3b82f6" style="background:#3b82f6" title="Blue"></button>
-                <button type="button" class="um-dot" data-acc="#10b981" style="background:#10b981" title="Emerald"></button>
-                <button type="button" class="um-dot" data-acc="#ec4899" style="background:#ec4899" title="Pink"></button>
-                <button type="button" class="um-dot" data-acc="#eab308" style="background:#eab308" title="Gold"></button>
-              </div>
+          </div>
+          <div class="um-row">
+            <span>Colour</span>
+            <div class="um-dots" id="umDots">
+              <button type="button" class="um-dot" data-acc="#8b5cf6" style="background:#8b5cf6" title="Violet"></button>
+              <button type="button" class="um-dot" data-acc="#d96b27" style="background:#d96b27" title="Amber"></button>
+              <button type="button" class="um-dot" data-acc="#3b82f6" style="background:#3b82f6" title="Blue"></button>
+              <button type="button" class="um-dot" data-acc="#10b981" style="background:#10b981" title="Emerald"></button>
+              <button type="button" class="um-dot" data-acc="#ec4899" style="background:#ec4899" title="Pink"></button>
+              <button type="button" class="um-dot" data-acc="#eab308" style="background:#eab308" title="Gold"></button>
             </div>
+          </div>
+          <div class="um-row">
+            <span>Preview</span>
+            <button type="button" class="small" id="umPvBtn">Discord Dark</button>
+          </div>
+          <div style="border-top:1px solid var(--line);padding-top:8px;display:flex;flex-direction:column;gap:4px">
+            <button type="button" class="sb-btn" id="umServersBtn" style="padding:6px 8px"><svg class="ic"><use href="#i-servers"></use></svg>My Servers</button>
+            <button type="button" class="sb-btn hidden" id="umOwnerBtn" style="padding:6px 8px"><svg class="ic"><use href="#i-tools"></use></svg>Owner Panel</button>
             <button id="logoutBtn" class="danger small" style="width:100%;justify-content:center;margin-top:4px"><svg class="ic"><use href="#i-logout"></use></svg>Sign out</button>
           </div>
         </div>
       </div>
     </div>
-  </header>
+  </div>
+</header>
 
+<div id="viewServers" class="hidden">
+  <div class="wrap" style="max-width:1120px;padding:28px 20px">
+    <div class="srv-hero">
+      <div class="srv-hero-left">
+        <div class="srv-hero-av" id="srvHeroAv">9N</div>
+        <div>
+          <h1 id="srvHeroTitle" style="margin:0;font-size:24px;color:var(--ink)">Welcome back</h1>
+          <p id="srvHeroSub" class="muted" style="margin:4px 0 0;font-size:14px">Pick a server below to open its independent dashboard.</p>
+        </div>
+      </div>
+      <div class="btnrow">
+        <button type="button" id="srvOwnerBtn" class="primary hidden"><svg class="ic"><use href="#i-servers"></use></svg>Owner Panel</button>
+        <a href="../" style="text-decoration:none"><button type="button">Bot Guide</button></a>
+      </div>
+    </div>
+    <div class="ws-head" style="margin-bottom:16px">
+      <div>
+        <h2 style="margin:0;font-size:20px;color:var(--ink)">Your servers</h2>
+        <p class="muted" style="margin:3px 0 0;font-size:13px">Each server has its own messages, automation, and tools.</p>
+      </div>
+      <input id="hubSrvSearch" type="search" placeholder="Search servers..." aria-label="Search servers" style="max-width:250px">
+    </div>
+    <div id="srvHubGrid" class="srv-cards"></div>
+  </div>
+</div>
+
+<div id="viewLibrary" class="hidden">
   <div class="ws">
     <aside class="sidebar">
-      <button type="button" id="srvPickBtn" class="sb-srv hidden"></button>
+      <button type="button" id="srvPickBtn" class="sb-srv"></button>
       <select id="libGuild" class="hidden" aria-label="Server" style="display:none"></select>
-      <div class="sb-sec">Workspace</div>
+      <div class="sb-sec">Server Workspace</div>
       <button type="button" class="sb-btn on"><svg class="ic"><use href="#i-section"></use></svg>Messages</button>
       <button id="autoBtn" class="sb-btn" title="Automation"><svg class="ic"><use href="#i-schedule"></use></svg>Automation</button>
       <button id="toolsBtn" class="sb-btn" title="Server tools"><svg class="ic"><use href="#i-tools"></use></svg>Server tools</button>
-      <button id="adminBtn" class="sb-btn hidden" title="Approved servers"><svg class="ic"><use href="#i-servers"></use></svg>Servers</button>
+      <button id="adminBtn" class="sb-btn hidden" title="Owner Panel"><svg class="ic"><use href="#i-servers"></use></svg>Owner Panel</button>
       <div class="sb-sec">Resources</div>
       <button id="helpBtn" class="sb-btn" title="Tour &amp; guides"><svg class="ic"><use href="#i-question"></use></svg>Guides</button>
       <div class="sb-foot"><b>Need a hand?</b><br>Setup steps, variables and FAQ are in Guides.</div>
@@ -129,8 +163,8 @@
     <main class="ws-main">
       <div class="ws-head">
         <div>
-          <h1>Messages</h1>
-          <p>Embeds and Components V2 layouts saved for this server. Publish them to any channel and edit them later.</p>
+          <h1 id="wsTitle">Messages</h1>
+          <p id="wsSub">Embeds and Components V2 layouts saved for this server.</p>
         </div>
         <div class="newwrap">
           <button class="primary" id="newBtn" aria-haspopup="true" aria-expanded="false"><svg class="ic"><use href="#i-plus"></use></svg>New message</button>
@@ -143,7 +177,7 @@
       </div>
 
       <div id="libTools" class="libtools hidden">
-        <input id="libSearch" type="search" placeholder="Search messages" aria-label="Search messages" autocomplete="off">
+        <input id="libSearch" type="search" placeholder="Search messages in this server" aria-label="Search messages" autocomplete="off">
         <div id="libChips" class="chips"></div>
       </div>
       <div id="list"></div>
@@ -152,17 +186,30 @@
 </div>
 
 <div id="viewAdmin" class="hidden">
-  <div class="top">
-    <button id="adminBack" class="tb" title="Back"><svg class="ic"><use href="#i-back"></use></svg><span class="t">Back</span></button>
-    <h1>Approved servers</h1>
-  </div>
-  <div class="wrap">
-    <p class="muted">The bot stays only in servers on this list and leaves any other server it is added to. Administrators of an approved server can use this dashboard for that server's messages only.</p>
-    <h3>Storage</h3>
-    <p class="muted" id="adminStorage">Loading...</p>
-    <h3>Approved</h3>
+  <div class="wrap" style="max-width:1040px;padding:24px 20px">
+    <div class="ws-head">
+      <div>
+        <h1>Bot Owner Panel</h1>
+        <p>Manage approved servers, join requests, and bot-wide storage.</p>
+      </div>
+      <button id="adminBack" type="button"><svg class="ic"><use href="#i-back"></use></svg>Back to My Servers</button>
+    </div>
+    <div class="admin-stats">
+      <div class="stat-box"><small>Approved Servers</small><b id="admStatSrv">—</b></div>
+      <div class="stat-box"><small>Pending Requests</small><b id="admStatReq">—</b></div>
+      <div class="stat-box"><small>Total Messages</small><b id="admStatMsg">—</b></div>
+      <div class="stat-box"><small>Schedules &amp; Templates</small><b id="admStatSched">—</b></div>
+    </div>
+    <div class="bcard" style="background:var(--panel);margin-bottom:18px">
+      <b style="color:var(--ink)">Database &amp; Storage</b>
+      <p class="muted" id="adminStorage" style="margin:6px 0 0">Loading...</p>
+    </div>
+    <div class="ws-head" style="margin-bottom:10px">
+      <h3 style="margin:0">Approved Servers</h3>
+      <input id="adminSearch" type="search" placeholder="Filter approved servers..." style="max-width:240px">
+    </div>
     <div id="adminAllowed"></div>
-    <h3>Approve a server by ID</h3>
+    <h3 style="margin-top:22px">Approve a server by ID</h3>
     <div class="btnrow">
       <input id="adminGuildId" placeholder="Server ID (numbers only)" style="max-width:280px">
       <button class="primary" id="adminAddBtn"><svg class="ic"><use href="#i-check"></use></svg>Approve</button>
@@ -630,6 +677,6 @@
 
 <div id="testToast" class="ttoast hidden"></div>
 
-<script src="app.js?v=29"></script>
+<script src="app.js?v=30"></script>
 </body>
 </html>
