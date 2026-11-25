@@ -4737,12 +4737,26 @@ function renderTourStep() {
   $("tourBack").disabled = tourIdx === 0;
   $("tourNext").textContent = tourIdx === tourSteps.length - 1 ? "Finish" : "Next";
   card.classList.remove("hidden");
-  const cw = card.offsetWidth || 340, ch = card.offsetHeight || 170;
-  let top = r.bottom + 14;
-  if (top + ch > window.innerHeight - 12) top = Math.max(12, r.top - ch - 14);
-  let left = Math.min(window.innerWidth - cw - 12, Math.max(12, r.left));
-  card.style.top = top + "px";
-  card.style.left = left + "px";
+  const cw = card.offsetWidth || 340, ch = card.offsetHeight || 190;
+  let top, left;
+  if (r.bottom + ch + 16 <= window.innerHeight) {
+    top = r.bottom + 12;
+    left = r.left;
+  } else if (r.top - ch - 16 >= 12) {
+    top = r.top - ch - 12;
+    left = r.left;
+  } else if (r.left - cw - 18 >= 12) {
+    top = Math.max(16, Math.min(window.innerHeight - ch - 16, r.top + 20));
+    left = r.left - cw - 14;
+  } else if (r.right + cw + 18 <= window.innerWidth) {
+    top = Math.max(16, Math.min(window.innerHeight - ch - 16, r.top + 20));
+    left = r.right + 14;
+  } else {
+    top = window.innerHeight - ch - 16;
+    left = (window.innerWidth - cw) / 2;
+  }
+  card.style.top = Math.max(12, Math.min(window.innerHeight - ch - 12, top)) + "px";
+  card.style.left = Math.max(12, Math.min(window.innerWidth - cw - 12, left)) + "px";
 }
 function startSpotlightTour(steps) {
   tourSteps = steps;
