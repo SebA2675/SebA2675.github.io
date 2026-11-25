@@ -9,7 +9,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="logo.png">
 <title>Embed Dashboard</title>
-<link rel="stylesheet" href="styles.css?v=24">
+<link rel="stylesheet" href="styles.css?v=25">
 </head>
 <body>
 
@@ -490,6 +490,15 @@
   </div>
 </div>
 
+<div id="cmdOverlay" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="cmdTitle">
+  <div class="modal" style="width:min(520px,100%)">
+    <h2 id="cmdTitle">Quick Jump (Ctrl+K)</h2>
+    <input id="cmdSearch" type="search" placeholder="Type a command or message name..." autocomplete="off" style="margin-bottom:10px">
+    <div id="cmdList" style="max-height:340px;overflow:auto;display:flex;flex-direction:column;gap:4px"></div>
+    <div class="btnrow" style="margin-top:12px"><button id="cmdClose"><svg class="ic"><use href="#i-close"></use></svg>Close</button></div>
+  </div>
+</div>
+
 <div id="dialogOverlay" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="dialogTitle">
   <div class="modal" style="width:min(420px,100%)">
     <h2 id="dialogTitle"></h2>
@@ -504,6 +513,6 @@
 
 <div id="testToast" class="ttoast hidden"></div>
 
-<script src="app.js?v=24"></script>
+<script src="app.js?v=25"></script>
 </body>
 </html>

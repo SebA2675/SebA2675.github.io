@@ -3619,13 +3619,17 @@ document.addEventListener("keydown", (e) => {
     hideAddMenu();
     const fm = $("fmtMore");
     if (fm) fm.classList.add("hidden");
-    for (const id of ["sendOverlay", "toolsOverlay", "histOverlay", "schedOverlay", "emojiOverlay", "rawJsonOverlay", "galleryOverlay", "helpOverlay", "srvOverlay", "respOverlay", "autoOverlay"]) {
+    for (const id of ["sendOverlay", "toolsOverlay", "histOverlay", "schedOverlay", "emojiOverlay", "rawJsonOverlay", "galleryOverlay", "helpOverlay", "srvOverlay", "respOverlay", "autoOverlay", "cmdOverlay"]) {
       if (!$(id).classList.contains("hidden")) { $(id).classList.add("hidden"); if (id === "emojiOverlay") emojiCb = null; }
     }
     return;
   }
-  if ($("viewBuilder").classList.contains("hidden")) return;
   const mod = e.ctrlKey || e.metaKey;
+  if (mod && e.key.toLowerCase() === "k") {
+    if ($("viewLogin").classList.contains("hidden")) { e.preventDefault(); openCmdPalette(); }
+    return;
+  }
+  if ($("viewBuilder").classList.contains("hidden")) return;
   if (!mod) return;
   const k = e.key.toLowerCase();
   if (k === "s") { e.preventDefault(); save(false); return; }
@@ -4143,4 +4147,71 @@ $("wipeGuildBtn").onclick = async () => {
     openLibrary();
   } catch (e) { if (e.message !== "login") toolsStatus("Failed: " + e.message); }
 };
+/* ---------- Phase 9: Command Palette (Ctrl+K) ---------- */
+function cmdActions() {
+  const inBuilder = !$("viewBuilder").classList.contains("hidden");
+  const acts = [
+    { label: "New Layout Message", hint: "Create", run: () => $("newLayoutBtn").click() },
+    { label: "New Classic Embed", hint: "Create", run: () => $("newClassicBtn").click() },
+    { label: "Starter Template Gallery", hint: "Create", run: () => $("newGalleryBtn").click() },
+    { label: "Open Server Automation", hint: "Manage", run: () => $("autoBtn").click() },
+    { label: "Open Server Tools (Trash, Brand Kit, Backups)", hint: "Manage", run: () => $("toolsBtn").click() },
+    { label: "Open Guides & Quick Tour", hint: "Help", run: () => $("helpBtn").click() },
+  ];
+  if (inBuilder && cur) {
+    acts.unshift(
+      { label: "Save Message", hint: "Ctrl+S", run: () => save(false) },
+      { label: "Send to Discord", hint: "Builder", run: () => $("sendBtn").click() },
+      { label: "Open Raw JSON", hint: "Builder", run: () => $("rawJsonBtn").click() },
+      { label: "Open Form Responses & Click Stats", hint: "Builder", run: () => $("respBtn").click() },
+      { label: "Open Schedules", hint: "Builder", run: () => $("schedBtn").click() },
+      { label: "Back to My Messages", hint: "Nav", run: () => $("backBtn").click() }
+    );
+  }
+  (libItems || []).slice(0, 40).forEach((m) => {
+    acts.push({
+      label: "Open: " + m.name,
+      hint: guildName(m.guild_id),
+      run: async () => openBuilder(await api("/messages/" + m.id)),
+    });
+  });
+  return acts;
+}
+
+let cmdItems = [];
+function drawCmdList() {
+  const q = ($("cmdSearch").value || "").trim().toLowerCase();
+  cmdItems = cmdActions().filter((a) => !q || a.label.toLowerCase().includes(q) || a.hint.toLowerCase().includes(q));
+  $("cmdList").innerHTML = cmdItems.length
+    ? cmdItems.map((a, i) =>
+      '<button type="button" class="small" data-cmdi="' + i + '" style="justify-content:space-between;padding:8px 10px">' +
+      '<span>' + esc(a.label) + '</span><span class="muted">' + esc(a.hint) + '</span></button>'
+    ).join("")
+    : '<p class="muted">No matching commands.</p>';
+}
+
+function openCmdPalette() {
+  $("cmdSearch").value = "";
+  drawCmdList();
+  $("cmdOverlay").classList.remove("hidden");
+  $("cmdSearch").focus();
+}
+
+$("cmdSearch").oninput = drawCmdList;
+$("cmdSearch").addEventListener("keydown", (e) => {
+  if (e.key === "Enter" && cmdItems.length) {
+    e.preventDefault();
+    $("cmdOverlay").classList.add("hidden");
+    cmdItems[0].run();
+  }
+});
+$("cmdClose").onclick = () => { $("cmdOverlay").classList.add("hidden"); };
+$("cmdOverlay").onclick = (e) => { if (e.target === $("cmdOverlay")) $("cmdOverlay").classList.add("hidden"); };
+$("cmdList").addEventListener("click", (e) => {
+  const b = e.target.closest("[data-cmdi]");
+  if (!b) return;
+  const item = cmdItems[Number(b.dataset.cmdi)];
+  $("cmdOverlay").classList.add("hidden");
+  if (item) item.run();
+});
 start();
