@@ -2807,7 +2807,7 @@ if ($("srvHubGrid")) $("srvHubGrid").addEventListener("click", async (e) => {
   if (!gid) return;
   await openLibrary(gid);
   if (d.hubauto) openAutoSub("wel");
-  if (d.hubtools && $("toolsBtn")) $("toolsBtn").click();
+  if (d.hubtools) openToolsSub("imp");
 });
 $("srvSearch").oninput = drawServerModal;
 $("srvClose").onclick = () => { $("srvOverlay").classList.add("hidden"); };
@@ -2833,14 +2833,16 @@ $("libChips").addEventListener("click", (e) => {
   renderLibList();
 });
 
-function showWsTab(tab, autoSub) {
+function showWsTab(tab, sub) {
   if ($("wsMessages")) $("wsMessages").classList.toggle("hidden", tab !== "messages");
   if ($("wsAutomation")) $("wsAutomation").classList.toggle("hidden", tab !== "automation");
   if ($("wsTools")) $("wsTools").classList.toggle("hidden", tab !== "tools");
   if ($("msgTabBtn")) $("msgTabBtn").classList.toggle("on", tab === "messages");
-  if ($("toolsBtn")) $("toolsBtn").classList.toggle("on", tab === "tools");
   document.querySelectorAll(".sidebar [data-autotab]").forEach((b) => {
-    b.classList.toggle("on", tab === "automation" && b.dataset.autotab === autoSub);
+    b.classList.toggle("on", tab === "automation" && b.dataset.autotab === sub);
+  });
+  document.querySelectorAll(".sidebar [data-toolstab]").forEach((b) => {
+    b.classList.toggle("on", tab === "tools" && b.dataset.toolstab === sub);
   });
 }
 if ($("msgTabBtn")) $("msgTabBtn").onclick = () => showWsTab("messages");
@@ -2964,7 +2966,13 @@ async function loadToolsTemplates() {
   }
 }
 
-$("toolsBtn").onclick = async () => {
+const TOOLS_TABS = {
+  imp: ["toolsCardImp", "Backup & Import"],
+  tpl: ["toolsCardTpl", "Templates & Sequences"],
+  wh: ["toolsCardWh", "Webhooks & Brand Kit"],
+  team: ["toolsCardTeam", "Team, Trash & Logs"],
+};
+async function openToolsSub(sub) {
   await loadGuilds();
   if (!guilds.length) { notifyErr("No server available."); return; }
   const gid = libGuild || guilds[0].id;
@@ -2972,14 +2980,22 @@ $("toolsBtn").onclick = async () => {
   if ($("toolsSrvLabel")) $("toolsSrvLabel").textContent = g ? ("Server: " + g.name) : "";
   $("toolsGuild").innerHTML = opts(guilds.map((x) => [x.id, x.name]), gid);
   $("toolsGuild").value = gid;
+  const meta = TOOLS_TABS[sub] || TOOLS_TABS.imp;
+  if ($("toolsTitle")) $("toolsTitle").textContent = meta[1];
+  Object.values(TOOLS_TABS).forEach(([cid]) => {
+    if ($(cid)) $(cid).classList.toggle("hidden", cid !== meta[0]);
+  });
   toolsStatus("");
-  showWsTab("tools");
+  showWsTab("tools", sub);
   loadToolsTemplates();
   loadToolsSequences();
   loadToolsPersonas();
   loadToolsWebhooks();
   loadToolsPhase8();
-};
+}
+document.querySelectorAll(".sidebar [data-toolstab]").forEach((b) => {
+  b.onclick = () => openToolsSub(b.dataset.toolstab);
+});
 
 $("toolsGuild").onchange = () => { toolsStatus(""); loadToolsTemplates(); loadToolsSequences(); loadToolsPersonas(); loadToolsWebhooks(); loadToolsPhase8(); };
 $("toolsClose").onclick = () => showWsTab("messages");
@@ -4311,7 +4327,10 @@ function cmdActions() {
     { label: "Social Feeds (RSS/YT/Reddit)", hint: "Automation", run: () => openAutoSub("feed") },
     { label: "Custom /faq Commands", hint: "Automation", run: () => openAutoSub("cmd") },
     { label: "Sticky Messages", hint: "Automation", run: () => openAutoSub("sticky") },
-    { label: "Open Server Tools (Trash, Brand Kit, Backups)", hint: "Manage", run: () => $("toolsBtn").click() },
+    { label: "Backup & Import", hint: "Server Tools", run: () => openToolsSub("imp") },
+    { label: "Templates & Sequences", hint: "Server Tools", run: () => openToolsSub("tpl") },
+    { label: "Webhooks & Brand Kit", hint: "Server Tools", run: () => openToolsSub("wh") },
+    { label: "Team, Trash & Logs", hint: "Server Tools", run: () => openToolsSub("team") },
     { label: "Open Guides & Quick Tour", hint: "Help", run: () => $("helpBtn").click() },
   ];
   if (inBuilder && cur) {

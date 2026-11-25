@@ -152,13 +152,17 @@
       <select id="libGuild" class="hidden" aria-label="Server" style="display:none"></select>
       <div class="sb-sec">Server Workspace</div>
       <button type="button" id="msgTabBtn" class="sb-btn on"><svg class="ic"><use href="#i-section"></use></svg>Messages</button>
-      <button id="toolsBtn" class="sb-btn" title="Server tools"><svg class="ic"><use href="#i-tools"></use></svg>Server tools</button>
       <div class="sb-sec">Automation</div>
       <button type="button" class="sb-btn" data-autotab="wel"><svg class="ic"><use href="#i-mail"></use></svg>Welcome &amp; Goodbye</button>
       <button type="button" class="sb-btn" data-autotab="kw"><svg class="ic"><use href="#i-reply"></use></svg>Keyword Replies</button>
       <button type="button" class="sb-btn" data-autotab="feed"><svg class="ic"><use href="#i-schedule"></use></svg>Social Feeds</button>
       <button type="button" class="sb-btn" data-autotab="cmd"><svg class="ic"><use href="#i-code"></use></svg>Custom /faq</button>
       <button type="button" class="sb-btn" data-autotab="sticky"><svg class="ic"><use href="#i-buttons"></use></svg>Sticky Messages</button>
+      <div class="sb-sec">Server Tools</div>
+      <button type="button" class="sb-btn" data-toolstab="imp"><svg class="ic"><use href="#i-import"></use></svg>Backup &amp; Import</button>
+      <button type="button" class="sb-btn" data-toolstab="tpl"><svg class="ic"><use href="#i-template"></use></svg>Templates &amp; Sequences</button>
+      <button type="button" class="sb-btn" data-toolstab="wh"><svg class="ic"><use href="#i-tools"></use></svg>Webhooks &amp; Brand Kit</button>
+      <button type="button" class="sb-btn" data-toolstab="team"><svg class="ic"><use href="#i-servers"></use></svg>Team, Trash &amp; Logs</button>
       <div class="sb-sec">Resources</div>
       <button id="helpBtn" class="sb-btn" title="Tour &amp; guides"><svg class="ic"><use href="#i-question"></use></svg>Guides</button>
       <div class="sb-foot"><b>Need a hand?</b><br>Setup steps, variables and FAQ are in Guides.</div>
@@ -263,21 +267,22 @@
       <section id="wsTools" class="hidden">
         <div class="ws-head">
           <div>
-            <h2>Server Tools</h2>
+            <h2 id="toolsTitle">Server Tools</h2>
             <p id="toolsSrvLabel" class="muted" style="margin:4px 0 0"></p>
           </div>
           <button id="toolsClose" type="button"><svg class="ic"><use href="#i-back"></use></svg>Back to Messages</button>
         </div>
         <select id="toolsGuild" class="hidden" style="display:none"></select>
-        <div class="btnrow" style="margin-bottom:10px">
-          <button id="toolsBackup"><svg class="ic"><use href="#i-export"></use></svg>Download backup</button>
-          <button id="toolsImport"><svg class="ic"><use href="#i-import"></use></svg>Import file...</button>
-          <input type="file" id="importFile" accept=".json,application/json" class="hidden">
-        </div>
-        <p id="toolsStatus" class="muted" style="min-height:20px"></p>
+        <p id="toolsStatus" class="muted" style="min-height:20px;margin:0 0 10px"></p>
         <div style="display:grid;gap:14px">
-          <div class="bcard" style="background:var(--panel);padding:18px">
-            <h3 style="margin-top:0">Import from Discord Link or Discohook JSON</h3>
+          <div class="bcard" id="toolsCardImp" style="background:var(--panel);padding:18px">
+            <h3 style="margin-top:0">Backup &amp; File Import</h3>
+            <div class="btnrow" style="margin-bottom:14px">
+              <button id="toolsBackup"><svg class="ic"><use href="#i-export"></use></svg>Download backup</button>
+              <button id="toolsImport"><svg class="ic"><use href="#i-import"></use></svg>Import file...</button>
+              <input type="file" id="importFile" accept=".json,application/json" class="hidden">
+            </div>
+            <h3>Import from Discord Link or Discohook JSON</h3>
             <div class="btnrow" style="margin-bottom:8px">
               <input id="impLinkUrl" placeholder="https://discord.com/channels/..." style="flex:1;min-width:180px">
               <button class="primary small" id="impLinkBtn">Import link</button>
@@ -286,13 +291,10 @@
             <button class="small" id="impDiscoBtn" style="margin-top:6px">Import Discohook JSON</button>
           </div>
 
-          <div class="bcard" style="background:var(--panel);padding:18px">
+          <div class="bcard" id="toolsCardTpl" style="background:var(--panel);padding:18px">
             <h3 style="margin-top:0">Templates</h3>
-            <div id="toolsTemplates"></div>
-          </div>
-
-          <div class="bcard" style="background:var(--panel);padding:18px">
-            <h3 style="margin-top:0">Message sequences</h3>
+            <div id="toolsTemplates" style="margin-bottom:16px"></div>
+            <h3>Message sequences</h3>
             <p class="muted">Group saved messages to post them in order into a channel.</p>
             <label>Channel for posting sequences</label><select id="seqChannel"></select>
             <div id="toolsSequences" style="margin-top:8px"></div>
@@ -305,7 +307,7 @@
             </div>
           </div>
 
-          <div class="bcard" style="background:var(--panel);padding:18px">
+          <div class="bcard" id="toolsCardWh" style="background:var(--panel);padding:18px">
             <h3 style="margin-top:0">Webhook presets &amp; Channel Webhooks</h3>
             <p class="muted">A preset is a name and picture to post under, like "Server News".</p>
             <div id="toolsPersonas"></div>
@@ -320,26 +322,23 @@
               <input id="whNewName" maxlength="80" placeholder="New webhook name" style="flex:1;min-width:150px">
               <button class="primary small" id="whCreateBtn"><svg class="ic"><use href="#i-plus"></use></svg>Create webhook</button>
             </div>
-          </div>
-
-          <div class="bcard" style="background:var(--panel);padding:18px">
-            <h3 style="margin-top:0">Brand Kit</h3>
+            <h3 style="margin-top:18px">Brand Kit</h3>
             <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
               <input type="color" id="bkColor" value="#5865F2" style="width:48px;height:36px;padding:2px">
               <input id="bkFooter" maxlength="300" placeholder="Default footer text" style="flex:1;min-width:160px">
               <button class="primary small" id="bkSaveBtn">Save Brand Kit</button>
             </div>
-            <h3 style="margin-top:16px">Editor Access (Teamwork)</h3>
+          </div>
+
+          <div class="bcard" id="toolsCardTeam" style="background:var(--panel);padding:18px">
+            <h3 style="margin-top:0">Editor Access (Teamwork)</h3>
             <p class="muted">Grant trusted members dashboard access for this server without giving them Discord Administrator.</p>
             <div id="toolsEditors"></div>
-            <div class="btnrow" style="margin-top:8px">
+            <div class="btnrow" style="margin-top:8px;margin-bottom:16px">
               <input id="edUserId" placeholder="Discord User ID (numbers only)" style="flex:1;min-width:150px">
               <button class="primary small" id="edAddBtn"><svg class="ic"><use href="#i-plus"></use></svg>Add editor</button>
             </div>
-          </div>
-
-          <div class="bcard" style="background:var(--panel);padding:18px">
-            <h3 style="margin-top:0">Bulk Search &amp; Replace</h3>
+            <h3>Bulk Search &amp; Replace</h3>
             <div class="btnrow">
               <input id="brFind" placeholder="Find text (e.g. old link)" style="flex:1;min-width:140px">
               <input id="brReplace" placeholder="Replace with" style="flex:1;min-width:140px">
@@ -701,6 +700,6 @@
 
 <div id="testToast" class="ttoast hidden"></div>
 
-<script src="app.js?v=34"></script>
+<script src="app.js?v=35"></script>
 </body>
 </html>
