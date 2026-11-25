@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' https:; connect-src https://h5nngnplb6.apps.bot-hosting.cloud; base-uri 'none'; form-action 'none'">
+<meta name="theme-color" content="#f8fafc">
+<link rel="icon" href="dashboard/logo.jpg">
+<title>Features — 9NATION EMBEDS</title>
+<link rel="stylesheet" href="dashboard/styles.css?v=44">
+</head>
+<body>
+<header class="nav">
+  <div class="nav-in">
+    <a class="brand" href="./"><img src="dashboard/logo.jpg" alt="9NATION" class="logo"><span>9NATION <b>EMBEDS</b></span></a>
+    <nav class="nav-links">
+      <a href="./">Home</a>
+      <a href="features.html" class="on">Features</a>
+      <a href="guide.html">Guide</a>
+      <a href="dashboard/status.html">Status</a>
+      <a href="dashboard/about.html">About</a>
+    </nav>
+    <div class="nav-right">
+      <button type="button" id="landThemeBtn" class="small" title="Toggle Light/Dark theme">Dark mode</button>
+      <a href="dashboard/" style="text-decoration:none"><button class="primary" type="button">Sign in</button></a>
+    </div>
+  </div>
+</header>
+
+<main class="wrap" style="max-width:1120px;padding:36px 20px 56px">
+  <section id="demo">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px">
+      <div>
+        <h1 style="font-size:30px;margin:0 0 6px;color:var(--ink)">Live Message Preview</h1>
+        <p class="muted" style="margin:0;font-size:15px">Switch between Components V2 and Classic Embed, and click the interactive buttons below.</p>
+      </div>
+      <div class="seg">
+        <button type="button" id="demoV2Btn" class="on">Components V2</button>
+        <button type="button" id="demoClassicBtn">Classic Embed</button>
+      </div>
+    </div>
+    <div class="discord" id="demoBox" style="max-width:740px">
+      <div class="msghead"><span>9NATION EMBEDS</span><span class="app">APP</span></div>
+      <div id="demoV2">
+        <div class="pbox" style="border-left-color:#8b5cf6">
+          <div class="ptext"><h2>Welcome to 9Nation!</h2><p>Pick your roles below, read the rules, or open a support form.</p></div>
+          <div class="pdiv line"></div>
+          <div class="pbtns">
+            <span class="pbtn blue" data-demomsg="Role menu opened! Members can toggle roles in 1 click.">Get Roles</span>
+            <span class="pbtn green" data-demomsg="Pop-up form opened! Answers log to #applications with Accept/Deny.">Apply Now</span>
+            <span class="pbtn" data-demomsg="Switched to Page 2: Server Rules &amp; FAQ.">Next Page</span>
+          </div>
+        </div>
+      </div>
+      <div id="demoClassic" class="hidden">
+        <div class="cembed" style="border-left-color:#8b5cf6">
+          <div class="ctitle">Server Announcements</div>
+          <div class="cdesc">Classic embeds support up to 10 embeds per message, custom fields, thumbnails, and live variables like <code>{{membercount}}</code>.</div>
+          <div class="cfoot"><span>9NATION EMBEDS &bull; Today at 12:00 PM</span></div>
+        </div>
+      </div>
+      <p id="demoOut" class="dm" style="margin:8px 0 0;min-height:18px"></p>
+    </div>
+  </section>
+
+  <section style="margin-top:48px">
+    <h2 style="font-size:26px;margin:0 0 6px;color:var(--ink)">Everything Included</h2>
+    <p class="muted" style="margin:0 0 20px;font-size:15px">Every server gets its own independent workspace for messages, automation, and tools.</p>
+    <div class="galgrid" style="grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px">
+      <div class="bcard" style="background:var(--panel);padding:20px">
+        <b style="font-size:16px;color:var(--ink)">Components V2 &amp; Classic Embeds</b>
+        <p class="muted" style="margin:8px 0 0;line-height:1.6">Build modern accented Boxes, Sections, Image Galleries (up to 10), Dividers, Button Rows, and Dropdowns — or up to 10 Classic Embeds per message.</p>
+      </div>
+      <div class="bcard" style="background:var(--panel);padding:20px">
+        <b style="font-size:16px;color:var(--ink)">Formatting &amp; Custom Emojis</b>
+        <p class="muted" style="margin:8px 0 0;line-height:1.6">1-click Markdown toolbar, live character counter, problem checker, and a Custom Emoji Picker pulling animated &amp; static emojis from your servers.</p>
+      </div>
+      <div class="bcard" style="background:var(--panel);padding:20px">
+        <b style="font-size:16px;color:var(--ink)">Permanent &amp; Custom Variables</b>
+        <p class="muted" style="margin:8px 0 0;line-height:1.6">Use <code>{{usermention}}</code>, <code>{{servername}}</code>, <code>{{membercount}}</code>, and up to 20 custom variables with a live Variable Playground.</p>
+      </div>
+      <div class="bcard" style="background:var(--panel);padding:20px">
+        <b style="font-size:16px;color:var(--ink)">Interactive Forms &amp; CSV Export</b>
+        <p class="muted" style="margin:8px 0 0;line-height:1.6">Attach 5-question pop-up Discord modals to buttons, log answers to a staff channel with Accept/Deny buttons &amp; auto-roles, and export CSV.</p>
+      </div>
+      <div class="bcard" style="background:var(--panel);padding:20px">
+        <b style="font-size:16px;color:var(--ink)">Self-Role Wizard &amp; Multi-Page</b>
+        <p class="muted" style="margin:8px 0 0;line-height:1.6">Generate button or dropdown role menus in seconds (with admin-role safety blocks), plus paginated messages and role/cooldown access rules.</p>
+      </div>
+      <div class="bcard" style="background:var(--panel);padding:20px">
+        <b style="font-size:16px;color:var(--ink)">Welcome, Keywords &amp; Feeds</b>
+        <p class="muted" style="margin:8px 0 0;line-height:1.6">Set up Welcome/Goodbye, Keyword auto-replies, RSS/YouTube/Reddit feeds, Sticky messages, <code>/faq</code> commands, and recurring Schedules.</p>
+      </div>
+      <div class="bcard" style="background:var(--panel);padding:20px">
+        <b style="font-size:16px;color:var(--ink)">Webhooks, Brand Kit &amp; Sequences</b>
+        <p class="muted" style="margin:8px 0 0;line-height:1.6">Post under custom webhook personas, auto-apply your server's default colour &amp; footer, and send up to 10 messages in sequence.</p>
+      </div>
+      <div class="bcard" style="background:var(--panel);padding:20px">
+        <b style="font-size:16px;color:var(--ink)">Imports, Backups &amp; Teamwork</b>
+        <p class="muted" style="margin:8px 0 0;line-height:1.6">Import from Discord message links or Discohook JSON, copy layouts across servers, grant Editor access, and restore from 30-day Trash.</p>
+      </div>
+    </div>
+  </section>
+
+  <footer class="muted" style="text-align:center;margin-top:52px;padding-top:22px;border-top:1px solid var(--line);font-size:13px">
+    &copy; 2026 9NATION EMBEDS &middot;
+    <a href="./">Home</a> &middot;
+    <a href="guide.html">Guide</a> &middot;
+    <a href="dashboard/about.html">About</a> &middot;
+    <a href="dashboard/privacy.html">Privacy</a> &middot;
+    <a href="dashboard/terms.html">Terms</a>
+  </footer>
+</main>
+<script src="landing.js?v=44"></script>
+</body>
+</html>

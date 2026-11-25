@@ -2617,6 +2617,12 @@ async function openBuilder(msg) {
   applyPw();
   setMode("edit");
   renderAll();
+  try {
+    if (!localStorage.getItem("builder_tour_v1")) {
+      if (window.innerWidth > 900) { treeOpen = true; applyTree(); }
+      setTimeout(() => startSpotlightTour(BUILDER_TOUR_STEPS), 200);
+    }
+  } catch (e) {}
 }
 
 let libItems = [];
@@ -4700,5 +4706,64 @@ function initAppearance() {
     if (e.target.closest("button")) closeMobMenu();
   });
 }
+
+let tourSteps = [], tourIdx = 0;
+function closeTour() {
+  if ($("tourSpot")) $("tourSpot").classList.add("hidden");
+  if ($("tourCard")) $("tourCard").classList.add("hidden");
+  try { localStorage.setItem("builder_tour_v1", "1"); } catch (e) {}
+}
+function renderTourStep() {
+  const s = tourSteps[tourIdx];
+  if (!s) { closeTour(); return; }
+  const el = document.querySelector(s.sel);
+  if (!el || el.offsetParent === null) {
+    if (tourIdx < tourSteps.length - 1) { tourIdx++; renderTourStep(); }
+    else closeTour();
+    return;
+  }
+  el.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "nearest" });
+  const r = el.getBoundingClientRect();
+  const pad = 6;
+  const spot = $("tourSpot"), card = $("tourCard");
+  spot.style.top = Math.max(4, r.top - pad) + "px";
+  spot.style.left = Math.max(4, r.left - pad) + "px";
+  spot.style.width = Math.min(window.innerWidth - 8, r.width + pad * 2) + "px";
+  spot.style.height = Math.min(window.innerHeight - 8, r.height + pad * 2) + "px";
+  spot.classList.remove("hidden");
+  $("tourStep").textContent = "Step " + (tourIdx + 1) + " of " + tourSteps.length;
+  $("tourTitle").textContent = s.title;
+  $("tourBody").textContent = s.body;
+  $("tourBack").disabled = tourIdx === 0;
+  $("tourNext").textContent = tourIdx === tourSteps.length - 1 ? "Finish" : "Next";
+  card.classList.remove("hidden");
+  const cw = card.offsetWidth || 340, ch = card.offsetHeight || 170;
+  let top = r.bottom + 14;
+  if (top + ch > window.innerHeight - 12) top = Math.max(12, r.top - ch - 14);
+  let left = Math.min(window.innerWidth - cw - 12, Math.max(12, r.left));
+  card.style.top = top + "px";
+  card.style.left = left + "px";
+}
+function startSpotlightTour(steps) {
+  tourSteps = steps;
+  tourIdx = 0;
+  renderTourStep();
+}
+const BUILDER_TOUR_STEPS = [
+  { sel: "#tabs", title: "Pages, Replies, Forms & Variables", body: "Switch between your Main message, + Page tabs, Private Replies, Pop-Up Forms, and Custom {{variables}}." },
+  { sel: "#treeCollapseBtn", title: "Message Tree", body: "All blocks in your message appear here. Drag rows to reorder, or click this bar to collapse the list anytime." },
+  { sel: "#blockPalette", title: "Add a Part", body: "Click Box, Text, Section, Images, Divider, Buttons, or Dropdown to add new parts to your layout." },
+  { sel: "#discordBox", title: "Live Discord Preview", body: "See your message exactly as it appears in Discord. Click any block in the preview to edit it, or use Test mode to click buttons!" },
+  { sel: ".pane-settings", title: "Part Settings", body: "Edit text, formatting, custom emojis, button actions (Links, Replies, Forms, Roles), and cooldown rules here." },
+  { sel: "#sendBtn", title: "Publish to Discord", body: "Changes auto-save as you type. Click Send when ready to post to a channel, update a live message, or schedule it." },
+];
+if ($("tourSkip")) $("tourSkip").onclick = closeTour;
+if ($("tourBack")) $("tourBack").onclick = () => { if (tourIdx > 0) { tourIdx--; renderTourStep(); } };
+if ($("tourNext")) $("tourNext").onclick = () => { if (tourIdx < tourSteps.length - 1) { tourIdx++; renderTourStep(); } else closeTour(); };
+if ($("builderTourBtn")) $("builderTourBtn").onclick = () => {
+  if ($("builderEl") && $("builderEl").dataset.tree !== "open") { $("builderEl").dataset.tree = "open"; }
+  startSpotlightTour(BUILDER_TOUR_STEPS);
+};
+
 initAppearance();
 start();

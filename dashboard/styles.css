@@ -449,6 +449,14 @@ label{display:block;font-size:13px;font-weight:600;color:var(--ink);margin:12px 
 .ws-title-row .ic{width:24px;height:24px;color:var(--accent)}
 .card-hdr{display:flex;align-items:center;gap:8px;margin:0 0 8px;font-size:16px;font-weight:700;color:var(--ink)}
 .card-hdr .ic{width:18px;height:18px;color:var(--accent);flex:none}
+
+/* ----- Game-Style Spotlight Tour ----- */
+.tour-spot{position:fixed;z-index:95;border-radius:12px;box-shadow:0 0 0 9999px rgba(10,12,18,.74),0 0 0 3px var(--accent);pointer-events:none;transition:top .22s ease,left .22s ease,width .22s ease,height .22s ease}
+.tour-card{position:fixed;z-index:98;width:min(360px,calc(100vw - 24px));background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px;box-shadow:0 22px 54px rgba(0,0,0,.45)}
+.tour-step{display:inline-block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;padding:3px 9px;border-radius:999px;background:var(--accent-soft);color:var(--accent);margin-bottom:8px}
+.tour-card h3{margin:0 0 6px;font-size:17px;color:var(--ink)}
+.tour-card p{margin:0 0 14px;font-size:13.5px;line-height:1.5;color:var(--muted)}
+.tour-foot{display:flex;align-items:center;justify-content:space-between;gap:8px}
 .srv-pill{display:inline-flex;align-items:center;gap:6px;padding:4px 11px;border-radius:999px;background:var(--panel2);border:1px solid var(--line);font-size:12px;font-weight:600;color:var(--ink)}
 .um-lbl{display:inline-flex;align-items:center;gap:6px}
 .um-lbl .ic{width:15px;height:15px}

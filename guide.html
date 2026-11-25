@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' https:; connect-src https://h5nngnplb6.apps.bot-hosting.cloud; base-uri 'none'; form-action 'none'">
+<meta name="theme-color" content="#f8fafc">
+<link rel="icon" href="dashboard/logo.jpg">
+<title>Visual Guide — 9NATION EMBEDS</title>
+<link rel="stylesheet" href="dashboard/styles.css?v=44">
+</head>
+<body>
+<header class="nav">
+  <div class="nav-in">
+    <a class="brand" href="./"><img src="dashboard/logo.jpg" alt="9NATION" class="logo"><span>9NATION <b>EMBEDS</b></span></a>
+    <nav class="nav-links">
+      <a href="./">Home</a>
+      <a href="features.html">Features</a>
+      <a href="guide.html" class="on">Guide</a>
+      <a href="dashboard/status.html">Status</a>
+      <a href="dashboard/about.html">About</a>
+    </nav>
+    <div class="nav-right">
+      <button type="button" id="landThemeBtn" class="small" title="Toggle Light/Dark theme">Dark mode</button>
+      <a href="dashboard/" style="text-decoration:none"><button class="primary" type="button">Sign in</button></a>
+    </div>
+  </div>
+</header>
+
+<main class="wrap" style="max-width:1040px;padding:36px 20px 56px">
+  <h1 style="font-size:32px;margin:0 0 8px;color:var(--ink)">Visual Step-by-Step Guide</h1>
+  <p class="muted" style="font-size:15px;margin:0 0 28px">Everything you need to go from inviting the bot to building interactive Discord layouts.</p>
+
+  <div style="display:grid;gap:24px">
+    <div class="bcard" style="background:var(--panel);padding:22px">
+      <h2 style="margin:0 0 8px;color:var(--ink)">1. Invite the Bot &amp; Check Live Status</h2>
+      <p class="muted" style="margin:0 0 14px;line-height:1.6">
+        Start on <a href="./">nation9.me</a> and click <b>+ Invite Bot</b> to add 9NATION EMBEDS to your Discord server. You can check bot health, gateway ping, and uptime anytime on the <a href="dashboard/status.html">Status</a> page.
+      </p>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px">
+        <img src="assets/guide-home.png" alt="9NATION EMBEDS Homepage" style="width:100%;border-radius:12px;border:1px solid var(--line)">
+        <img src="assets/guide-status.png" alt="9NATION EMBEDS Live Status" style="width:100%;border-radius:12px;border:1px solid var(--line)">
+      </div>
+    </div>
+
+    <div class="bcard" style="background:var(--panel);padding:22px">
+      <h2 style="margin:0 0 8px;color:var(--ink)">2. Sign In with Discord &amp; Pick Your Server</h2>
+      <p class="muted" style="margin:0 0 14px;line-height:1.6">
+        Open the <a href="dashboard/">Dashboard</a> and click <b>Log in with Discord</b>. Once signed in, you'll land on <b>My Servers</b> — click <b>Open dashboard</b> on any approved server to enter its isolated workspace.
+      </p>
+      <img src="assets/guide-login.png" alt="9NATION EMBEDS Discord Sign In" style="width:100%;max-width:560px;border-radius:12px;border:1px solid var(--line)">
+    </div>
+
+    <div class="bcard" style="background:var(--panel);padding:22px">
+      <h2 style="margin:0 0 8px;color:var(--ink)">3. Inside Your Server Workspace</h2>
+      <p class="muted" style="margin:0 0 12px;line-height:1.6">
+        Every server is completely independent. Use the left sidebar (or the <b>&#9776;</b> menu on phones) to jump directly to:
+      </p>
+      <div class="galgrid" style="grid-template-columns:repeat(auto-fit,minmax(220px,1fr))">
+        <div class="galcard"><b>Messages &amp; Schedules</b><span class="muted">Create Components V2 or Classic Embeds, search drafts, and manage all scheduled posts.</span></div>
+        <div class="galcard"><b>Automation</b><span class="muted">Dedicated pages for Welcome &amp; Goodbye, Keyword Replies, Social Feeds, Custom <code>/faq</code>, and Sticky Messages.</span></div>
+        <div class="galcard"><b>Server Tools</b><span class="muted">Backups, Discord Link &amp; Discohook JSON import, Templates, Sequences, Webhooks, Brand Kit, Teamwork &amp; Trash.</span></div>
+      </div>
+    </div>
+
+    <div class="bcard" style="background:var(--panel);padding:22px">
+      <h2 style="margin:0 0 8px;color:var(--ink)">4. Interactive Builder Walkthrough (In-App Spotlight Tour)</h2>
+      <p class="muted" style="margin:0 0 12px;line-height:1.6">
+        When you open a message in the Builder for the first time, an interactive <b>in-game spotlight tutorial</b> automatically highlights each panel and explains what it does:
+      </p>
+      <ul class="muted" style="line-height:1.7;margin:0;padding-left:20px">
+        <li><b>Message Tree:</b> Drag rows to reorder, or collapse the tree to keep Add buttons close.</li>
+        <li><b>Add a Part:</b> Click Box, Text, Section, Images, Divider, Buttons, or Dropdown.</li>
+        <li><b>Live Preview:</b> Click any part directly in the preview to edit it, or toggle <b>Test</b> mode to click buttons.</li>
+        <li><b>Part Settings:</b> Edit formatting, custom emojis, button actions (Links, Replies, Forms, Roles), and cooldown rules.</li>
+        <li><b>Send &amp; Schedule:</b> Publish to any Discord channel, update live posts, or set recurring schedules.</li>
+      </ul>
+    </div>
+  </div>
+
+  <footer class="muted" style="text-align:center;margin-top:52px;padding-top:22px;border-top:1px solid var(--line);font-size:13px">
+    &copy; 2026 9NATION EMBEDS &middot;
+    <a href="./">Home</a> &middot;
+    <a href="features.html">Features</a> &middot;
+    <a href="dashboard/about.html">About</a> &middot;
+    <a href="dashboard/privacy.html">Privacy</a> &middot;
+    <a href="dashboard/terms.html">Terms</a>
+  </footer>
+</main>
+<script src="landing.js?v=44"></script>
+</body>
+</html>

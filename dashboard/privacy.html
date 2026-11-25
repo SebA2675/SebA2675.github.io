@@ -3,18 +3,19 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; img-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self' 'unsafe-inline'; img-src 'self'; base-uri 'none'; form-action 'none'">
 <meta name="theme-color" content="#f8fafc">
 <link rel="icon" href="logo.jpg">
-<title>Privacy — 9NATION EMBEDS</title>
-<link rel="stylesheet" href="styles.css?v=42">
+<title>Privacy Policy — 9NATION EMBEDS</title>
+<link rel="stylesheet" href="styles.css?v=44">
 </head>
 <body>
 <header class="nav">
   <div class="nav-in">
     <a class="brand" href="../"><img src="logo.jpg" alt="9NATION" class="logo"><span>9NATION <b>EMBEDS</b></span></a>
     <nav class="nav-links">
-      <a href="../#features">Features</a>
+      <a href="../features.html">Features</a>
+      <a href="../guide.html">Guide</a>
       <a href="status.html">Status</a>
       <a href="about.html">About</a>
     </nav>
@@ -23,36 +24,38 @@
     </div>
   </div>
 </header>
-<main class="wrap" style="max-width:760px;padding:28px 16px 48px">
-<div class="bcard" style="background:var(--panel);padding:22px 26px">
+<main class="wrap" style="max-width:820px;padding:32px 16px 56px">
+  <div class="bcard" style="background:var(--panel);padding:26px 30px;line-height:1.65">
+    <h1 style="margin:0 0 4px;color:var(--ink)">Privacy Policy</h1>
+    <p class="muted" style="margin:0 0 18px">Last updated 25 November 2026</p>
+    <p>This Privacy Policy explains what data <b>9NATION EMBEDS</b> collects, why it is needed, how long it is kept, and how you can delete it at any time.</p>
 
-<h1>Privacy</h1>
-<p class="muted">Last updated 24 November 2026</p>
-<p>This page says what the Embed Dashboard and its Discord bot store, why, and how to have it removed.</p>
-<h2>Who runs it</h2>
-<p>The 9 Nation team runs the dashboard (this website) and the bot. Ask for help or removal through the owner of the server you use it in, or through the bot owner on Discord.</p>
-<h2>What is stored</h2>
-<ul>
-<li><b>Your Discord user ID</b>, only to check that you may use a server, to enforce cooldown and once-per-person rules on buttons you press, and to record the time you last logged out.</li>
-<li><b>The messages you design:</b> their text, images' web addresses, buttons, dropdowns, forms, replies, names, schedules, saved templates, webhook name and picture presets, the server and channel IDs they are for, and the last 20 saved versions of each message.</li>
-<li><b>Approved server list:</b> server IDs and names.</li>
-</ul>
-<h2>What is not stored</h2>
-<ul>
-<li>No passwords, Discord tokens, email addresses or message content from your servers' members.</li>
-<li>Answers to pop-up forms are sent straight to the Discord channel the server chose. The bot does not keep a copy.</li>
-<li>Your IP address is used only briefly in memory to limit abuse and is not saved.</li>
-<li>No advertising, no analytics, no tracking, no cookies. The dashboard keeps a login pass in your browser's local storage. Pressing <b>Log out</b> removes it and cancels it on the server.</li>
-</ul>
-<h2>Where it is kept</h2>
-<p>On a free bot host. A copy of the database is also saved every night in a private repository for recovery, and the newest 14 copies are kept.</p>
-<h2>Sharing</h2>
-<p>Data is never sold or shared with anyone. It is not used for anything except running this tool.</p>
-<h2>Deleting your data</h2>
-<p>Delete any message in the dashboard to remove it, its versions, its schedules and its button records. To remove everything for a server or for yourself, ask the owner and it will be deleted. Backup copies disappear within 14 days.</p>
+    <h2>1. Data We Store</h2>
+    <ul>
+      <li><b>Discord User IDs:</b> Used to verify dashboard permissions, enforce button cooldowns / once-per-person locks, and track editor access lists.</li>
+      <li><b>Saved Messages &amp; Configuration:</b> Draft names, layouts, embed text, image URLs, buttons, dropdowns, forms, replies, schedules, templates, webhook presets, Brand Kit settings, and the last 20 saved versions per message.</li>
+      <li><b>Automation &amp; Feeds:</b> Welcome/Goodbye channel &amp; message mappings, keyword triggers, RSS/YouTube/Reddit feed URLs, sticky message configs, and <code>/faq</code> entries.</li>
+      <li><b>Server Identifiers &amp; Logs:</b> Approved server IDs/names and recent dashboard activity logs (edits, posts, deletions) for server auditing.</li>
+    </ul>
 
-</div>
-<p class="muted" style="text-align:center;margin-top:20px"><a href="./">Open Dashboard</a> &middot; <a href="about.html">About</a> &middot; <a href="privacy.html">Privacy</a> &middot; <a href="terms.html">Terms</a> &middot; <a href="status.html">Status</a></p>
+    <h2>2. Data We Never Collect or Store</h2>
+    <ul>
+      <li>No Discord passwords, account tokens, email addresses, or private DMs.</li>
+      <li>No bulk logging of general Discord chat messages (only messages matching an active Keyword trigger or Sticky channel check are evaluated in memory).</li>
+      <li>No third-party ads, analytics trackers, or tracking cookies. Session tokens are stored only in your browser's <code>localStorage</code> and invalidated when you click <b>Sign out</b>.</li>
+      <li>IP addresses are used strictly in memory for rate-limiting and are never written to disk.</li>
+    </ul>
+
+    <h2>3. Retention &amp; Backups</h2>
+    <ul>
+      <li><b>30-Day Trash:</b> Deleted messages stay in your server's Trash for 30 days for recovery before permanent purge.</li>
+      <li><b>Automated Backups:</b> Encrypted nightly database backups are retained for up to 14 days for disaster recovery.</li>
+    </ul>
+
+    <h2>4. Your Data Rights &amp; Deletion</h2>
+    <p>Server administrators can export all server data as JSON or permanently wipe all saved drafts, automation, and settings for their server anytime using <b>Team, Trash &amp; Logs &rarr; Delete all server data</b>. Data is never sold or shared with third parties.</p>
+  </div>
+  <p class="muted" style="text-align:center;margin-top:20px"><a href="../">Home</a> &middot; <a href="./">Dashboard</a> &middot; <a href="about.html">About</a> &middot; <a href="privacy.html">Privacy</a> &middot; <a href="terms.html">Terms</a> &middot; <a href="status.html">Status</a></p>
 </main>
 </body>
 </html>

@@ -9,7 +9,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="logo.jpg">
 <title>9NATION EMBEDS — Dashboard</title>
-<link rel="stylesheet" href="styles.css?v=43">
+<link rel="stylesheet" href="styles.css?v=44">
 </head>
 <body>
 
@@ -78,7 +78,8 @@
     </div>
     <nav class="nav-links">
       <a href="#" id="navServersBtn"><svg class="ic"><use href="#i-servers"></use></svg>My servers</a>
-      <a href="../#features"><svg class="ic"><use href="#i-template"></use></svg>Features</a>
+      <a href="../features.html"><svg class="ic"><use href="#i-template"></use></svg>Features</a>
+      <a href="../guide.html"><svg class="ic"><use href="#i-question"></use></svg>Guide</a>
       <a href="status.html"><svg class="ic"><use href="#i-history"></use></svg>Status</a>
       <a href="#" id="navAdminBtn" class="hidden"><svg class="ic"><use href="#i-tools"></use></svg>Owner Panel</a>
     </nav>
@@ -428,6 +429,7 @@
     <div class="toprow">
       <button id="backBtn" class="tb" title="Back"><svg class="ic"><use href="#i-back"></use></svg><span class="t">Back</span></button>
       <button id="treeBtn" class="tb treeToggle" title="Show or hide the parts tree"><svg class="ic"><use href="#i-tree"></use></svg><span class="t">Parts</span></button>
+      <button id="builderTourBtn" class="tb" title="Interactive walkthrough"><svg class="ic"><use href="#i-question"></use></svg><span class="t">Tour</span></button>
       <input id="nameInput" placeholder="Message name">
       <button id="moreBtn" class="tb moreBtn" aria-haspopup="true" aria-expanded="false" title="More actions" aria-label="More actions"><svg class="ic"><use href="#i-more"></use></svg></button>
       <div id="moreMenu">
@@ -734,6 +736,20 @@
 
 <div id="testToast" class="ttoast hidden"></div>
 
-<script src="app.js?v=42"></script>
+<div id="tourSpot" class="tour-spot hidden"></div>
+<div id="tourCard" class="tour-card hidden" role="dialog" aria-modal="true" aria-labelledby="tourTitle">
+  <span class="tour-step" id="tourStep"></span>
+  <h3 id="tourTitle"></h3>
+  <p id="tourBody"></p>
+  <div class="tour-foot">
+    <button type="button" class="small" id="tourSkip">Skip tour</button>
+    <div style="display:flex;gap:6px">
+      <button type="button" class="small" id="tourBack">Back</button>
+      <button type="button" class="primary small" id="tourNext">Next</button>
+    </div>
+  </div>
+</div>
+
+<script src="app.js?v=44"></script>
 </body>
 </html>

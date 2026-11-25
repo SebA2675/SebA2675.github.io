@@ -7,17 +7,18 @@
 <meta name="theme-color" content="#f8fafc">
 <link rel="icon" href="dashboard/logo.jpg">
 <title>9NATION EMBEDS — Discord Embed &amp; Layout Studio</title>
-<link rel="stylesheet" href="dashboard/styles.css?v=42">
+<link rel="stylesheet" href="dashboard/styles.css?v=44">
 </head>
 <body>
 <header class="nav">
   <div class="nav-in">
     <a class="brand" href="./"><img src="dashboard/logo.jpg" alt="9NATION" class="logo"><span>9NATION <b>EMBEDS</b></span></a>
     <nav class="nav-links">
-      <a href="#features">Features</a>
-      <a href="dashboard/">Message builder</a>
-      <a href="#guide">Guide</a>
+      <a href="./" class="on">Home</a>
+      <a href="features.html">Features</a>
+      <a href="guide.html">Guide</a>
       <a href="dashboard/status.html">Status</a>
+      <a href="dashboard/about.html">About</a>
     </nav>
     <div class="nav-right">
       <button type="button" id="landThemeBtn" class="small" title="Toggle Light/Dark theme">Dark mode</button>
@@ -26,8 +27,8 @@
   </div>
 </header>
 
-<main class="wrap" style="max-width:1120px;padding:40px 20px">
-  <section class="hero">
+<main class="wrap" style="max-width:1140px;padding:24px 20px;min-height:calc(100vh - 61px);display:flex;flex-direction:column;justify-content:center">
+  <section class="hero" style="padding:20px 0 28px">
     <div class="hero-left">
       <div id="livePill" class="pill"><span class="pdot"></span><span id="liveText">Checking bot status...</span></div>
       <h1 class="hero-title">Your community's <span>embed &amp; layout</span> studio.</h1>
@@ -49,90 +50,37 @@
     </div>
   </section>
 
-  <section id="demo" style="margin-top:44px">
-    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px">
-      <div>
-        <h2 style="font-size:24px;margin:0 0 4px;color:var(--ink)">Live Message Preview</h2>
-        <p class="muted" style="margin:0;font-size:14px">Try clicking the buttons or switching between Components V2 and Classic Embed.</p>
+  <div class="galgrid" style="grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;margin-top:8px">
+    <a href="features.html" style="text-decoration:none;color:inherit">
+      <div class="bcard" style="background:var(--panel);padding:18px;height:100%">
+        <b style="font-size:16px;color:var(--ink)">Explore Features &amp; Live Demo &rarr;</b>
+        <p class="muted" style="margin:6px 0 0">Try the interactive Components V2 preview and see every tool included.</p>
       </div>
-      <div class="seg">
-        <button type="button" id="demoV2Btn" class="on">Components V2</button>
-        <button type="button" id="demoClassicBtn">Classic Embed</button>
+    </a>
+    <a href="guide.html" style="text-decoration:none;color:inherit">
+      <div class="bcard" style="background:var(--panel);padding:18px;height:100%">
+        <b style="font-size:16px;color:var(--ink)">Visual Step-by-Step Guide &rarr;</b>
+        <p class="muted" style="margin:6px 0 0">Real screenshots and walkthroughs for the Builder, Automation, and Server Tools.</p>
       </div>
-    </div>
-    <div class="discord" id="demoBox" style="max-width:680px">
-      <div class="msghead"><span>9NATION EMBEDS</span><span class="app">APP</span></div>
-      <div id="demoV2">
-        <div class="pbox" style="border-left-color:#8b5cf6">
-          <div class="ptext"><h2>Welcome to 9Nation!</h2><p>Pick your roles below, read the rules, or open a support form.</p></div>
-          <div class="pdiv line"></div>
-          <div class="pbtns">
-            <span class="pbtn blue" data-demomsg="Role menu opened! Members can toggle roles in 1 click.">Get Roles</span>
-            <span class="pbtn green" data-demomsg="Pop-up form opened! Answers log to #applications with Accept/Deny.">Apply Now</span>
-            <span class="pbtn" data-demomsg="Switched to Page 2: Server Rules &amp; FAQ.">Next Page</span>
-          </div>
-        </div>
+    </a>
+    <a href="dashboard/status.html" style="text-decoration:none;color:inherit">
+      <div class="bcard" style="background:var(--panel);padding:18px;height:100%">
+        <b style="font-size:16px;color:var(--ink)">Live Bot Status &rarr;</b>
+        <p class="muted" style="margin:6px 0 0">Check Discord gateway latency, API response time, and uptime.</p>
       </div>
-      <div id="demoClassic" class="hidden">
-        <div class="cembed" style="border-left-color:#8b5cf6">
-          <div class="ctitle">Server Announcements</div>
-          <div class="cdesc">Classic embeds support up to 10 embeds per message, custom fields, thumbnails, and live variables like <code>{{membercount}}</code>.</div>
-          <div class="cfoot"><span>9NATION EMBEDS &bull; Today at 12:00 PM</span></div>
-        </div>
-      </div>
-      <p id="demoOut" class="dm" style="margin:8px 0 0;min-height:18px"></p>
-    </div>
-  </section>
+    </a>
+  </div>
 
-  <section id="features" style="margin-top:52px">
-    <h2 style="font-size:26px;margin:0 0 6px;color:var(--ink)">Everything your server needs</h2>
-    <p class="muted" style="margin:0 0 20px;font-size:15px">Every server gets its own isolated workspace for messages, automation, and tools.</p>
-    <div class="galgrid" style="grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px">
-      <div class="bcard" style="background:var(--panel);padding:18px">
-        <b style="font-size:16px;color:var(--ink)">Components V2 &amp; Classic Embeds</b>
-        <p class="muted" style="margin:8px 0 0;line-height:1.55">Build modern containers, sections, image galleries, button rows, and dropdowns — or up to 10 classic embeds in one message.</p>
-      </div>
-      <div class="bcard" style="background:var(--panel);padding:18px">
-        <b style="font-size:16px;color:var(--ink)">Permanent &amp; Custom Variables</b>
-        <p class="muted" style="margin:8px 0 0;line-height:1.55">Insert <code>{{usermention}}</code>, <code>{{servername}}</code>, <code>{{membercount}}</code>, and custom server variables with a live playground preview.</p>
-      </div>
-      <div class="bcard" style="background:var(--panel);padding:18px">
-        <b style="font-size:16px;color:var(--ink)">Interactive Forms &amp; CSV Export</b>
-        <p class="muted" style="margin:8px 0 0;line-height:1.55">Attach pop-up Discord modals to buttons, log submissions to a channel with Accept/Deny actions, and export responses to CSV.</p>
-      </div>
-      <div class="bcard" style="background:var(--panel);padding:18px">
-        <b style="font-size:16px;color:var(--ink)">Self-Role Wizard &amp; /faq</b>
-        <p class="muted" style="margin:8px 0 0;line-height:1.55">Generate button or dropdown role menus in seconds, and let members search your saved FAQs anytime with <code>/faq</code>.</p>
-      </div>
-      <div class="bcard" style="background:var(--panel);padding:18px">
-        <b style="font-size:16px;color:var(--ink)">Automation &amp; Schedules</b>
-        <p class="muted" style="margin:8px 0 0;line-height:1.55">Set up Welcome/Goodbye messages, Keyword auto-replies, RSS/YouTube/Reddit feeds, Sticky messages, and recurring scheduled posts.</p>
-      </div>
-      <div class="bcard" style="background:var(--panel);padding:18px">
-        <b style="font-size:16px;color:var(--ink)">Per-Server Brand Kit &amp; Verify</b>
-        <p class="muted" style="margin:8px 0 0;line-height:1.55">Save default accent colours and footers per server, copy layouts between servers, and verify live Discord posts in one click.</p>
-      </div>
-    </div>
-  </section>
-
-  <section id="guide" style="margin-top:52px">
-    <h2 style="font-size:26px;margin:0 0 6px;color:var(--ink)">How to get started</h2>
-    <p class="muted" style="margin:0 0 20px;font-size:15px">Three quick steps to start managing your server.</p>
-    <div class="galgrid" style="grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px">
-      <div class="bcard" style="background:var(--panel);padding:18px"><b style="color:var(--ink)">1. Sign in with Discord</b><p class="muted" style="margin:8px 0 0">Click <b>Sign in</b> to authenticate securely with Discord and view your servers.</p></div>
-      <div class="bcard" style="background:var(--panel);padding:18px"><b style="color:var(--ink)">2. Pick Your Server</b><p class="muted" style="margin:8px 0 0">Choose any approved server from your Server Picker to open its independent dashboard.</p></div>
-      <div class="bcard" style="background:var(--panel);padding:18px"><b style="color:var(--ink)">3. Build &amp; Publish</b><p class="muted" style="margin:8px 0 0">Create messages, configure automation, and publish directly to any channel.</p></div>
-    </div>
-  </section>
-
-  <footer class="muted" style="text-align:center;margin-top:56px;padding-top:22px;border-top:1px solid var(--line);font-size:13px">
+  <footer class="muted" style="text-align:center;margin-top:36px;padding-top:18px;border-top:1px solid var(--line);font-size:13px">
     &copy; 2026 9NATION EMBEDS &middot;
+    <a href="features.html">Features</a> &middot;
+    <a href="guide.html">Guide</a> &middot;
     <a href="dashboard/about.html">About</a> &middot;
     <a href="dashboard/privacy.html">Privacy</a> &middot;
     <a href="dashboard/terms.html">Terms</a> &middot;
     <a href="dashboard/status.html">Status</a>
   </footer>
 </main>
-<script src="landing.js?v=42"></script>
+<script src="landing.js?v=44"></script>
 </body>
 </html>
