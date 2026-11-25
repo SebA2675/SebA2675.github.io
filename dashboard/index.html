@@ -154,7 +154,6 @@
       <button type="button" class="sb-btn on"><svg class="ic"><use href="#i-section"></use></svg>Messages</button>
       <button id="autoBtn" class="sb-btn" title="Automation"><svg class="ic"><use href="#i-schedule"></use></svg>Automation</button>
       <button id="toolsBtn" class="sb-btn" title="Server tools"><svg class="ic"><use href="#i-tools"></use></svg>Server tools</button>
-      <button id="adminBtn" class="sb-btn hidden" title="Owner Panel"><svg class="ic"><use href="#i-servers"></use></svg>Owner Panel</button>
       <div class="sb-sec">Resources</div>
       <button id="helpBtn" class="sb-btn" title="Tour &amp; guides"><svg class="ic"><use href="#i-question"></use></svg>Guides</button>
       <div class="sb-foot"><b>Need a hand?</b><br>Setup steps, variables and FAQ are in Guides.</div>
@@ -361,7 +360,8 @@
 <div id="toolsOverlay" class="overlay hidden">
   <div class="modal" style="width:min(520px,100%)">
     <h2>Server tools</h2>
-    <label>Server</label><select id="toolsGuild"></select>
+    <p id="toolsSrvLabel" class="muted" style="margin:0 0 8px"></p>
+    <select id="toolsGuild" class="hidden" style="display:none"></select>
     <div class="btnrow" style="margin-top:10px">
       <button id="toolsBackup"><svg class="ic"><use href="#i-export"></use></svg>Download backup</button>
       <button id="toolsImport"><svg class="ic"><use href="#i-import"></use></svg>Import file...</button>
@@ -550,7 +550,8 @@
 <div id="autoOverlay" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="autoTitle">
   <div class="modal" style="width:min(660px,100%)">
     <h2 id="autoTitle">Server Automation</h2>
-    <label>Server</label><select id="autoGuild"></select>
+    <p id="autoSrvLabel" class="muted" style="margin:0 0 8px"></p>
+    <select id="autoGuild" class="hidden" style="display:none"></select>
     <p id="autoStatus" class="muted" style="min-height:20px;margin:6px 0"></p>
 
     <div class="bcard">
@@ -677,6 +678,6 @@
 
 <div id="testToast" class="ttoast hidden"></div>
 
-<script src="app.js?v=31"></script>
+<script src="app.js?v=32"></script>
 </body>
 </html>

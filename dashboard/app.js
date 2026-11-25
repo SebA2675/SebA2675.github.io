@@ -2954,7 +2954,11 @@ async function loadToolsTemplates() {
 $("toolsBtn").onclick = async () => {
   await loadGuilds();
   if (!guilds.length) { notifyErr("No server available."); return; }
-  $("toolsGuild").innerHTML = opts(guilds.map((g) => [g.id, g.name]), "");
+  const gid = libGuild || guilds[0].id;
+  const g = guilds.find((x) => x.id === gid);
+  if ($("toolsSrvLabel")) $("toolsSrvLabel").textContent = g ? ("Server: " + g.name) : "";
+  $("toolsGuild").innerHTML = opts(guilds.map((x) => [x.id, x.name]), gid);
+  $("toolsGuild").value = gid;
   toolsStatus("");
   $("toolsOverlay").classList.remove("hidden");
   loadToolsTemplates();
@@ -3434,7 +3438,7 @@ async function openAdmin() {
   }
 }
 
-$("adminBtn").onclick = openAdmin;
+if ($("adminBtn")) $("adminBtn").onclick = openAdmin;
 $("adminBack").onclick = () => openServers();
 if ($("adminSearch")) $("adminSearch").oninput = renderAdminAllowed;
 
@@ -3691,20 +3695,21 @@ async function start() {
   try {
     const me = await api("/me");
     isOwner = !!me.is_owner;
-    $("adminBtn").classList.toggle("hidden", !isOwner);
+    if ($("adminBtn")) $("adminBtn").classList.toggle("hidden", !isOwner);
     if ($("navAdminBtn")) $("navAdminBtn").classList.toggle("hidden", !isOwner);
     if ($("umOwnerBtn")) $("umOwnerBtn").classList.toggle("hidden", !isOwner);
     if ($("srvOwnerBtn")) $("srvOwnerBtn").classList.toggle("hidden", !isOwner);
-    const uname = me.global_name || me.username || "Account";
+    const uname = me.global_name || me.username || "User";
     const init = uname.slice(0, 2).toUpperCase();
+    const avHtml = me.avatar_url
+      ? '<img src="' + esc(me.avatar_url) + '" alt="" style="width:100%;height:100%;border-radius:50%;object-fit:cover;display:block">'
+      : esc(init);
     if ($("umName")) $("umName").textContent = uname;
     if ($("umFullName")) $("umFullName").textContent = uname;
     if ($("umRoleBadge")) $("umRoleBadge").textContent = isOwner ? "Bot Owner" : "Member";
-    if ($("umAv")) $("umAv").textContent = init;
-    if ($("srvHeroAv")) $("srvHeroAv").textContent = init;
-    const hr = new Date().getHours();
-    const greet = hr < 12 ? "Good morning" : hr < 18 ? "Good afternoon" : "Good evening";
-    if ($("srvHeroTitle")) $("srvHeroTitle").textContent = greet + ", " + uname;
+    if ($("umAv")) $("umAv").innerHTML = avHtml;
+    if ($("srvHeroAv")) $("srvHeroAv").innerHTML = avHtml;
+    if ($("srvHeroTitle")) $("srvHeroTitle").textContent = uname;
     await openServers();
     try { if (!localStorage.getItem("tour_seen")) { localStorage.setItem("tour_seen", "1"); $("helpOverlay").classList.remove("hidden"); } } catch (e) {}
   } catch (e) {
@@ -4079,7 +4084,11 @@ async function loadAutomation() {
 $("autoBtn").onclick = async () => {
   await loadGuilds();
   if (!guilds.length) { notifyErr("No server available."); return; }
-  $("autoGuild").innerHTML = opts(guilds.map((g) => [g.id, g.name]), libGuild || guilds[0].id);
+  const gid = libGuild || guilds[0].id;
+  const g = guilds.find((x) => x.id === gid);
+  if ($("autoSrvLabel")) $("autoSrvLabel").textContent = g ? ("Server: " + g.name) : "";
+  $("autoGuild").innerHTML = opts(guilds.map((x) => [x.id, x.name]), gid);
+  $("autoGuild").value = gid;
   $("autoOverlay").classList.remove("hidden");
   loadAutomation();
 };
