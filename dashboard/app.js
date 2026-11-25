@@ -3618,6 +3618,9 @@ async function start() {
     const me = await api("/me");
     isOwner = !!me.is_owner;
     $("adminBtn").classList.toggle("hidden", !isOwner);
+    const uname = me.global_name || me.username || "Account";
+    if ($("umName")) $("umName").textContent = uname;
+    if ($("umAv")) $("umAv").textContent = uname.slice(0, 2).toUpperCase();
     openLibrary();
     try { if (!localStorage.getItem("tour_seen")) { localStorage.setItem("tour_seen", "1"); $("helpOverlay").classList.remove("hidden"); } } catch (e) {}
   } catch (e) {
@@ -4429,4 +4432,37 @@ $("rwGenBtn").onclick = () => {
   renderAll();
   notify("Generated role menu!", "ok");
 };
+function initAppearance() {
+  const apply = (theme, accent) => {
+    if (theme === "light") document.documentElement.setAttribute("data-theme", "light");
+    else document.documentElement.removeAttribute("data-theme");
+    document.documentElement.style.setProperty("--accent", accent);
+    try { localStorage.setItem("ui_theme", theme); localStorage.setItem("ui_accent", accent); } catch (e) {}
+    if ($("themeDarkBtn")) $("themeDarkBtn").classList.toggle("on", theme !== "light");
+    if ($("themeLightBtn")) $("themeLightBtn").classList.toggle("on", theme === "light");
+    document.querySelectorAll("#umDots .um-dot").forEach((b) => b.classList.toggle("on", b.dataset.acc === accent));
+  };
+  let t = "dark", a = "#8b5cf6";
+  try { t = localStorage.getItem("ui_theme") || "dark"; a = localStorage.getItem("ui_accent") || "#8b5cf6"; } catch (e) {}
+  apply(t, a);
+  if ($("umBtn") && $("umDrop")) {
+    $("umBtn").onclick = (e) => {
+      e.stopPropagation();
+      const open = $("umDrop").classList.toggle("hidden");
+      $("umBtn").setAttribute("aria-expanded", String(!open));
+    };
+    document.addEventListener("click", (e) => {
+      if (!e.target.closest("#userMenuWrap")) {
+        $("umDrop").classList.add("hidden");
+        $("umBtn").setAttribute("aria-expanded", "false");
+      }
+    });
+  }
+  if ($("themeDarkBtn")) $("themeDarkBtn").onclick = () => { try { a = localStorage.getItem("ui_accent") || "#8b5cf6"; } catch (e) {} apply("dark", a); };
+  if ($("themeLightBtn")) $("themeLightBtn").onclick = () => { try { a = localStorage.getItem("ui_accent") || "#8b5cf6"; } catch (e) {} apply("light", a); };
+  document.querySelectorAll("#umDots .um-dot").forEach((b) => {
+    b.onclick = () => { try { t = localStorage.getItem("ui_theme") || "dark"; } catch (e) {} apply(t, b.dataset.acc); };
+  });
+}
+initAppearance();
 start();

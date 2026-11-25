@@ -4,12 +4,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' https: data:; connect-src https://h5nngnplb6.apps.bot-hosting.cloud; font-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
-<meta name="theme-color" content="#f5efe1">
-<link rel="icon" href="logo.png">
+<meta name="theme-color" content="#0b0c10">
+<link rel="icon" href="logo.jpg">
 <link rel="manifest" href="manifest.json">
-<link rel="apple-touch-icon" href="logo.png">
-<title>Embed Dashboard</title>
-<link rel="stylesheet" href="styles.css?v=28">
+<link rel="apple-touch-icon" href="logo.jpg">
+<title>9NATION EMBEDS — Dashboard</title>
+<link rel="stylesheet" href="styles.css?v=29">
 </head>
 <body>
 
@@ -59,41 +59,95 @@
 
 <div id="viewLogin" class="center hidden">
   <div class="card">
-    <img class="logo big" src="logo.png" alt="">
-    <h1 style="margin:6px 0">Embed Dashboard</h1>
+    <img class="logo big" src="logo.jpg" alt="9NATION">
+    <h1 style="margin:6px 0">9NATION EMBEDS</h1>
     <p id="loginMsg" class="muted">Not logged in.</p>
-    <button class="primary" id="loginBtn"><svg class="ic"><use href="#i-logout"></use></svg>Log in with Discord</button>
+    <button class="primary" id="loginBtn" style="width:100%;justify-content:center;padding:11px 16px"><svg class="ic"><use href="#i-logout"></use></svg>Log in with Discord</button>
     <p class="muted" style="margin-top:16px">Signing in only checks your Discord ID and your server permissions. It never asks for your password.</p>
-    <p class="muted"><a href="about.html">About</a> &middot; <a href="privacy.html">Privacy</a> &middot; <a href="terms.html">Terms</a></p>
+    <p class="muted"><a href="../embeds/">Guide</a> &middot; <a href="status.html">Status</a> &middot; <a href="about.html">About</a> &middot; <a href="privacy.html">Privacy</a> &middot; <a href="terms.html">Terms</a></p>
   </div>
 </div>
 
 <div id="viewLibrary" class="hidden">
-  <div class="top">
-    <img class="logo" src="logo.png" alt="">
-    <h1>My messages</h1>
-    <div class="newwrap">
-      <button class="primary" id="newBtn" aria-haspopup="true" aria-expanded="false"><svg class="ic"><use href="#i-plus"></use></svg>New</button>
-      <div id="newMenu" class="menu hidden" role="menu">
-        <button id="newLayoutBtn" role="menuitem"><svg class="ic"><use href="#i-plus"></use></svg><span><b>Layout message</b><small>Text, images, buttons, dropdowns, forms</small></span></button>
-        <button id="newClassicBtn" role="menuitem"><svg class="ic"><use href="#i-section"></use></svg><span><b>Classic embed</b><small>The traditional embed box, up to 10</small></span></button>
-        <button id="newGalleryBtn" role="menuitem"><svg class="ic"><use href="#i-template"></use></svg><span><b>Starter gallery</b><small>Rules, Welcome, FAQ, Announcements, Roles</small></span></button>
+  <header class="nav">
+    <div class="nav-in">
+      <a class="brand" href="../embeds/"><img src="logo.jpg" alt="9NATION" class="logo"><span>9NATION <b>EMBEDS</b></span></a>
+      <nav class="nav-links">
+        <a href="./" class="on">Dashboard</a>
+        <a href="../embeds/">Guide</a>
+        <a href="status.html">Status</a>
+        <a href="about.html">About</a>
+      </nav>
+      <div class="nav-right">
+        <div class="usermenu" id="userMenuWrap">
+          <button type="button" class="um-btn" id="umBtn" aria-haspopup="true" aria-expanded="false">
+            <span class="um-av" id="umAv">9N</span>
+            <span id="umName">Account</span>
+            <svg class="ic" style="width:14px;height:14px"><use href="#i-down"></use></svg>
+          </button>
+          <div class="um-drop hidden" id="umDrop">
+            <div class="um-head">Appearance &amp; Account</div>
+            <div class="um-row">
+              <span>Theme</span>
+              <div class="um-seg">
+                <button type="button" id="themeDarkBtn">Dark</button>
+                <button type="button" id="themeLightBtn">Light</button>
+              </div>
+            </div>
+            <div class="um-row">
+              <span>Colour</span>
+              <div class="um-dots" id="umDots">
+                <button type="button" class="um-dot" data-acc="#8b5cf6" style="background:#8b5cf6" title="Violet"></button>
+                <button type="button" class="um-dot" data-acc="#d96b27" style="background:#d96b27" title="Amber"></button>
+                <button type="button" class="um-dot" data-acc="#3b82f6" style="background:#3b82f6" title="Blue"></button>
+                <button type="button" class="um-dot" data-acc="#10b981" style="background:#10b981" title="Emerald"></button>
+                <button type="button" class="um-dot" data-acc="#ec4899" style="background:#ec4899" title="Pink"></button>
+                <button type="button" class="um-dot" data-acc="#eab308" style="background:#eab308" title="Gold"></button>
+              </div>
+            </div>
+            <button id="logoutBtn" class="danger small" style="width:100%;justify-content:center;margin-top:4px"><svg class="ic"><use href="#i-logout"></use></svg>Sign out</button>
+          </div>
+        </div>
       </div>
     </div>
-    <button id="helpBtn" class="tb" title="Tour &amp; guides"><svg class="ic"><use href="#i-question"></use></svg><span class="t">Guides</span></button>
-    <button id="autoBtn" class="tb" title="Automation"><svg class="ic"><use href="#i-schedule"></use></svg><span class="t">Automation</span></button>
-    <button id="toolsBtn" class="tb" title="Server tools"><svg class="ic"><use href="#i-tools"></use></svg><span class="t">Server tools</span></button>
-    <button id="adminBtn" class="tb hidden" title="Approved servers"><svg class="ic"><use href="#i-servers"></use></svg><span class="t">Servers</span></button>
-    <button id="logoutBtn" class="tb" title="Log out"><svg class="ic"><use href="#i-logout"></use></svg><span class="t">Log out</span></button>
-  </div>
-  <div class="wrap">
-    <div id="libTools" class="libtools hidden">
-      <input id="libSearch" type="search" placeholder="Search messages" aria-label="Search messages" autocomplete="off">
-      <button type="button" id="srvPickBtn" class="hidden" style="display:inline-flex;align-items:center;gap:8px;max-width:260px"></button>
+  </header>
+
+  <div class="ws">
+    <aside class="sidebar">
+      <button type="button" id="srvPickBtn" class="sb-srv hidden"></button>
       <select id="libGuild" class="hidden" aria-label="Server" style="display:none"></select>
-      <div id="libChips" class="chips"></div>
-    </div>
-    <div id="list"></div>
+      <div class="sb-sec">Workspace</div>
+      <button type="button" class="sb-btn on"><svg class="ic"><use href="#i-section"></use></svg>Messages</button>
+      <button id="autoBtn" class="sb-btn" title="Automation"><svg class="ic"><use href="#i-schedule"></use></svg>Automation</button>
+      <button id="toolsBtn" class="sb-btn" title="Server tools"><svg class="ic"><use href="#i-tools"></use></svg>Server tools</button>
+      <button id="adminBtn" class="sb-btn hidden" title="Approved servers"><svg class="ic"><use href="#i-servers"></use></svg>Servers</button>
+      <div class="sb-sec">Resources</div>
+      <button id="helpBtn" class="sb-btn" title="Tour &amp; guides"><svg class="ic"><use href="#i-question"></use></svg>Guides</button>
+      <div class="sb-foot"><b>Need a hand?</b><br>Setup steps, variables and FAQ are in Guides.</div>
+    </aside>
+
+    <main class="ws-main">
+      <div class="ws-head">
+        <div>
+          <h1>Messages</h1>
+          <p>Embeds and Components V2 layouts saved for this server. Publish them to any channel and edit them later.</p>
+        </div>
+        <div class="newwrap">
+          <button class="primary" id="newBtn" aria-haspopup="true" aria-expanded="false"><svg class="ic"><use href="#i-plus"></use></svg>New message</button>
+          <div id="newMenu" class="menu hidden" role="menu">
+            <button id="newLayoutBtn" role="menuitem"><svg class="ic"><use href="#i-plus"></use></svg><span><b>Layout message</b><small>Text, images, buttons, dropdowns, forms</small></span></button>
+            <button id="newClassicBtn" role="menuitem"><svg class="ic"><use href="#i-section"></use></svg><span><b>Classic embed</b><small>The traditional embed box, up to 10</small></span></button>
+            <button id="newGalleryBtn" role="menuitem"><svg class="ic"><use href="#i-template"></use></svg><span><b>Starter gallery</b><small>Rules, Welcome, FAQ, Announcements, Roles</small></span></button>
+          </div>
+        </div>
+      </div>
+
+      <div id="libTools" class="libtools hidden">
+        <input id="libSearch" type="search" placeholder="Search messages" aria-label="Search messages" autocomplete="off">
+        <div id="libChips" class="chips"></div>
+      </div>
+      <div id="list"></div>
+    </main>
   </div>
 </div>
 
@@ -576,6 +630,6 @@
 
 <div id="testToast" class="ttoast hidden"></div>
 
-<script src="app.js?v=28"></script>
+<script src="app.js?v=29"></script>
 </body>
 </html>
