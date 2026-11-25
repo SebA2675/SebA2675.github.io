@@ -251,8 +251,13 @@ label{display:block;font-size:13px;font-weight:600;color:var(--ink);margin:12px 
   .nav-links{display:none}
 }
 @media(max-width:600px){
-  .srv-hero{padding:16px;gap:14px;margin-bottom:18px}
-  .srv-hero-av{width:46px;height:46px;font-size:18px}
+  .srv-hero{padding:14px;gap:10px;margin-bottom:14px}
+  .srv-hero-left{gap:12px;width:100%}
+  .srv-hero-av{width:42px;height:42px;font-size:16px}
+  #srvHeroTitle{font-size:19px!important}
+  .srv-hero .info-bar{padding:5px 9px;font-size:12px;margin:4px 0 0!important}
+  .srv-hero .btnrow{width:100%;gap:6px}
+  .srv-hero .btnrow button{padding:6px 10px;font-size:13px}
   .srv-cards{grid-template-columns:1fr}
   .ws-head{gap:10px}
   .ws-head h1,.ws-head h2{font-size:20px}
