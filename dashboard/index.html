@@ -9,7 +9,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="logo.png">
 <title>Embed Dashboard</title>
-<link rel="stylesheet" href="styles.css?v=25">
+<link rel="stylesheet" href="styles.css?v=26">
 </head>
 <body>
 
@@ -136,6 +136,9 @@
         <button id="schedBtn" class="tb" title="Post or update at a set time"><svg class="ic"><use href="#i-schedule"></use></svg><span class="t">Schedule</span></button>
         <button id="dmBtn" class="tb" title="Send a test copy to your DMs"><svg class="ic"><use href="#i-mail"></use></svg><span class="t">Send a test to my DMs</span></button>
         <button id="respBtn" class="tb" title="Form responses &amp; click stats"><svg class="ic"><use href="#i-form"></use></svg><span class="t">Responses</span></button>
+        <button id="shareBtn" class="tb" title="Create read-only share link"><svg class="ic"><use href="#i-copy"></use></svg><span class="t">Share link</span></button>
+        <button id="checkLinksBtn" class="tb" title="Check all URLs in message"><svg class="ic"><use href="#i-check"></use></svg><span class="t">Check links</span></button>
+        <button id="trigBtn" class="tb" title="Webhook trigger URLs"><svg class="ic"><use href="#i-send"></use></svg><span class="t">Trigger URLs</span></button>
         <button id="rawJsonBtn" class="tb" title="View or edit raw JSON"><svg class="ic"><use href="#i-code"></use></svg><span class="t">Raw JSON</span></button>
       </div>
       <button class="primary" id="saveBtn"></button>
@@ -262,6 +265,13 @@
       <input type="file" id="importFile" accept=".json,application/json" class="hidden">
     </div>
     <p id="toolsStatus" class="muted" style="min-height:20px"></p>
+    <h3>Import from Discord Link or Discohook JSON</h3>
+    <div class="btnrow" style="margin-bottom:8px">
+      <input id="impLinkUrl" placeholder="https://discord.com/channels/..." style="flex:1;min-width:180px">
+      <button class="primary small" id="impLinkBtn">Import link</button>
+    </div>
+    <textarea id="impDiscoJson" placeholder="Paste Discohook / Embed Generator JSON here..." style="min-height:70px;font-size:12px"></textarea>
+    <button class="small" id="impDiscoBtn" style="margin-top:6px">Import Discohook JSON</button>
     <h3>Templates</h3>
     <div id="toolsTemplates"></div>
     <h3>Message sequences</h3>
@@ -499,6 +509,18 @@
   </div>
 </div>
 
+<div id="trigOverlay" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="trigTitle">
+  <div class="modal" style="width:min(560px,100%)">
+    <h2 id="trigTitle">Webhook Trigger URLs</h2>
+    <p class="muted">External services can POST JSON <code>{"variables": {...}}</code> to a trigger URL to post this message automatically.</p>
+    <label>Target channel</label><select id="trigCh"></select>
+    <button class="primary small" id="trigCreateBtn" style="margin-top:8px"><svg class="ic"><use href="#i-plus"></use></svg>Create trigger URL</button>
+    <p id="trigSecretBox" class="bcard hidden" style="margin-top:10px;word-break:break-all"></p>
+    <div id="trigList" style="margin-top:10px"></div>
+    <div class="btnrow" style="margin-top:12px"><button id="trigClose"><svg class="ic"><use href="#i-close"></use></svg>Close</button></div>
+  </div>
+</div>
+
 <div id="dialogOverlay" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="dialogTitle">
   <div class="modal" style="width:min(420px,100%)">
     <h2 id="dialogTitle"></h2>
@@ -513,6 +535,6 @@
 
 <div id="testToast" class="ttoast hidden"></div>
 
-<script src="app.js?v=25"></script>
+<script src="app.js?v=26"></script>
 </body>
 </html>

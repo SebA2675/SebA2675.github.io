@@ -3619,7 +3619,7 @@ document.addEventListener("keydown", (e) => {
     hideAddMenu();
     const fm = $("fmtMore");
     if (fm) fm.classList.add("hidden");
-    for (const id of ["sendOverlay", "toolsOverlay", "histOverlay", "schedOverlay", "emojiOverlay", "rawJsonOverlay", "galleryOverlay", "helpOverlay", "srvOverlay", "respOverlay", "autoOverlay", "cmdOverlay"]) {
+    for (const id of ["sendOverlay", "toolsOverlay", "histOverlay", "schedOverlay", "emojiOverlay", "rawJsonOverlay", "galleryOverlay", "helpOverlay", "srvOverlay", "respOverlay", "autoOverlay", "cmdOverlay", "trigOverlay"]) {
       if (!$(id).classList.contains("hidden")) { $(id).classList.add("hidden"); if (id === "emojiOverlay") emojiCb = null; }
     }
     return;
@@ -4213,5 +4213,110 @@ $("cmdList").addEventListener("click", (e) => {
   const item = cmdItems[Number(b.dataset.cmdi)];
   $("cmdOverlay").classList.add("hidden");
   if (item) item.run();
+});
+/* ---------- Remaining PDF Features (Imports, Share, Link Checker, Triggers) ---------- */
+$("shareBtn").onclick = async () => {
+  closeMore();
+  if (!cur || !cur.id) { notify("Save the message first.", "info"); return; }
+  try {
+    const r = await api("/messages/" + cur.id + "/share", { method: "POST" });
+    const url = location.origin + "/dashboard/share.html?t=" + encodeURIComponent(r.token);
+    try { await navigator.clipboard.writeText(url); notify("Copied 7-day share link to clipboard!", "ok"); }
+    catch (e) { await uiPrompt("Share link (valid 7 days)", url); }
+  } catch (e) { if (e.message !== "login") notifyErr(e.message); }
+};
+
+$("checkLinksBtn").onclick = async () => {
+  closeMore();
+  if (!cur || !cur.id) { notify("Save the message first.", "info"); return; }
+  toast("Checking links...");
+  try {
+    const r = await api("/messages/" + cur.id + "/check-links", { method: "POST" });
+    if (!r.broken || !r.broken.length) notify("Checked " + r.checked + " link(s): all OK!", "ok");
+    else notifyErr(r.broken.length + " broken link(s): " + r.broken.map((b) => b.url + " (" + b.reason + ")").join(", "));
+  } catch (e) { if (e.message !== "login") notifyErr(e.message); }
+};
+
+$("impLinkBtn").onclick = async () => {
+  const gid = $("toolsGuild").value;
+  const url = $("impLinkUrl").value.trim();
+  if (!url) { toolsStatus("Paste a Discord message link."); return; }
+  toolsStatus("Importing from Discord...");
+  try {
+    const m = await api("/guilds/" + gid + "/import-link", { method: "POST", body: JSON.stringify({ url }) });
+    $("impLinkUrl").value = "";
+    $("toolsOverlay").classList.add("hidden");
+    notify("Imported message!", "ok");
+    await openBuilder(m);
+  } catch (e) { if (e.message !== "login") toolsStatus("Failed: " + e.message); }
+};
+
+$("impDiscoBtn").onclick = async () => {
+  const gid = $("toolsGuild").value;
+  const raw = $("impDiscoJson").value.trim();
+  if (!raw) { toolsStatus("Paste Discohook JSON first."); return; }
+  let parsed;
+  try { parsed = JSON.parse(raw); } catch (e) { toolsStatus("Invalid JSON."); return; }
+  const src = (parsed.messages && parsed.messages[0] && parsed.messages[0].data) || parsed;
+  const embeds = (src.embeds || []).slice(0, 10).map((e) => ({
+    id: uid(),
+    title: String(e.title || "").slice(0, 256),
+    description: String(e.description || "").slice(0, 4096),
+    color: typeof e.color === "number" ? "#" + e.color.toString(16).padStart(6, "0") : (typeof e.color === "string" && e.color.startsWith("#") ? e.color : "#5865F2"),
+    url: String(e.url || ""),
+    author_name: String((e.author && e.author.name) || ""),
+    author_url: String((e.author && e.author.url) || ""),
+    author_icon: String((e.author && e.author.icon_url) || ""),
+    image: String((e.image && e.image.url) || ""),
+    thumbnail: String((e.thumbnail && e.thumbnail.url) || ""),
+    footer_text: String((e.footer && e.footer.text) || ""),
+    footer_icon: String((e.footer && e.footer.icon_url) || ""),
+    timestamp: !!e.timestamp,
+    fields: (e.fields || []).slice(0, 25).map((f) => ({ id: uid(), name: String(f.name || "").slice(0, 256), value: String(f.value || "").slice(0, 1024), inline: !!f.inline })),
+  }));
+  const layout = { kind: "classic", guild_id: gid, content: String(src.content || "").slice(0, 2000), embeds, blocks: [], replies: [], forms: [] };
+  $("impDiscoJson").value = "";
+  $("toolsOverlay").classList.add("hidden");
+  await openBuilder({ id: null, name: (embeds[0] && embeds[0].title) || "Imported Discohook", guild_id: gid, layout });
+};
+
+async function loadTriggers() {
+  if (!cur || !cur.id) return;
+  $("trigList").innerHTML = '<p class="muted">Loading...</p>';
+  try {
+    const list = await api("/messages/" + cur.id + "/triggers");
+    $("trigList").innerHTML = list.length
+      ? list.map((t) =>
+        '<div class="mrow"><div class="grow"><b>Trigger #' + t.id + '</b><div class="muted">Channel #' + esc(channelName(t.channel_id)) + '</div></div>' +
+        '<button class="small ib danger" data-rmtrig="' + esc(t.id) + '">' + ic("trash") + "</button></div>"
+      ).join("")
+      : '<p class="muted">No trigger URLs yet.</p>';
+  } catch (e) { if (e.message !== "login") $("trigList").innerHTML = '<p class="muted">' + esc(e.message) + "</p>"; }
+}
+
+$("trigBtn").onclick = () => {
+  closeMore();
+  if (!cur || !cur.id) { notify("Save the message first.", "info"); return; }
+  $("trigSecretBox").classList.add("hidden");
+  $("trigCh").innerHTML = chans.map((c) => '<option value="' + esc(c.id) + '">#' + esc(c.name) + "</option>").join("");
+  $("trigOverlay").classList.remove("hidden");
+  loadTriggers();
+};
+$("trigClose").onclick = () => { $("trigOverlay").classList.add("hidden"); };
+$("trigOverlay").onclick = (e) => { if (e.target === $("trigOverlay")) $("trigOverlay").classList.add("hidden"); };
+$("trigCreateBtn").onclick = async () => {
+  try {
+    const r = await api("/messages/" + cur.id + "/triggers", { method: "POST", body: JSON.stringify({ channel_id: $("trigCh").value }) });
+    const box = $("trigSecretBox");
+    box.classList.remove("hidden");
+    box.innerHTML = '<b>Save this secret now (shown once):</b><br>URL: <code>' + esc(API_URL + "/trigger/" + r.id) + '</code><br>Bearer Secret: <code>' + esc(r.secret) + '</code>';
+    loadTriggers();
+  } catch (e) { if (e.message !== "login") notifyErr(e.message); }
+};
+$("trigList").addEventListener("click", async (e) => {
+  const id = btnData(e).rmtrig;
+  if (!id || !await uiConfirm("Revoke this trigger URL?", { title: "Revoke trigger", okText: "Revoke", danger: true })) return;
+  await api("/triggers/" + id, { method: "DELETE" });
+  loadTriggers();
 });
 start();
