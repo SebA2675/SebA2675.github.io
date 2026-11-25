@@ -219,7 +219,7 @@ let treeOpen = false;
 function applyTree() {
   $("builderEl").dataset.tree = treeOpen ? "open" : "closed";
   $("treeBtn").classList.toggle("on", treeOpen);
-  $("treeEdge").textContent = treeOpen ? "‹" : "›";
+  $("treeEdge").textContent = treeOpen ? "â€¹" : "â€º";
   positionFloatBar();
 }
 $("treeBtn").onclick = () => { treeOpen = !treeOpen; applyTree(); };
@@ -2730,14 +2730,14 @@ function drawServerModal() {
     return '<div class="srvcard' + (libGuild === g.id ? " on" : "") + '" data-pickguild="' + esc(g.id) + '">' +
       srvIconHtml(g, 36) + '<div class="srvmeta"><b>' + esc(g.name) + '</b><small>' + cnt + ' msg(s)' +
       (g.last_edit ? ' &middot; ' + esc(ago(g.last_edit)) : '') + '</small></div>' +
-      '<button type="button" class="srvfav' + (fav ? " on" : "") + '" data-favguild="' + esc(g.id) + '" title="Pin server">' + (fav ? "★" : "☆") + '</button></div>';
+      '<button type="button" class="srvfav' + (fav ? " on" : "") + '" data-favguild="' + esc(g.id) + '" title="Pin server">' + (fav ? "â˜…" : "â˜†") + '</button></div>';
   }).join("");
   listEl.innerHTML = html || '<p class="muted">No matching servers.</p>';
 }
 function renderLibrary() {
   if (!libGuild && guilds.length) libGuild = guilds[0].id;
   const g = guilds.find((x) => x.id === libGuild);
-  if ($("wsTitle")) $("wsTitle").textContent = g ? ("Messages — " + g.name) : "Messages";
+  if ($("wsTitle")) $("wsTitle").textContent = g ? ("Messages â€” " + g.name) : "Messages";
   const srvItems = libItems.filter((m) => !libGuild || String(m.guild_id) === libGuild);
   $("libTools").classList.toggle("hidden", !srvItems.length);
   if ($("libGuild")) {
@@ -2780,7 +2780,7 @@ async function openServers() {
   try {
     await loadGuilds();
     libItems = await api("/messages");
-    if ($("srvHeroSub")) $("srvHeroSub").textContent = guilds.length + " server(s) available — each server has its own independent messages, automation, and tools.";
+    if ($("srvHeroSub")) $("srvHeroSub").textContent = guilds.length + " server(s) available â€” each server has its own independent messages, automation, and tools.";
     renderSrvHub();
   } catch (e) {
     if (e.message !== "login" && grid) grid.innerHTML = '<p class="muted">Could not load servers: ' + esc(e.message) + '</p>';
@@ -2833,13 +2833,24 @@ $("libChips").addEventListener("click", (e) => {
   renderLibList();
 });
 
-async function openLibrary(gid) {
+function showWsTab(tab) {
+  if ($("wsMessages")) $("wsMessages").classList.toggle("hidden", tab !== "messages");
+  if ($("wsAutomation")) $("wsAutomation").classList.toggle("hidden", tab !== "automation");
+  if ($("wsTools")) $("wsTools").classList.toggle("hidden", tab !== "tools");
+  if ($("msgTabBtn")) $("msgTabBtn").classList.toggle("on", tab === "messages");
+  if ($("autoBtn")) $("autoBtn").classList.toggle("on", tab === "automation");
+  if ($("toolsBtn")) $("toolsBtn").classList.toggle("on", tab === "tools");
+}
+if ($("msgTabBtn")) $("msgTabBtn").onclick = () => showWsTab("messages");
+
+async function openLibrary(gid, tab) {
   clearTimeout(autosaveTimer);
   if (gid) {
     libGuild = String(gid);
     try { localStorage.setItem("last_guild", libGuild); } catch (e) {}
   }
   show("viewLibrary");
+  showWsTab(tab || "messages");
   $("list").innerHTML = '<div class="skel-card"></div>'.repeat(6);
   try {
     await loadGuilds();
@@ -2960,7 +2971,7 @@ $("toolsBtn").onclick = async () => {
   $("toolsGuild").innerHTML = opts(guilds.map((x) => [x.id, x.name]), gid);
   $("toolsGuild").value = gid;
   toolsStatus("");
-  $("toolsOverlay").classList.remove("hidden");
+  showWsTab("tools");
   loadToolsTemplates();
   loadToolsSequences();
   loadToolsPersonas();
@@ -2969,8 +2980,7 @@ $("toolsBtn").onclick = async () => {
 };
 
 $("toolsGuild").onchange = () => { toolsStatus(""); loadToolsTemplates(); loadToolsSequences(); loadToolsPersonas(); loadToolsWebhooks(); loadToolsPhase8(); };
-$("toolsClose").onclick = () => { $("toolsOverlay").classList.add("hidden"); };
-$("toolsOverlay").onclick = (e) => { if (e.target === $("toolsOverlay")) $("toolsOverlay").classList.add("hidden"); };
+$("toolsClose").onclick = () => showWsTab("messages");
 
 $("toolsBackup").onclick = async () => {
   const gid = $("toolsGuild").value;
@@ -3010,7 +3020,7 @@ $("toolsTemplates").addEventListener("click", async (e) => {
   try {
     if (d.use) {
       const t = await api("/templates/" + d.use);
-      $("toolsOverlay").classList.add("hidden");
+      showWsTab("messages");
       await openBuilder({ id: null, name: t.name, guild_id: t.guild_id, layout: t.layout });
     }
     if (d.rmtpl && await uiConfirm("Delete this template?", { title: "Delete template", okText: "Delete", danger: true })) {
@@ -3730,7 +3740,7 @@ document.addEventListener("keydown", (e) => {
     hideAddMenu();
     const fm = $("fmtMore");
     if (fm) fm.classList.add("hidden");
-    for (const id of ["sendOverlay", "toolsOverlay", "histOverlay", "schedOverlay", "emojiOverlay", "rawJsonOverlay", "galleryOverlay", "helpOverlay", "srvOverlay", "respOverlay", "autoOverlay", "cmdOverlay", "trigOverlay", "roleWizOverlay", "copyToOverlay"]) {
+    for (const id of ["sendOverlay", "histOverlay", "schedOverlay", "emojiOverlay", "rawJsonOverlay", "galleryOverlay", "helpOverlay", "srvOverlay", "respOverlay", "cmdOverlay", "trigOverlay", "roleWizOverlay", "copyToOverlay"]) {
       if (!$(id).classList.contains("hidden")) { $(id).classList.add("hidden"); if (id === "emojiOverlay") emojiCb = null; }
     }
     return;
@@ -3849,7 +3859,7 @@ const STARTER_TEMPLATES = [
     build: () => ({
       blocks: [
         { id: uid(), type: "box", accent: "#1ABC9C", children: [
-          { id: uid(), type: "text", content: "# FAQ — Page 1\n**Q: How do I get roles?**\nUse the self-role buttons in #roles." },
+          { id: uid(), type: "text", content: "# FAQ â€” Page 1\n**Q: How do I get roles?**\nUse the self-role buttons in #roles." },
           { id: uid(), type: "button_row", buttons: [
             { id: uid(), label: "Prev", style: "grey", action: { type: "page", page_index: -1 }, allowed_roles: [], cooldown: 0, once: false },
             { id: uid(), label: "Next", style: "blue", action: { type: "page", page_index: -2 }, allowed_roles: [], cooldown: 0, once: false }
@@ -3857,7 +3867,7 @@ const STARTER_TEMPLATES = [
         ]}
       ],
       pages: [
-        { id: uid(), name: "Page 2", blocks: [{ id: uid(), type: "box", accent: "#1ABC9C", children: [{ id: uid(), type: "text", content: "# FAQ — Page 2\n**Q: How do I contact staff?**\nClick the Support Info button or message a moderator." }] }], content: "", embeds: [] }
+        { id: uid(), name: "Page 2", blocks: [{ id: uid(), type: "box", accent: "#1ABC9C", children: [{ id: uid(), type: "text", content: "# FAQ â€” Page 2\n**Q: How do I contact staff?**\nClick the Support Info button or message a moderator." }] }], content: "", embeds: [] }
       ],
       replies: [], forms: [], variables: []
     })
@@ -4089,12 +4099,11 @@ $("autoBtn").onclick = async () => {
   if ($("autoSrvLabel")) $("autoSrvLabel").textContent = g ? ("Server: " + g.name) : "";
   $("autoGuild").innerHTML = opts(guilds.map((x) => [x.id, x.name]), gid);
   $("autoGuild").value = gid;
-  $("autoOverlay").classList.remove("hidden");
+  showWsTab("automation");
   loadAutomation();
 };
 $("autoGuild").onchange = loadAutomation;
-$("autoClose").onclick = () => { $("autoOverlay").classList.add("hidden"); };
-$("autoOverlay").onclick = (e) => { if (e.target === $("autoOverlay")) $("autoOverlay").classList.add("hidden"); };
+$("autoClose").onclick = () => showWsTab("messages");
 
 $("autoSaveBtn").onclick = async () => {
   const gid = $("autoGuild").value;
@@ -4161,7 +4170,7 @@ $("stickyAddBtn").onclick = async () => {
   } catch (e) { if (e.message !== "login") $("autoStatus").textContent = "Failed: " + e.message; }
 };
 
-$("autoOverlay").addEventListener("click", async (e) => {
+$("wsAutomation").addEventListener("click", async (e) => {
   const d = btnData(e);
   try {
     if (d.rmkw) { await api("/keywords/" + d.rmkw, { method: "DELETE" }); loadAutomation(); }
@@ -4250,7 +4259,7 @@ $("brRunBtn").onclick = async () => {
   } catch (e) { if (e.message !== "login") toolsStatus("Failed: " + e.message); }
 };
 
-$("toolsOverlay").addEventListener("click", async (e) => {
+$("wsTools").addEventListener("click", async (e) => {
   const d = btnData(e);
   const gid = $("toolsGuild").value;
   try {
@@ -4268,7 +4277,7 @@ $("wipeGuildBtn").onclick = async () => {
   if (!await uiConfirm("Delete ALL saved messages, templates, schedules, and settings for this server? This cannot be undone.", { title: "Delete all server data", okText: "Delete everything", danger: true })) return;
   try {
     await api("/guilds/" + gid + "/data", { method: "DELETE" });
-    $("toolsOverlay").classList.add("hidden");
+    showWsTab("messages");
     notify("All data deleted for that server.", "ok");
     openLibrary();
   } catch (e) { if (e.message !== "login") toolsStatus("Failed: " + e.message); }
@@ -4371,7 +4380,7 @@ $("impLinkBtn").onclick = async () => {
   try {
     const m = await api("/guilds/" + gid + "/import-link", { method: "POST", body: JSON.stringify({ url }) });
     $("impLinkUrl").value = "";
-    $("toolsOverlay").classList.add("hidden");
+    showWsTab("messages");
     notify("Imported message!", "ok");
     await openBuilder(m);
   } catch (e) { if (e.message !== "login") toolsStatus("Failed: " + e.message); }
@@ -4402,7 +4411,7 @@ $("impDiscoBtn").onclick = async () => {
   }));
   const layout = { kind: "classic", guild_id: gid, content: String(src.content || "").slice(0, 2000), embeds, blocks: [], replies: [], forms: [] };
   $("impDiscoJson").value = "";
-  $("toolsOverlay").classList.add("hidden");
+  showWsTab("messages");
   await openBuilder({ id: null, name: (embeds[0] && embeds[0].title) || "Imported Discohook", guild_id: gid, layout });
 };
 
@@ -4483,7 +4492,7 @@ $("sendVerifyBtn").onclick = async () => {
     fresh = r.message;
     cur.posted_message_id = fresh.posted_message_id;
     refreshSendButtons();
-    setStatus(r.exists ? "Verified: message still exists in Discord." : "Message was deleted in Discord — status cleared so you can post again.");
+    setStatus(r.exists ? "Verified: message still exists in Discord." : "Message was deleted in Discord â€” status cleared so you can post again.");
   } catch (e) { if (e.message !== "login") setStatus("Failed: " + e.message); }
 };
 

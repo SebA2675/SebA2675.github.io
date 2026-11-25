@@ -151,7 +151,7 @@
       <button type="button" id="srvPickBtn" class="sb-srv"></button>
       <select id="libGuild" class="hidden" aria-label="Server" style="display:none"></select>
       <div class="sb-sec">Server Workspace</div>
-      <button type="button" class="sb-btn on"><svg class="ic"><use href="#i-section"></use></svg>Messages</button>
+      <button type="button" id="msgTabBtn" class="sb-btn on"><svg class="ic"><use href="#i-section"></use></svg>Messages</button>
       <button id="autoBtn" class="sb-btn" title="Automation"><svg class="ic"><use href="#i-schedule"></use></svg>Automation</button>
       <button id="toolsBtn" class="sb-btn" title="Server tools"><svg class="ic"><use href="#i-tools"></use></svg>Server tools</button>
       <div class="sb-sec">Resources</div>
@@ -160,26 +160,195 @@
     </aside>
 
     <main class="ws-main">
-      <div class="ws-head">
-        <div>
-          <h1 id="wsTitle">Messages</h1>
-          <p id="wsSub">Embeds and Components V2 layouts saved for this server.</p>
-        </div>
-        <div class="newwrap">
-          <button class="primary" id="newBtn" aria-haspopup="true" aria-expanded="false"><svg class="ic"><use href="#i-plus"></use></svg>New message</button>
-          <div id="newMenu" class="menu hidden" role="menu">
-            <button id="newLayoutBtn" role="menuitem"><svg class="ic"><use href="#i-plus"></use></svg><span><b>Layout message</b><small>Text, images, buttons, dropdowns, forms</small></span></button>
-            <button id="newClassicBtn" role="menuitem"><svg class="ic"><use href="#i-section"></use></svg><span><b>Classic embed</b><small>The traditional embed box, up to 10</small></span></button>
-            <button id="newGalleryBtn" role="menuitem"><svg class="ic"><use href="#i-template"></use></svg><span><b>Starter gallery</b><small>Rules, Welcome, FAQ, Announcements, Roles</small></span></button>
+      <section id="wsMessages">
+        <div class="ws-head">
+          <div>
+            <h1 id="wsTitle">Messages</h1>
+            <p id="wsSub">Embeds and Components V2 layouts saved for this server.</p>
+          </div>
+          <div class="newwrap">
+            <button class="primary" id="newBtn" aria-haspopup="true" aria-expanded="false"><svg class="ic"><use href="#i-plus"></use></svg>New message</button>
+            <div id="newMenu" class="menu hidden" role="menu">
+              <button id="newLayoutBtn" role="menuitem"><svg class="ic"><use href="#i-plus"></use></svg><span><b>Layout message</b><small>Text, images, buttons, dropdowns, forms</small></span></button>
+              <button id="newClassicBtn" role="menuitem"><svg class="ic"><use href="#i-section"></use></svg><span><b>Classic embed</b><small>The traditional embed box, up to 10</small></span></button>
+              <button id="newGalleryBtn" role="menuitem"><svg class="ic"><use href="#i-template"></use></svg><span><b>Starter gallery</b><small>Rules, Welcome, FAQ, Announcements, Roles</small></span></button>
+            </div>
           </div>
         </div>
-      </div>
 
-      <div id="libTools" class="libtools hidden">
-        <input id="libSearch" type="search" placeholder="Search messages in this server" aria-label="Search messages" autocomplete="off">
-        <div id="libChips" class="chips"></div>
-      </div>
-      <div id="list"></div>
+        <div id="libTools" class="libtools hidden">
+          <input id="libSearch" type="search" placeholder="Search messages in this server" aria-label="Search messages" autocomplete="off">
+          <div id="libChips" class="chips"></div>
+        </div>
+        <div id="list"></div>
+      </section>
+
+      <section id="wsAutomation" class="hidden">
+        <div class="ws-head">
+          <div>
+            <h1 id="autoTitle">Server Automation</h1>
+            <p id="autoSrvLabel" class="muted" style="margin:4px 0 0">Configure welcome messages, auto-replies, feeds, /faq, and sticky messages for this server.</p>
+          </div>
+          <button id="autoClose" type="button"><svg class="ic"><use href="#i-back"></use></svg>Back to Messages</button>
+        </div>
+        <select id="autoGuild" class="hidden" style="display:none"></select>
+        <p id="autoStatus" class="muted" style="min-height:20px;margin:0 0 12px"></p>
+
+        <div style="display:grid;gap:14px">
+          <div class="bcard" style="background:var(--panel);padding:18px">
+            <h3 style="margin-top:0">Welcome &amp; Goodbye</h3>
+            <label style="text-transform:none;display:flex;gap:8px;align-items:center;letter-spacing:0"><input type="checkbox" id="autoWelOn"> Enable Welcome message</label>
+            <label>Welcome channel</label><select id="autoWelCh"></select>
+            <label>Welcome saved message</label><select id="autoWelMsg"></select>
+            <label style="text-transform:none;display:flex;gap:8px;align-items:center;letter-spacing:0;margin-top:12px"><input type="checkbox" id="autoByeOn"> Enable Goodbye message</label>
+            <label>Goodbye channel</label><select id="autoByeCh"></select>
+            <label>Goodbye saved message</label><select id="autoByeMsg"></select>
+            <button class="primary small" id="autoSaveBtn" style="margin-top:12px"><svg class="ic"><use href="#i-save"></use></svg>Save Welcome/Goodbye</button>
+          </div>
+
+          <div class="bcard" style="background:var(--panel);padding:18px">
+            <h3 style="margin-top:0">Keyword Auto-Replies</h3>
+            <div id="autoKwList"></div>
+            <div class="btnrow" style="margin-top:8px">
+              <input id="kwPhrase" maxlength="100" placeholder="Trigger phrase" style="flex:1;min-width:130px">
+              <select id="kwMatch" style="width:auto"><option value="contains">Contains</option><option value="exact">Exact</option><option value="starts">Starts with</option></select>
+              <select id="kwMsg" style="flex:1;min-width:130px"></select>
+              <button class="primary small" id="kwAddBtn"><svg class="ic"><use href="#i-plus"></use></svg>Add</button>
+            </div>
+          </div>
+
+          <div class="bcard" style="background:var(--panel);padding:18px">
+            <h3 style="margin-top:0">RSS / YouTube / Reddit Feeds</h3>
+            <p class="muted">Template messages can use <code>{{title}}</code>, <code>{{link}}</code>, and <code>{{author}}</code>.</p>
+            <div id="autoFeedList"></div>
+            <div class="btnrow" style="margin-top:8px">
+              <select id="feedKind" style="width:auto"><option value="rss">RSS</option><option value="youtube">YouTube</option><option value="reddit">Reddit</option></select>
+              <input id="feedUrl" placeholder="https://..." style="flex:2;min-width:160px">
+              <select id="feedCh" style="flex:1;min-width:120px"></select>
+              <select id="feedMsg" style="flex:1;min-width:120px"></select>
+              <button class="primary small" id="feedAddBtn"><svg class="ic"><use href="#i-plus"></use></svg>Add</button>
+            </div>
+          </div>
+
+          <div class="bcard" style="background:var(--panel);padding:18px">
+            <h3 style="margin-top:0">Custom Slash Commands (/faq)</h3>
+            <p class="muted">Members can trigger these using <code>/faq &lt;name&gt;</code> in Discord.</p>
+            <div id="autoCmdList"></div>
+            <div class="btnrow" style="margin-top:8px">
+              <input id="cmdName" maxlength="32" placeholder="name (e.g. rules)" style="flex:1;min-width:110px">
+              <input id="cmdDesc" maxlength="100" placeholder="Description" style="flex:1;min-width:130px">
+              <select id="cmdMsg" style="flex:1;min-width:120px"></select>
+              <button class="primary small" id="cmdAddBtn"><svg class="ic"><use href="#i-plus"></use></svg>Add</button>
+            </div>
+          </div>
+
+          <div class="bcard" style="background:var(--panel);padding:18px">
+            <h3 style="margin-top:0">Sticky Messages</h3>
+            <div id="autoStickyList"></div>
+            <div class="btnrow" style="margin-top:8px">
+              <select id="stickyCh" style="flex:1;min-width:130px"></select>
+              <select id="stickyMsg" style="flex:1;min-width:130px"></select>
+              <input id="stickyDelay" type="number" min="3" max="60" value="5" style="width:70px" title="Delay seconds">
+              <button class="primary small" id="stickyAddBtn"><svg class="ic"><use href="#i-plus"></use></svg>Set sticky</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="wsTools" class="hidden">
+        <div class="ws-head">
+          <div>
+            <h2>Server Tools</h2>
+            <p id="toolsSrvLabel" class="muted" style="margin:4px 0 0"></p>
+          </div>
+          <button id="toolsClose" type="button"><svg class="ic"><use href="#i-back"></use></svg>Back to Messages</button>
+        </div>
+        <select id="toolsGuild" class="hidden" style="display:none"></select>
+        <div class="btnrow" style="margin-bottom:10px">
+          <button id="toolsBackup"><svg class="ic"><use href="#i-export"></use></svg>Download backup</button>
+          <button id="toolsImport"><svg class="ic"><use href="#i-import"></use></svg>Import file...</button>
+          <input type="file" id="importFile" accept=".json,application/json" class="hidden">
+        </div>
+        <p id="toolsStatus" class="muted" style="min-height:20px"></p>
+        <div style="display:grid;gap:14px">
+          <div class="bcard" style="background:var(--panel);padding:18px">
+            <h3 style="margin-top:0">Import from Discord Link or Discohook JSON</h3>
+            <div class="btnrow" style="margin-bottom:8px">
+              <input id="impLinkUrl" placeholder="https://discord.com/channels/..." style="flex:1;min-width:180px">
+              <button class="primary small" id="impLinkBtn">Import link</button>
+            </div>
+            <textarea id="impDiscoJson" placeholder="Paste Discohook / Embed Generator JSON here..." style="min-height:70px;font-size:12px"></textarea>
+            <button class="small" id="impDiscoBtn" style="margin-top:6px">Import Discohook JSON</button>
+          </div>
+
+          <div class="bcard" style="background:var(--panel);padding:18px">
+            <h3 style="margin-top:0">Templates</h3>
+            <div id="toolsTemplates"></div>
+          </div>
+
+          <div class="bcard" style="background:var(--panel);padding:18px">
+            <h3 style="margin-top:0">Message sequences</h3>
+            <p class="muted">Group saved messages to post them in order into a channel.</p>
+            <label>Channel for posting sequences</label><select id="seqChannel"></select>
+            <div id="toolsSequences" style="margin-top:8px"></div>
+            <div class="bcard" style="margin-top:10px">
+              <label style="margin-top:0">New sequence name</label>
+              <input id="seqName" maxlength="100" placeholder="e.g. Server Rules + Info">
+              <label>Messages to include (max 10)</label>
+              <div id="seqMsgChecks" style="max-height:130px;overflow:auto;margin-bottom:8px"></div>
+              <button class="primary small" id="seqAdd"><svg class="ic"><use href="#i-plus"></use></svg>Create sequence</button>
+            </div>
+          </div>
+
+          <div class="bcard" style="background:var(--panel);padding:18px">
+            <h3 style="margin-top:0">Webhook presets &amp; Channel Webhooks</h3>
+            <p class="muted">A preset is a name and picture to post under, like "Server News".</p>
+            <div id="toolsPersonas"></div>
+            <div class="btnrow" style="margin-top:8px;margin-bottom:14px">
+              <input id="personaName" maxlength="80" placeholder="Name, e.g. Server News" style="flex:1;min-width:150px">
+              <input id="personaAvatar" placeholder="Picture link (https, optional)" style="flex:1;min-width:150px">
+              <button class="primary small" id="personaAdd"><svg class="ic"><use href="#i-plus"></use></svg>Add preset</button>
+            </div>
+            <label>Channel</label><select id="whChannel"></select>
+            <div id="toolsWebhooks" style="margin-top:8px"></div>
+            <div class="btnrow" style="margin-top:8px">
+              <input id="whNewName" maxlength="80" placeholder="New webhook name" style="flex:1;min-width:150px">
+              <button class="primary small" id="whCreateBtn"><svg class="ic"><use href="#i-plus"></use></svg>Create webhook</button>
+            </div>
+          </div>
+
+          <div class="bcard" style="background:var(--panel);padding:18px">
+            <h3 style="margin-top:0">Brand Kit</h3>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+              <input type="color" id="bkColor" value="#5865F2" style="width:48px;height:36px;padding:2px">
+              <input id="bkFooter" maxlength="300" placeholder="Default footer text" style="flex:1;min-width:160px">
+              <button class="primary small" id="bkSaveBtn">Save Brand Kit</button>
+            </div>
+            <h3 style="margin-top:16px">Editor Access (Teamwork)</h3>
+            <p class="muted">Grant trusted members dashboard access for this server without giving them Discord Administrator.</p>
+            <div id="toolsEditors"></div>
+            <div class="btnrow" style="margin-top:8px">
+              <input id="edUserId" placeholder="Discord User ID (numbers only)" style="flex:1;min-width:150px">
+              <button class="primary small" id="edAddBtn"><svg class="ic"><use href="#i-plus"></use></svg>Add editor</button>
+            </div>
+          </div>
+
+          <div class="bcard" style="background:var(--panel);padding:18px">
+            <h3 style="margin-top:0">Bulk Search &amp; Replace</h3>
+            <div class="btnrow">
+              <input id="brFind" placeholder="Find text (e.g. old link)" style="flex:1;min-width:140px">
+              <input id="brReplace" placeholder="Replace with" style="flex:1;min-width:140px">
+              <button class="small" id="brRunBtn">Replace all</button>
+            </div>
+            <h3 style="margin-top:16px">Trash (30-day restore)</h3>
+            <div id="toolsTrash"></div>
+            <h3 style="margin-top:16px">Recent Activity Log</h3>
+            <div id="toolsActivity" style="max-height:180px;overflow:auto"></div>
+            <h3 style="margin-top:16px">Data Rights</h3>
+            <button class="small danger" id="wipeGuildBtn"><svg class="ic"><use href="#i-trash"></use></svg>Delete all server data</button>
+          </div>
+        </div>
+      </section>
     </main>
   </div>
 </div>
@@ -357,88 +526,6 @@
   </div>
 </div>
 
-<div id="toolsOverlay" class="overlay hidden">
-  <div class="modal" style="width:min(520px,100%)">
-    <h2>Server tools</h2>
-    <p id="toolsSrvLabel" class="muted" style="margin:0 0 8px"></p>
-    <select id="toolsGuild" class="hidden" style="display:none"></select>
-    <div class="btnrow" style="margin-top:10px">
-      <button id="toolsBackup"><svg class="ic"><use href="#i-export"></use></svg>Download backup</button>
-      <button id="toolsImport"><svg class="ic"><use href="#i-import"></use></svg>Import file...</button>
-      <input type="file" id="importFile" accept=".json,application/json" class="hidden">
-    </div>
-    <p id="toolsStatus" class="muted" style="min-height:20px"></p>
-    <h3>Import from Discord Link or Discohook JSON</h3>
-    <div class="btnrow" style="margin-bottom:8px">
-      <input id="impLinkUrl" placeholder="https://discord.com/channels/..." style="flex:1;min-width:180px">
-      <button class="primary small" id="impLinkBtn">Import link</button>
-    </div>
-    <textarea id="impDiscoJson" placeholder="Paste Discohook / Embed Generator JSON here..." style="min-height:70px;font-size:12px"></textarea>
-    <button class="small" id="impDiscoBtn" style="margin-top:6px">Import Discohook JSON</button>
-    <h3>Templates</h3>
-    <div id="toolsTemplates"></div>
-    <h3>Message sequences</h3>
-    <p class="muted">Group saved messages to post them in order into a channel.</p>
-    <label>Channel for posting sequences</label><select id="seqChannel"></select>
-    <div id="toolsSequences" style="margin-top:8px"></div>
-    <div class="bcard" style="margin-top:8px">
-      <label style="margin-top:0">New sequence name</label>
-      <input id="seqName" maxlength="100" placeholder="e.g. Server Rules + Info">
-      <label>Messages to include (max 10)</label>
-      <div id="seqMsgChecks" style="max-height:130px;overflow:auto;margin-bottom:8px"></div>
-      <button class="primary small" id="seqAdd"><svg class="ic"><use href="#i-plus"></use></svg>Create sequence</button>
-    </div>
-    <h3>Webhook presets</h3>
-    <p class="muted">A preset is a name and picture to post under, like "Server News". You pick one with "Send as" in the Send window.</p>
-    <div id="toolsPersonas"></div>
-    <div class="btnrow" style="margin-top:8px">
-      <input id="personaName" maxlength="80" placeholder="Name, e.g. Server News" style="flex:1;min-width:150px">
-      <input id="personaAvatar" placeholder="Picture link (https, optional)" style="flex:1;min-width:150px">
-      <button class="primary small" id="personaAdd"><svg class="ic"><use href="#i-plus"></use></svg>Add preset</button>
-    </div>
-    <h3>Channel Webhooks</h3>
-    <p class="muted">List, create, or delete Discord webhooks in a channel (webhooks owned by the bot support all interactive components).</p>
-    <label>Channel</label><select id="whChannel"></select>
-    <div id="toolsWebhooks" style="margin-top:8px"></div>
-    <div class="btnrow" style="margin-top:8px">
-      <input id="whNewName" maxlength="80" placeholder="New webhook name" style="flex:1;min-width:150px">
-      <button class="primary small" id="whCreateBtn"><svg class="ic"><use href="#i-plus"></use></svg>Create webhook</button>
-    </div>
-    <h3>Brand Kit</h3>
-    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-      <input type="color" id="bkColor" value="#5865F2" style="width:48px;height:36px;padding:2px">
-      <input id="bkFooter" maxlength="300" placeholder="Default footer text" style="flex:1;min-width:160px">
-      <button class="primary small" id="bkSaveBtn">Save Brand Kit</button>
-    </div>
-
-    <h3>Editor Access (Teamwork)</h3>
-    <p class="muted">Grant trusted members dashboard access for this server without giving them Discord Administrator.</p>
-    <div id="toolsEditors"></div>
-    <div class="btnrow" style="margin-top:8px">
-      <input id="edUserId" placeholder="Discord User ID (numbers only)" style="flex:1;min-width:150px">
-      <button class="primary small" id="edAddBtn"><svg class="ic"><use href="#i-plus"></use></svg>Add editor</button>
-    </div>
-
-    <h3>Bulk Search &amp; Replace</h3>
-    <div class="btnrow">
-      <input id="brFind" placeholder="Find text (e.g. old link)" style="flex:1;min-width:140px">
-      <input id="brReplace" placeholder="Replace with" style="flex:1;min-width:140px">
-      <button class="small" id="brRunBtn">Replace all</button>
-    </div>
-
-    <h3>Trash (30-day restore)</h3>
-    <div id="toolsTrash"></div>
-
-    <h3>Recent Activity Log</h3>
-    <div id="toolsActivity" style="max-height:180px;overflow:auto"></div>
-
-    <h3>Data Rights</h3>
-    <button class="small danger" id="wipeGuildBtn"><svg class="ic"><use href="#i-trash"></use></svg>Delete all server data</button>
-
-    <div class="btnrow" style="margin-top:10px"><button id="toolsClose"><svg class="ic"><use href="#i-close"></use></svg>Close</button></div>
-  </div>
-</div>
-
 <div id="histOverlay" class="overlay hidden">
   <div class="modal" style="width:min(520px,100%)">
     <h2>Version history</h2>
@@ -547,75 +634,6 @@
   </div>
 </div>
 
-<div id="autoOverlay" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="autoTitle">
-  <div class="modal" style="width:min(660px,100%)">
-    <h2 id="autoTitle">Server Automation</h2>
-    <p id="autoSrvLabel" class="muted" style="margin:0 0 8px"></p>
-    <select id="autoGuild" class="hidden" style="display:none"></select>
-    <p id="autoStatus" class="muted" style="min-height:20px;margin:6px 0"></p>
-
-    <div class="bcard">
-      <h3 style="margin-top:0">Welcome &amp; Goodbye</h3>
-      <label style="text-transform:none;display:flex;gap:8px;align-items:center;letter-spacing:0"><input type="checkbox" id="autoWelOn"> Enable Welcome message</label>
-      <label>Welcome channel</label><select id="autoWelCh"></select>
-      <label>Welcome saved message</label><select id="autoWelMsg"></select>
-      <label style="text-transform:none;display:flex;gap:8px;align-items:center;letter-spacing:0;margin-top:10px"><input type="checkbox" id="autoByeOn"> Enable Goodbye message</label>
-      <label>Goodbye channel</label><select id="autoByeCh"></select>
-      <label>Goodbye saved message</label><select id="autoByeMsg"></select>
-      <button class="primary small" id="autoSaveBtn" style="margin-top:10px"><svg class="ic"><use href="#i-save"></use></svg>Save Welcome/Goodbye</button>
-    </div>
-
-    <div class="bcard">
-      <h3 style="margin-top:0">Keyword Auto-Replies</h3>
-      <div id="autoKwList"></div>
-      <div class="btnrow" style="margin-top:8px">
-        <input id="kwPhrase" maxlength="100" placeholder="Trigger phrase" style="flex:1;min-width:130px">
-        <select id="kwMatch" style="width:auto"><option value="contains">Contains</option><option value="exact">Exact</option><option value="starts">Starts with</option></select>
-        <select id="kwMsg" style="flex:1;min-width:130px"></select>
-        <button class="primary small" id="kwAddBtn"><svg class="ic"><use href="#i-plus"></use></svg>Add</button>
-      </div>
-    </div>
-
-    <div class="bcard">
-      <h3 style="margin-top:0">RSS / YouTube / Reddit Feeds</h3>
-      <p class="muted">Template messages can use <code>{{title}}</code>, <code>{{link}}</code>, and <code>{{author}}</code>.</p>
-      <div id="autoFeedList"></div>
-      <div class="btnrow" style="margin-top:8px">
-        <select id="feedKind" style="width:auto"><option value="rss">RSS</option><option value="youtube">YouTube</option><option value="reddit">Reddit</option></select>
-        <input id="feedUrl" placeholder="https://..." style="flex:2;min-width:160px">
-        <select id="feedCh" style="flex:1;min-width:120px"></select>
-        <select id="feedMsg" style="flex:1;min-width:120px"></select>
-        <button class="primary small" id="feedAddBtn"><svg class="ic"><use href="#i-plus"></use></svg>Add</button>
-      </div>
-    </div>
-
-    <div class="bcard">
-      <h3 style="margin-top:0">Custom Slash Commands (/faq)</h3>
-      <p class="muted">Members can trigger these using <code>/faq &lt;name&gt;</code> in Discord.</p>
-      <div id="autoCmdList"></div>
-      <div class="btnrow" style="margin-top:8px">
-        <input id="cmdName" maxlength="32" placeholder="name (e.g. rules)" style="flex:1;min-width:110px">
-        <input id="cmdDesc" maxlength="100" placeholder="Description" style="flex:1;min-width:130px">
-        <select id="cmdMsg" style="flex:1;min-width:120px"></select>
-        <button class="primary small" id="cmdAddBtn"><svg class="ic"><use href="#i-plus"></use></svg>Add</button>
-      </div>
-    </div>
-
-    <div class="bcard">
-      <h3 style="margin-top:0">Sticky Messages</h3>
-      <div id="autoStickyList"></div>
-      <div class="btnrow" style="margin-top:8px">
-        <select id="stickyCh" style="flex:1;min-width:130px"></select>
-        <select id="stickyMsg" style="flex:1;min-width:130px"></select>
-        <input id="stickyDelay" type="number" min="3" max="60" value="5" style="width:70px" title="Delay seconds">
-        <button class="primary small" id="stickyAddBtn"><svg class="ic"><use href="#i-plus"></use></svg>Set sticky</button>
-      </div>
-    </div>
-
-    <div class="btnrow" style="margin-top:12px"><button id="autoClose"><svg class="ic"><use href="#i-close"></use></svg>Close</button></div>
-  </div>
-</div>
-
 <div id="cmdOverlay" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="cmdTitle">
   <div class="modal" style="width:min(520px,100%)">
     <h2 id="cmdTitle">Quick Jump (Ctrl+K)</h2>
@@ -678,6 +696,6 @@
 
 <div id="testToast" class="ttoast hidden"></div>
 
-<script src="app.js?v=32"></script>
+<script src="app.js?v=33"></script>
 </body>
 </html>
