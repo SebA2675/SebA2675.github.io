@@ -35,11 +35,11 @@ async function loadLiveStats() {
     const r = await fetch(API_URL + "/health", { cache: "no-store" });
     if (!r.ok) throw new Error("HTTP " + r.status);
     const d = await r.json();
-    const ping = d.discord_ping_ms != null ? d.discord_ping_ms + " ms" : "Online";
+    const ping = d.discord_latency_ms != null ? d.discord_latency_ms + " ms" : "Online";
     if ($("liveText")) $("liveText").textContent = "Online · " + ping;
-    if ($("stSrv")) $("stSrv").textContent = d.guilds != null ? String(d.guilds) : "—";
+    if ($("stSrv")) $("stSrv").textContent = d.servers != null ? String(d.servers) : "—";
     if ($("stPing")) $("stPing").textContent = ping;
-    if ($("stUp")) $("stUp").textContent = fmtUp(d.uptime_s);
+    if ($("stUp")) $("stUp").textContent = fmtUp(d.uptime_seconds);
   } catch (e) {
     if ($("liveText")) $("liveText").textContent = "Status unavailable";
   }

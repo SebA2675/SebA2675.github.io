@@ -4549,10 +4549,15 @@ function initAppearance() {
     b.onclick = () => { try { t = localStorage.getItem("ui_theme_v2") || "light"; } catch (e) {} apply(t, b.dataset.acc); };
   });
   const syncPvBtn = () => {
-    if ($("umPvBtn")) $("umPvBtn").textContent = pvLight ? "Discord Light" : "Discord Dark";
+    if ($("umPvBtn")) $("umPvBtn").textContent = pv === "light" ? "Discord Light" : "Discord Dark";
   };
   syncPvBtn();
-  if ($("umPvBtn")) $("umPvBtn").onclick = () => { pvLight = !pvLight; applyPv(); syncPvBtn(); };
+  if ($("umPvBtn")) $("umPvBtn").onclick = () => {
+    pv = pv === "light" ? "dark" : "light";
+    try { localStorage.setItem("pv", pv); } catch (e) {}
+    applyPv();
+    syncPvBtn();
+  };
   if ($("navServersBtn")) $("navServersBtn").onclick = (e) => { e.preventDefault(); closeUm(); openServers(); };
   if ($("umServersBtn")) $("umServersBtn").onclick = () => { closeUm(); openServers(); };
   if ($("navAdminBtn")) $("navAdminBtn").onclick = (e) => { e.preventDefault(); closeUm(); openAdmin(); };
