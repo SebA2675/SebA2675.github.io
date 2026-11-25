@@ -219,7 +219,7 @@ let treeOpen = false;
 function applyTree() {
   $("builderEl").dataset.tree = treeOpen ? "open" : "closed";
   $("treeBtn").classList.toggle("on", treeOpen);
-  $("treeEdge").textContent = treeOpen ? "â€¹" : "â€º";
+  $("treeEdge").textContent = treeOpen ? "\u2039" : "\u203a";
   positionFloatBar();
 }
 $("treeBtn").onclick = () => { treeOpen = !treeOpen; applyTree(); };
@@ -2730,14 +2730,15 @@ function drawServerModal() {
     return '<div class="srvcard' + (libGuild === g.id ? " on" : "") + '" data-pickguild="' + esc(g.id) + '">' +
       srvIconHtml(g, 36) + '<div class="srvmeta"><b>' + esc(g.name) + '</b><small>' + cnt + ' msg(s)' +
       (g.last_edit ? ' &middot; ' + esc(ago(g.last_edit)) : '') + '</small></div>' +
-      '<button type="button" class="srvfav' + (fav ? " on" : "") + '" data-favguild="' + esc(g.id) + '" title="Pin server">' + (fav ? "â˜…" : "â˜†") + '</button></div>';
+      '<button type="button" class="srvfav' + (fav ? " on" : "") + '" data-favguild="' + esc(g.id) + '" title="Pin server">' + (fav ? "\u2605" : "\u2606") + '</button></div>';
   }).join("");
   listEl.innerHTML = html || '<p class="muted">No matching servers.</p>';
 }
 function renderLibrary() {
   if (!libGuild && guilds.length) libGuild = guilds[0].id;
   const g = guilds.find((x) => x.id === libGuild);
-  if ($("wsTitle")) $("wsTitle").textContent = g ? ("Messages â€” " + g.name) : "Messages";
+  if ($("wsTitle")) $("wsTitle").textContent = "Messages";
+  if ($("wsSrvPill")) $("wsSrvPill").innerHTML = g ? (srvIconHtml(g, 16) + "<span>" + esc(g.name) + "</span>") : "";
   const srvItems = libItems.filter((m) => !libGuild || String(m.guild_id) === libGuild);
   $("libTools").classList.toggle("hidden", !srvItems.length);
   if ($("libGuild")) {
@@ -2765,7 +2766,7 @@ function renderSrvHub() {
       '<div class="srvmeta"><b>' + esc(g.name) + '</b><small>' + cnt + ' message(s)' +
       (g.last_edit ? ' &middot; ' + esc(ago(g.last_edit)) : '') + '</small></div></div>' +
       '<div class="srv-card-acts">' +
-      '<button type="button" class="primary" data-hubopen="' + esc(g.id) + '">Open dashboard</button>' +
+      '<button type="button" class="primary" data-hubopen="' + esc(g.id) + '">' + ic("send") + 'Open dashboard</button>' +
       '<button type="button" class="ib" data-hubauto="' + esc(g.id) + '" title="Automation">' + ic("schedule") + '</button>' +
       '<button type="button" class="ib" data-hubtools="' + esc(g.id) + '" title="Server tools">' + ic("tools") + '</button>' +
       '</div></div>';
@@ -2780,7 +2781,7 @@ async function openServers() {
   try {
     await loadGuilds();
     libItems = await api("/messages");
-    if ($("srvHeroSub")) $("srvHeroSub").textContent = guilds.length + " server(s) available â€” each server has its own independent messages, automation, and tools.";
+    if ($("srvHeroSub")) $("srvHeroSub").textContent = guilds.length + " server(s) available \u2014 each server has its own independent messages, automation, and tools.";
     renderSrvHub();
   } catch (e) {
     if (e.message !== "login" && grid) grid.innerHTML = '<p class="muted">Could not load servers: ' + esc(e.message) + '</p>';
@@ -2977,7 +2978,8 @@ async function openToolsSub(sub) {
   if (!guilds.length) { notifyErr("No server available."); return; }
   const gid = libGuild || guilds[0].id;
   const g = guilds.find((x) => x.id === gid);
-  if ($("toolsSrvLabel")) $("toolsSrvLabel").textContent = g ? ("Server: " + g.name) : "";
+  if ($("toolsSrvPill")) $("toolsSrvPill").innerHTML = g ? (srvIconHtml(g, 16) + "<span>" + esc(g.name) + "</span>") : "";
+  if ($("toolsSrvLabel")) $("toolsSrvLabel").textContent = "Manage backups, imports, templates, webhooks, and team access for this server.";
   $("toolsGuild").innerHTML = opts(guilds.map((x) => [x.id, x.name]), gid);
   $("toolsGuild").value = gid;
   const meta = TOOLS_TABS[sub] || TOOLS_TABS.imp;
@@ -3877,7 +3879,7 @@ const STARTER_TEMPLATES = [
     build: () => ({
       blocks: [
         { id: uid(), type: "box", accent: "#1ABC9C", children: [
-          { id: uid(), type: "text", content: "# FAQ â€” Page 1\n**Q: How do I get roles?**\nUse the self-role buttons in #roles." },
+          { id: uid(), type: "text", content: "# FAQ \u2014 Page 1\n**Q: How do I get roles?**\nUse the self-role buttons in #roles." },
           { id: uid(), type: "button_row", buttons: [
             { id: uid(), label: "Prev", style: "grey", action: { type: "page", page_index: -1 }, allowed_roles: [], cooldown: 0, once: false },
             { id: uid(), label: "Next", style: "blue", action: { type: "page", page_index: -2 }, allowed_roles: [], cooldown: 0, once: false }
@@ -3885,7 +3887,7 @@ const STARTER_TEMPLATES = [
         ]}
       ],
       pages: [
-        { id: uid(), name: "Page 2", blocks: [{ id: uid(), type: "box", accent: "#1ABC9C", children: [{ id: uid(), type: "text", content: "# FAQ â€” Page 2\n**Q: How do I contact staff?**\nClick the Support Info button or message a moderator." }] }], content: "", embeds: [] }
+        { id: uid(), name: "Page 2", blocks: [{ id: uid(), type: "box", accent: "#1ABC9C", children: [{ id: uid(), type: "text", content: "# FAQ \u2014 Page 2\n**Q: How do I contact staff?**\nClick the Support Info button or message a moderator." }] }], content: "", embeds: [] }
       ],
       replies: [], forms: [], variables: []
     })
@@ -4121,7 +4123,8 @@ async function openAutoSub(sub) {
   if (!guilds.length) { notifyErr("No server available."); return; }
   const gid = libGuild || guilds[0].id;
   const g = guilds.find((x) => x.id === gid);
-  if ($("autoSrvLabel")) $("autoSrvLabel").textContent = g ? ("Server: " + g.name) : "";
+  if ($("autoSrvPill")) $("autoSrvPill").innerHTML = g ? (srvIconHtml(g, 16) + "<span>" + esc(g.name) + "</span>") : "";
+  if ($("autoSrvLabel")) $("autoSrvLabel").textContent = "Changes apply only to this server.";
   $("autoGuild").innerHTML = opts(guilds.map((x) => [x.id, x.name]), gid);
   $("autoGuild").value = gid;
   const meta = AUTO_TABS[sub] || AUTO_TABS.wel;
@@ -4532,7 +4535,7 @@ $("sendVerifyBtn").onclick = async () => {
     fresh = r.message;
     cur.posted_message_id = fresh.posted_message_id;
     refreshSendButtons();
-    setStatus(r.exists ? "Verified: message still exists in Discord." : "Message was deleted in Discord â€” status cleared so you can post again.");
+    setStatus(r.exists ? "Verified: message still exists in Discord." : "Message was deleted in Discord \u2014 status cleared so you can post again.");
   } catch (e) { if (e.message !== "login") setStatus("Failed: " + e.message); }
 };
 

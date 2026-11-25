@@ -9,7 +9,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="logo.jpg">
 <title>9NATION EMBEDS — Dashboard</title>
-<link rel="stylesheet" href="styles.css?v=30">
+<link rel="stylesheet" href="styles.css?v=36">
 </head>
 <body>
 
@@ -53,6 +53,7 @@
 <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></symbol>
 <symbol id="i-mail" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></symbol>
 <symbol id="i-code" viewBox="0 0 24 24"><path d="M8 9l-4 3 4 3M16 9l4 3-4 3M13 6l-2 12"/></symbol>
+<symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 16v-4M12 8h.01"/></symbol>
 </defs></svg>
 
 <div id="toasts" aria-live="polite"></div>
@@ -72,10 +73,10 @@
   <div class="nav-in">
     <a class="brand" href="../"><img src="logo.jpg" alt="9NATION" class="logo"><span>9NATION <b>EMBEDS</b></span></a>
     <nav class="nav-links">
-      <a href="#" id="navServersBtn">My servers</a>
-      <a href="../#features">Features</a>
-      <a href="status.html">Status</a>
-      <a href="#" id="navAdminBtn" class="hidden">Owner Panel</a>
+      <a href="#" id="navServersBtn"><svg class="ic"><use href="#i-servers"></use></svg>My servers</a>
+      <a href="../#features"><svg class="ic"><use href="#i-template"></use></svg>Features</a>
+      <a href="status.html"><svg class="ic"><use href="#i-history"></use></svg>Status</a>
+      <a href="#" id="navAdminBtn" class="hidden"><svg class="ic"><use href="#i-tools"></use></svg>Owner Panel</a>
     </nav>
     <div class="nav-right">
       <div class="usermenu" id="userMenuWrap">
@@ -87,14 +88,14 @@
         <div class="um-drop hidden" id="umDrop">
           <div class="um-head"><span id="umFullName">Account</span><span class="um-badge" id="umRoleBadge">Member</span></div>
           <div class="um-row">
-            <span>Theme</span>
+            <span class="um-lbl"><svg class="ic"><use href="#i-sun"></use></svg>Theme</span>
             <div class="um-seg">
               <button type="button" id="themeLightBtn">Light</button>
               <button type="button" id="themeDarkBtn">Dark</button>
             </div>
           </div>
           <div class="um-row">
-            <span>Colour</span>
+            <span class="um-lbl"><svg class="ic"><use href="#i-edit"></use></svg>Colour</span>
             <div class="um-dots" id="umDots">
               <button type="button" class="um-dot" data-acc="#8b5cf6" style="background:#8b5cf6" title="Violet"></button>
               <button type="button" class="um-dot" data-acc="#d96b27" style="background:#d96b27" title="Amber"></button>
@@ -105,7 +106,7 @@
             </div>
           </div>
           <div class="um-row">
-            <span>Preview</span>
+            <span class="um-lbl"><svg class="ic"><use href="#i-eye"></use></svg>Preview</span>
             <button type="button" class="small" id="umPvBtn">Discord Dark</button>
           </div>
           <div style="border-top:1px solid var(--line);padding-top:8px;display:flex;flex-direction:column;gap:4px">
@@ -125,19 +126,19 @@
       <div class="srv-hero-left">
         <div class="srv-hero-av" id="srvHeroAv">9N</div>
         <div>
-          <h1 id="srvHeroTitle" style="margin:0;font-size:24px;color:var(--ink)">Welcome back</h1>
-          <p id="srvHeroSub" class="muted" style="margin:4px 0 0;font-size:14px">Pick a server below to open its independent dashboard.</p>
+          <h1 id="srvHeroTitle" style="margin:0;font-size:24px;color:var(--ink)">Welcome</h1>
+          <div class="info-bar" style="margin:8px 0 0"><svg class="ic"><use href="#i-info"></use></svg><span id="srvHeroSub">Pick a server below to open its independent dashboard.</span></div>
         </div>
       </div>
       <div class="btnrow">
         <button type="button" id="srvOwnerBtn" class="primary hidden"><svg class="ic"><use href="#i-servers"></use></svg>Owner Panel</button>
-        <a href="../" style="text-decoration:none"><button type="button">Bot Guide</button></a>
+        <a href="../" style="text-decoration:none"><button type="button"><svg class="ic"><use href="#i-question"></use></svg>Bot Guide</button></a>
       </div>
     </div>
     <div class="ws-head" style="margin-bottom:16px">
       <div>
-        <h2 style="margin:0;font-size:20px;color:var(--ink)">Your servers</h2>
-        <p class="muted" style="margin:3px 0 0;font-size:13px">Each server has its own messages, automation, and tools.</p>
+        <div class="ws-title-row"><svg class="ic"><use href="#i-servers"></use></svg><h2 style="margin:0;font-size:20px;color:var(--ink)">Your servers</h2></div>
+        <div class="info-bar" style="margin:8px 0 0"><svg class="ic"><use href="#i-info"></use></svg><span>Each server keeps its own independent messages, automation, and tools.</span></div>
       </div>
       <input id="hubSrvSearch" type="search" placeholder="Search servers..." aria-label="Search servers" style="max-width:250px">
     </div>
@@ -172,8 +173,8 @@
       <section id="wsMessages">
         <div class="ws-head">
           <div>
-            <h1 id="wsTitle">Messages</h1>
-            <p id="wsSub">Embeds and Components V2 layouts saved for this server.</p>
+            <div class="ws-title-row"><svg class="ic"><use href="#i-section"></use></svg><h1 id="wsTitle">Messages</h1><span class="srv-pill" id="wsSrvPill"></span></div>
+            <div class="info-bar"><svg class="ic"><use href="#i-info"></use></svg><span id="wsSub">Embeds and Components V2 layouts saved for this server.</span></div>
           </div>
           <div class="newwrap">
             <button class="primary" id="newBtn" aria-haspopup="true" aria-expanded="false"><svg class="ic"><use href="#i-plus"></use></svg>New message</button>
@@ -195,8 +196,8 @@
       <section id="wsAutomation" class="hidden">
         <div class="ws-head">
           <div>
-            <h1 id="autoTitle">Server Automation</h1>
-            <p id="autoSrvLabel" class="muted" style="margin:4px 0 0">Configure welcome messages, auto-replies, feeds, /faq, and sticky messages for this server.</p>
+            <div class="ws-title-row"><svg class="ic"><use href="#i-schedule"></use></svg><h1 id="autoTitle">Server Automation</h1><span class="srv-pill" id="autoSrvPill"></span></div>
+            <div class="info-bar"><svg class="ic"><use href="#i-info"></use></svg><span id="autoSrvLabel">Configure welcome messages, auto-replies, feeds, /faq, and sticky messages for this server.</span></div>
           </div>
           <button id="autoClose" type="button"><svg class="ic"><use href="#i-back"></use></svg>Back to Messages</button>
         </div>
@@ -267,8 +268,8 @@
       <section id="wsTools" class="hidden">
         <div class="ws-head">
           <div>
-            <h2 id="toolsTitle">Server Tools</h2>
-            <p id="toolsSrvLabel" class="muted" style="margin:4px 0 0"></p>
+            <div class="ws-title-row"><svg class="ic"><use href="#i-tools"></use></svg><h2 id="toolsTitle" style="margin:0;font-size:24px;color:var(--ink)">Server Tools</h2><span class="srv-pill" id="toolsSrvPill"></span></div>
+            <div class="info-bar"><svg class="ic"><use href="#i-info"></use></svg><span id="toolsSrvLabel">Manage backups, imports, templates, webhooks, and team access for this server.</span></div>
           </div>
           <button id="toolsClose" type="button"><svg class="ic"><use href="#i-back"></use></svg>Back to Messages</button>
         </div>
@@ -361,8 +362,8 @@
   <div class="wrap" style="max-width:1040px;padding:24px 20px">
     <div class="ws-head">
       <div>
-        <h1>Bot Owner Panel</h1>
-        <p>Manage approved servers, join requests, and bot-wide storage.</p>
+        <div class="ws-title-row"><svg class="ic"><use href="#i-servers"></use></svg><h1 style="margin:0">Bot Owner Panel</h1></div>
+        <div class="info-bar"><svg class="ic"><use href="#i-info"></use></svg><span>Manage approved servers, join requests, and bot-wide storage.</span></div>
       </div>
       <button id="adminBack" type="button"><svg class="ic"><use href="#i-back"></use></svg>Back to My Servers</button>
     </div>
@@ -700,6 +701,6 @@
 
 <div id="testToast" class="ttoast hidden"></div>
 
-<script src="app.js?v=35"></script>
+<script src="app.js?v=36"></script>
 </body>
 </html>
