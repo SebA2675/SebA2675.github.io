@@ -9,7 +9,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="logo.jpg">
 <title>9NATION EMBEDS — Dashboard</title>
-<link rel="stylesheet" href="styles.css?v=40">
+<link rel="stylesheet" href="styles.css?v=41">
 </head>
 <body>
 
@@ -211,7 +211,8 @@
 
         <div style="display:grid;gap:14px">
           <div class="bcard" id="autoCardWel" style="background:var(--panel);padding:18px">
-            <h3 style="margin-top:0">Welcome &amp; Goodbye</h3>
+            <h3 class="card-hdr"><svg class="ic"><use href="#i-mail"></use></svg>Welcome &amp; Goodbye</h3>
+            <div class="info-bar"><svg class="ic"><use href="#i-info"></use></svg><span>Automatically post a saved message in a chosen channel whenever a member joins or leaves.</span></div>
             <label style="text-transform:none;display:flex;gap:8px;align-items:center;letter-spacing:0"><input type="checkbox" id="autoWelOn"> Enable Welcome message</label>
             <label>Welcome channel</label><select id="autoWelCh"></select>
             <label>Welcome saved message</label><select id="autoWelMsg"></select>
@@ -222,7 +223,8 @@
           </div>
 
           <div class="bcard" id="autoCardKw" style="background:var(--panel);padding:18px">
-            <h3 style="margin-top:0">Keyword Auto-Replies</h3>
+            <h3 class="card-hdr"><svg class="ic"><use href="#i-reply"></use></svg>Keyword Auto-Replies</h3>
+            <div class="info-bar"><svg class="ic"><use href="#i-info"></use></svg><span>Automatically reply with a saved message whenever someone types a matching trigger phrase in chat.</span></div>
             <div id="autoKwList"></div>
             <div class="btnrow" style="margin-top:8px">
               <input id="kwPhrase" maxlength="100" placeholder="Trigger phrase" style="flex:1;min-width:130px">
@@ -233,8 +235,8 @@
           </div>
 
           <div class="bcard" id="autoCardFeed" style="background:var(--panel);padding:18px">
-            <h3 style="margin-top:0">RSS / YouTube / Reddit Feeds</h3>
-            <p class="muted">Template messages can use <code>{{title}}</code>, <code>{{link}}</code>, and <code>{{author}}</code>.</p>
+            <h3 class="card-hdr"><svg class="ic"><use href="#i-schedule"></use></svg>RSS / YouTube / Reddit Feeds</h3>
+            <div class="info-bar"><svg class="ic"><use href="#i-info"></use></svg><span>Auto-post new videos, posts, or articles. Your saved message can use <code>{{title}}</code>, <code>{{link}}</code>, and <code>{{author}}</code>.</span></div>
             <div id="autoFeedList"></div>
             <div class="btnrow" style="margin-top:8px">
               <select id="feedKind" style="width:auto"><option value="rss">RSS</option><option value="youtube">YouTube</option><option value="reddit">Reddit</option></select>
@@ -246,8 +248,8 @@
           </div>
 
           <div class="bcard" id="autoCardCmd" style="background:var(--panel);padding:18px">
-            <h3 style="margin-top:0">Custom Slash Commands (/faq)</h3>
-            <p class="muted">Members can trigger these using <code>/faq &lt;name&gt;</code> in Discord.</p>
+            <h3 class="card-hdr"><svg class="ic"><use href="#i-code"></use></svg>Custom Slash Commands (/faq)</h3>
+            <div class="info-bar"><svg class="ic"><use href="#i-info"></use></svg><span>Let members pull up any saved message anytime using <code>/faq &lt;name&gt;</code> in Discord.</span></div>
             <div id="autoCmdList"></div>
             <div class="btnrow" style="margin-top:8px">
               <input id="cmdName" maxlength="32" placeholder="name (e.g. rules)" style="flex:1;min-width:110px">
@@ -258,7 +260,8 @@
           </div>
 
           <div class="bcard" id="autoCardSticky" style="background:var(--panel);padding:18px">
-            <h3 style="margin-top:0">Sticky Messages</h3>
+            <h3 class="card-hdr"><svg class="ic"><use href="#i-buttons"></use></svg>Sticky Messages</h3>
+            <div class="info-bar"><svg class="ic"><use href="#i-info"></use></svg><span>Keep a message pinned at the bottom of an active channel—the bot re-posts it after the delay when new chat arrives.</span></div>
             <div id="autoStickyList"></div>
             <div class="btnrow" style="margin-top:8px">
               <select id="stickyCh" style="flex:1;min-width:130px"></select>
@@ -282,26 +285,29 @@
         <p id="toolsStatus" class="muted" style="min-height:20px;margin:0 0 10px"></p>
         <div style="display:grid;gap:14px">
           <div class="bcard" id="toolsCardImp" style="background:var(--panel);padding:18px">
-            <h3 style="margin-top:0">Backup &amp; File Import</h3>
-            <div class="btnrow" style="margin-bottom:14px">
+            <h3 class="card-hdr"><svg class="ic"><use href="#i-import"></use></svg>Backup &amp; File Import</h3>
+            <div class="info-bar"><svg class="ic"><use href="#i-info"></use></svg><span>Export all saved messages for this server as a JSON backup, or import a backup file.</span></div>
+            <div class="btnrow" style="margin-bottom:16px">
               <button id="toolsBackup"><svg class="ic"><use href="#i-export"></use></svg>Download backup</button>
               <button id="toolsImport"><svg class="ic"><use href="#i-import"></use></svg>Import file...</button>
               <input type="file" id="importFile" accept=".json,application/json" class="hidden">
             </div>
-            <h3>Import from Discord Link or Discohook JSON</h3>
+            <h3 class="card-hdr"><svg class="ic"><use href="#i-copy"></use></svg>Import from Discord Link or Discohook JSON</h3>
+            <div class="info-bar"><svg class="ic"><use href="#i-info"></use></svg><span>Paste a Discord message link (from a channel the bot can read) or Discohook JSON to convert it into a draft.</span></div>
             <div class="btnrow" style="margin-bottom:8px">
               <input id="impLinkUrl" placeholder="https://discord.com/channels/..." style="flex:1;min-width:180px">
-              <button class="primary small" id="impLinkBtn">Import link</button>
+              <button class="primary small" id="impLinkBtn"><svg class="ic"><use href="#i-import"></use></svg>Import link</button>
             </div>
             <textarea id="impDiscoJson" placeholder="Paste Discohook / Embed Generator JSON here..." style="min-height:70px;font-size:12px"></textarea>
-            <button class="small" id="impDiscoBtn" style="margin-top:6px">Import Discohook JSON</button>
+            <button class="small" id="impDiscoBtn" style="margin-top:6px"><svg class="ic"><use href="#i-code"></use></svg>Import Discohook JSON</button>
           </div>
 
           <div class="bcard" id="toolsCardTpl" style="background:var(--panel);padding:18px">
-            <h3 style="margin-top:0">Templates</h3>
-            <div id="toolsTemplates" style="margin-bottom:16px"></div>
-            <h3>Message sequences</h3>
-            <p class="muted">Group saved messages to post them in order into a channel.</p>
+            <h3 class="card-hdr"><svg class="ic"><use href="#i-template"></use></svg>Templates</h3>
+            <div class="info-bar"><svg class="ic"><use href="#i-info"></use></svg><span>Reusable message templates saved for this server. Click Use to create a new draft from one.</span></div>
+            <div id="toolsTemplates" style="margin-bottom:18px"></div>
+            <h3 class="card-hdr"><svg class="ic"><use href="#i-tree"></use></svg>Message Sequences</h3>
+            <div class="info-bar"><svg class="ic"><use href="#i-info"></use></svg><span>Group up to 10 saved messages to post them in order into any channel at once.</span></div>
             <label>Channel for posting sequences</label><select id="seqChannel"></select>
             <div id="toolsSequences" style="margin-top:8px"></div>
             <div class="bcard" style="margin-top:10px">
@@ -314,8 +320,8 @@
           </div>
 
           <div class="bcard" id="toolsCardWh" style="background:var(--panel);padding:18px">
-            <h3 style="margin-top:0">Webhook presets &amp; Channel Webhooks</h3>
-            <p class="muted">A preset is a name and picture to post under, like "Server News".</p>
+            <h3 class="card-hdr"><svg class="ic"><use href="#i-send"></use></svg>Webhook Presets &amp; Channel Webhooks</h3>
+            <div class="info-bar"><svg class="ic"><use href="#i-info"></use></svg><span>Create custom sender names &amp; avatars ("Send as" in the Send window), or manage channel webhooks.</span></div>
             <div id="toolsPersonas"></div>
             <div class="btnrow" style="margin-top:8px;margin-bottom:14px">
               <input id="personaName" maxlength="80" placeholder="Name, e.g. Server News" style="flex:1;min-width:150px">
@@ -328,7 +334,8 @@
               <input id="whNewName" maxlength="80" placeholder="New webhook name" style="flex:1;min-width:150px">
               <button class="primary small" id="whCreateBtn"><svg class="ic"><use href="#i-plus"></use></svg>Create webhook</button>
             </div>
-            <h3 style="margin-top:18px">Brand Kit</h3>
+            <h3 class="card-hdr" style="margin-top:18px"><svg class="ic"><use href="#i-edit"></use></svg>Brand Kit</h3>
+            <div class="info-bar"><svg class="ic"><use href="#i-info"></use></svg><span>Automatically applies your default accent colour and footer text whenever you create a new message.</span></div>
             <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
               <input type="color" id="bkColor" value="#5865F2" style="width:48px;height:36px;padding:2px">
               <input id="bkFooter" maxlength="300" placeholder="Default footer text" style="flex:1;min-width:160px">
@@ -337,24 +344,27 @@
           </div>
 
           <div class="bcard" id="toolsCardTeam" style="background:var(--panel);padding:18px">
-            <h3 style="margin-top:0">Editor Access (Teamwork)</h3>
-            <p class="muted">Grant trusted members dashboard access for this server without giving them Discord Administrator.</p>
+            <h3 class="card-hdr"><svg class="ic"><use href="#i-servers"></use></svg>Editor Access (Teamwork)</h3>
+            <div class="info-bar"><svg class="ic"><use href="#i-info"></use></svg><span>Grant trusted members dashboard access for this server without giving them Discord Administrator.</span></div>
             <div id="toolsEditors"></div>
             <div class="btnrow" style="margin-top:8px;margin-bottom:16px">
               <input id="edUserId" placeholder="Discord User ID (numbers only)" style="flex:1;min-width:150px">
               <button class="primary small" id="edAddBtn"><svg class="ic"><use href="#i-plus"></use></svg>Add editor</button>
             </div>
-            <h3>Bulk Search &amp; Replace</h3>
+            <h3 class="card-hdr"><svg class="ic"><use href="#i-tools"></use></svg>Bulk Search &amp; Replace</h3>
+            <div class="info-bar"><svg class="ic"><use href="#i-info"></use></svg><span>Update links, role names, or phrases across all saved messages in this server at once.</span></div>
             <div class="btnrow">
               <input id="brFind" placeholder="Find text (e.g. old link)" style="flex:1;min-width:140px">
               <input id="brReplace" placeholder="Replace with" style="flex:1;min-width:140px">
               <button class="small" id="brRunBtn">Replace all</button>
             </div>
-            <h3 style="margin-top:16px">Trash (30-day restore)</h3>
+            <h3 class="card-hdr" style="margin-top:18px"><svg class="ic"><use href="#i-trash"></use></svg>Trash (30-day restore)</h3>
+            <div class="info-bar"><svg class="ic"><use href="#i-info"></use></svg><span>Deleted messages stay here for 30 days so you can restore them anytime.</span></div>
             <div id="toolsTrash"></div>
-            <h3 style="margin-top:16px">Recent Activity Log</h3>
+            <h3 class="card-hdr" style="margin-top:18px"><svg class="ic"><use href="#i-history"></use></svg>Recent Activity Log</h3>
             <div id="toolsActivity" style="max-height:180px;overflow:auto"></div>
-            <h3 style="margin-top:16px">Data Rights</h3>
+            <h3 class="card-hdr" style="margin-top:18px"><svg class="ic"><use href="#i-trash"></use></svg>Data Rights</h3>
+            <div class="warn-bar"><svg class="ic"><use href="#i-info"></use></svg><span>Permanently deletes all saved drafts, automation, and settings for this server.</span></div>
             <button class="small danger" id="wipeGuildBtn"><svg class="ic"><use href="#i-trash"></use></svg>Delete all server data</button>
           </div>
         </div>

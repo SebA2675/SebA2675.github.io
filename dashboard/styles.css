@@ -442,6 +442,8 @@ label{display:block;font-size:13px;font-weight:600;color:var(--ink);margin:12px 
 .warn-bar .ic{width:16px;height:16px;flex:none}
 .ws-title-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .ws-title-row .ic{width:24px;height:24px;color:var(--accent)}
+.card-hdr{display:flex;align-items:center;gap:8px;margin:0 0 8px;font-size:16px;font-weight:700;color:var(--ink)}
+.card-hdr .ic{width:18px;height:18px;color:var(--accent);flex:none}
 .srv-pill{display:inline-flex;align-items:center;gap:6px;padding:4px 11px;border-radius:999px;background:var(--panel2);border:1px solid var(--line);font-size:12px;font-weight:600;color:var(--ink)}
 .um-lbl{display:inline-flex;align-items:center;gap:6px}
 .um-lbl .ic{width:15px;height:15px}
