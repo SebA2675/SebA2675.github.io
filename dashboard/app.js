@@ -2843,9 +2843,11 @@ $("libChips").addEventListener("click", (e) => {
 
 function showWsTab(tab, sub) {
   if ($("wsMessages")) $("wsMessages").classList.toggle("hidden", tab !== "messages");
+  if ($("wsSchedules")) $("wsSchedules").classList.toggle("hidden", tab !== "schedules");
   if ($("wsAutomation")) $("wsAutomation").classList.toggle("hidden", tab !== "automation");
   if ($("wsTools")) $("wsTools").classList.toggle("hidden", tab !== "tools");
   if ($("msgTabBtn")) $("msgTabBtn").classList.toggle("on", tab === "messages");
+  if ($("schedTabBtn")) $("schedTabBtn").classList.toggle("on", tab === "schedules");
   document.querySelectorAll(".sidebar [data-autotab]").forEach((b) => {
     b.classList.toggle("on", tab === "automation" && b.dataset.autotab === sub);
   });
@@ -2854,6 +2856,49 @@ function showWsTab(tab, sub) {
   });
 }
 if ($("msgTabBtn")) $("msgTabBtn").onclick = () => showWsTab("messages");
+if ($("schedTabClose")) $("schedTabClose").onclick = () => showWsTab("messages");
+
+async function openServerSchedules() {
+  await loadGuilds();
+  const gid = libGuild || (guilds[0] && guilds[0].id) || "";
+  const g = guilds.find((x) => x.id === gid);
+  if ($("schedSrvPill")) $("schedSrvPill").innerHTML = g ? (srvIconHtml(g, 16) + "<span>" + esc(g.name) + "</span>") : "";
+  showWsTab("schedules");
+  const listEl = $("srvSchedList");
+  if (!listEl) return;
+  listEl.innerHTML = '<div class="skel-card"></div>'.repeat(2);
+  try {
+    const msgs = libItems.filter((m) => String(m.guild_id) === gid);
+    const all = (await Promise.all(msgs.map(async (m) => {
+      try {
+        const rows = await api("/messages/" + m.id + "/schedules");
+        return rows.map((s) => ({ ...s, msg_id: m.id, msg_name: m.name }));
+      } catch (e) { return []; }
+    }))).flat().sort((a, b) => (a.next_run_at || 0) - (b.next_run_at || 0));
+    listEl.innerHTML = all.length
+      ? all.map((s) => {
+        const next = s.next_run_at ? new Date(s.next_run_at * 1000).toLocaleString() : "Paused";
+        const kind = s.every_seconds ? ("Every " + Math.round(s.every_seconds / 60) + "m") : (s.cron_expr || "One-time");
+        return '<div class="row"><div class="grow"><b>' + esc(s.msg_name) + '</b><div class="muted">' +
+          esc(kind) + ' &middot; Next: ' + esc(next) + '</div></div>' +
+          '<button class="small" data-schedopen="' + esc(s.msg_id) + '">' + ic("edit") + 'Edit</button>' +
+          '<button class="small danger" data-scheddel="' + esc(s.id) + '">' + ic("trash") + 'Delete</button></div>';
+      }).join("")
+      : '<div class="lempty"><b>No scheduled posts in this server</b><p>Open any message in the Builder and click Schedule to create one.</p></div>';
+  } catch (e) {
+    if (e.message !== "login") listEl.innerHTML = '<p class="muted">Could not load schedules: ' + esc(e.message) + '</p>';
+  }
+}
+if ($("schedTabBtn")) $("schedTabBtn").onclick = openServerSchedules;
+if ($("srvSchedList")) $("srvSchedList").addEventListener("click", async (e) => {
+  const d = btnData(e);
+  if (d.schedopen) { openBuilder(await api("/messages/" + d.schedopen)); }
+  if (d.scheddel && await uiConfirm("Delete this scheduled post?", { title: "Delete schedule", okText: "Delete", danger: true })) {
+    await api("/schedules/" + d.scheddel, { method: "DELETE" });
+    notify("Schedule deleted.", "ok");
+    openServerSchedules();
+  }
+});
 
 async function openLibrary(gid, tab) {
   clearTimeout(autosaveTimer);
@@ -3449,6 +3494,10 @@ async function openAdmin() {
     if ($("admStatReq")) $("admStatReq").textContent = String(reqs.length + (d.pending || []).length);
     if ($("admStatMsg")) $("admStatMsg").textContent = String(st.counts.messages || 0);
     if ($("admStatSched")) $("admStatSched").textContent = String((st.counts.schedules || 0) + (st.counts.templates || 0));
+    fetch(API_URL + "/health", { cache: "no-store" }).then((r) => r.json()).then((h) => {
+      if ($("admStatHealth")) $("admStatHealth").textContent = h.ready ? "Online" : "Starting";
+      if ($("admHealthSub")) $("admHealthSub").textContent = (h.discord_latency_ms != null ? h.discord_latency_ms + " ms" : "") + (h.uptime_seconds != null ? " \u00b7 " + Math.floor(h.uptime_seconds / 60) + "m up" : "");
+    }).catch(() => { if ($("admStatHealth")) $("admStatHealth").textContent = "Offline"; });
     const kb = st.size_bytes / 1024;
     $("adminStorage").textContent = "Database: " + (kb >= 1024 ? (kb / 1024).toFixed(1) + " MB" : Math.round(kb) + " KB") +
       " of about 512 MB on the free host. Messages: " + (st.counts.messages || 0) +

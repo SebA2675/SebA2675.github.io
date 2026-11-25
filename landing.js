@@ -47,3 +47,24 @@ async function loadLiveStats() {
 
 initLandingTheme();
 loadLiveStats();
+
+if ($("demoV2Btn") && $("demoClassicBtn")) {
+  $("demoV2Btn").onclick = () => {
+    $("demoV2Btn").classList.add("on");
+    $("demoClassicBtn").classList.remove("on");
+    $("demoV2").classList.remove("hidden");
+    $("demoClassic").classList.add("hidden");
+  };
+  $("demoClassicBtn").onclick = () => {
+    $("demoClassicBtn").classList.add("on");
+    $("demoV2Btn").classList.remove("on");
+    $("demoClassic").classList.remove("hidden");
+    $("demoV2").classList.add("hidden");
+  };
+}
+if ($("demoBox")) {
+  $("demoBox").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-demomsg]");
+    if (b && $("demoOut")) $("demoOut").textContent = b.dataset.demomsg;
+  });
+}

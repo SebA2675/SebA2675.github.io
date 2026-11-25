@@ -9,7 +9,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="logo.jpg">
 <title>9NATION EMBEDS — Dashboard</title>
-<link rel="stylesheet" href="styles.css?v=41">
+<link rel="stylesheet" href="styles.css?v=42">
 </head>
 <body>
 
@@ -135,6 +135,7 @@
         </div>
       </div>
       <div class="btnrow">
+        <a href="https://h5nngnplb6.apps.bot-hosting.cloud/invite" target="_blank" rel="noopener" style="text-decoration:none"><button type="button"><svg class="ic"><use href="#i-plus"></use></svg>Add to Server</button></a>
         <button type="button" id="srvOwnerBtn" class="primary hidden"><svg class="ic"><use href="#i-servers"></use></svg>Owner Panel</button>
         <a href="../" style="text-decoration:none"><button type="button"><svg class="ic"><use href="#i-question"></use></svg>Bot Guide</button></a>
       </div>
@@ -158,6 +159,7 @@
       <select id="libGuild" class="hidden" aria-label="Server" style="display:none"></select>
       <div class="sb-sec">Server Workspace</div>
       <button type="button" id="msgTabBtn" class="sb-btn on"><svg class="ic"><use href="#i-section"></use></svg>Messages</button>
+      <button type="button" id="schedTabBtn" class="sb-btn"><svg class="ic"><use href="#i-schedule"></use></svg>Schedules</button>
       <div class="sb-sec">Automation</div>
       <button type="button" class="sb-btn" data-autotab="wel"><svg class="ic"><use href="#i-mail"></use></svg>Welcome &amp; Goodbye</button>
       <button type="button" class="sb-btn" data-autotab="kw"><svg class="ic"><use href="#i-reply"></use></svg>Keyword Replies</button>
@@ -196,6 +198,17 @@
           <div id="libChips" class="chips"></div>
         </div>
         <div id="list"></div>
+      </section>
+
+      <section id="wsSchedules" class="hidden">
+        <div class="ws-head">
+          <div>
+            <div class="ws-title-row"><svg class="ic"><use href="#i-schedule"></use></svg><h1 style="margin:0">Scheduled Posts</h1><span class="srv-pill" id="schedSrvPill"></span></div>
+            <div class="info-bar"><svg class="ic"><use href="#i-info"></use></svg><span>All active one-time and recurring scheduled posts for this server.</span></div>
+          </div>
+          <button id="schedTabClose" type="button"><svg class="ic"><use href="#i-back"></use></svg>Back to Messages</button>
+        </div>
+        <div id="srvSchedList"></div>
       </section>
 
       <section id="wsAutomation" class="hidden">
@@ -383,6 +396,7 @@
       <button id="adminBack" type="button"><svg class="ic"><use href="#i-back"></use></svg>Back to My Servers</button>
     </div>
     <div class="admin-stats">
+      <div class="stat-box"><small>Bot Status</small><b id="admStatHealth">—</b><span id="admHealthSub" class="muted" style="font-size:11px">Checking...</span></div>
       <div class="stat-box"><small>Approved Servers</small><b id="admStatSrv">—</b></div>
       <div class="stat-box"><small>Pending Requests</small><b id="admStatReq">—</b></div>
       <div class="stat-box"><small>Total Messages</small><b id="admStatMsg">—</b></div>
@@ -720,6 +734,6 @@
 
 <div id="testToast" class="ttoast hidden"></div>
 
-<script src="app.js?v=40"></script>
+<script src="app.js?v=42"></script>
 </body>
 </html>

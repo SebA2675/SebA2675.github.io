@@ -7,7 +7,7 @@
 <meta name="theme-color" content="#f8fafc">
 <link rel="icon" href="dashboard/logo.jpg">
 <title>9NATION EMBEDS — Discord Embed &amp; Layout Studio</title>
-<link rel="stylesheet" href="dashboard/styles.css?v=39">
+<link rel="stylesheet" href="dashboard/styles.css?v=42">
 </head>
 <body>
 <header class="nav">
@@ -35,8 +35,8 @@
         Create, customize, and stand out. Design Discord Components V2 layouts, classic embeds, interactive forms, self-role menus, and server automation — all from one clean per-server dashboard.
       </p>
       <div class="btnrow">
-        <a href="dashboard/" style="text-decoration:none"><button class="primary" type="button" style="padding:12px 20px;font-size:15px">+ Invite &amp; Sign in</button></a>
-        <a href="#features" style="text-decoration:none"><button type="button" style="padding:12px 20px;font-size:15px">See what it does</button></a>
+        <a href="https://h5nngnplb6.apps.bot-hosting.cloud/invite" target="_blank" rel="noopener" style="text-decoration:none"><button class="primary" type="button" style="padding:12px 20px;font-size:15px">+ Invite Bot</button></a>
+        <a href="dashboard/" style="text-decoration:none"><button type="button" style="padding:12px 20px;font-size:15px">Open Dashboard</button></a>
       </div>
       <div class="hero-stats">
         <div><b id="stSrv">—</b><span>Servers</span></div>
@@ -46,6 +46,41 @@
     </div>
     <div class="hero-right">
       <img src="embeds/banner.jpg" alt="9NATION EMBEDS" style="width:100%;border-radius:18px;border:1px solid var(--line);box-shadow:0 20px 50px rgba(15,23,42,.12)">
+    </div>
+  </section>
+
+  <section id="demo" style="margin-top:44px">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px">
+      <div>
+        <h2 style="font-size:24px;margin:0 0 4px;color:var(--ink)">Live Message Preview</h2>
+        <p class="muted" style="margin:0;font-size:14px">Try clicking the buttons or switching between Components V2 and Classic Embed.</p>
+      </div>
+      <div class="seg">
+        <button type="button" id="demoV2Btn" class="on">Components V2</button>
+        <button type="button" id="demoClassicBtn">Classic Embed</button>
+      </div>
+    </div>
+    <div class="discord" id="demoBox" style="max-width:680px">
+      <div class="msghead"><span>9NATION EMBEDS</span><span class="app">APP</span></div>
+      <div id="demoV2">
+        <div class="pbox" style="border-left-color:#8b5cf6">
+          <div class="ptext"><h2>Welcome to 9Nation!</h2><p>Pick your roles below, read the rules, or open a support form.</p></div>
+          <div class="pdiv line"></div>
+          <div class="pbtns">
+            <span class="pbtn blue" data-demomsg="Role menu opened! Members can toggle roles in 1 click.">Get Roles</span>
+            <span class="pbtn green" data-demomsg="Pop-up form opened! Answers log to #applications with Accept/Deny.">Apply Now</span>
+            <span class="pbtn" data-demomsg="Switched to Page 2: Server Rules &amp; FAQ.">Next Page</span>
+          </div>
+        </div>
+      </div>
+      <div id="demoClassic" class="hidden">
+        <div class="cembed" style="border-left-color:#8b5cf6">
+          <div class="ctitle">Server Announcements</div>
+          <div class="cdesc">Classic embeds support up to 10 embeds per message, custom fields, thumbnails, and live variables like <code>{{membercount}}</code>.</div>
+          <div class="cfoot"><span>9NATION EMBEDS &bull; Today at 12:00 PM</span></div>
+        </div>
+      </div>
+      <p id="demoOut" class="dm" style="margin:8px 0 0;min-height:18px"></p>
     </div>
   </section>
 
@@ -98,6 +133,6 @@
     <a href="dashboard/status.html">Status</a>
   </footer>
 </main>
-<script src="landing.js?v=31"></script>
+<script src="landing.js?v=42"></script>
 </body>
 </html>

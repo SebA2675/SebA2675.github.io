@@ -4,30 +4,27 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; img-src 'self'; base-uri 'none'; form-action 'none'">
-<meta name="theme-color" content="#f5efe1">
-<link rel="icon" href="logo.png">
-<title>Privacy - 9 Nation Embed Dashboard</title>
-<style>
-:root{--bg:#f5efe1;--panel:#fffaf0;--line:#dcd1ba;--text:#2b2218;--muted:#7b6f5c;--ink:#2b2218}
-*{box-sizing:border-box}
-body{margin:0;font-family:"Segoe UI",system-ui,-apple-system,Roboto,sans-serif;background:var(--bg);color:var(--text);line-height:1.6}
-main{max-width:720px;margin:0 auto;padding:24px 16px 48px}
-header{display:flex;align-items:center;gap:10px;margin-bottom:8px}
-header img{height:40px;width:auto;mix-blend-mode:multiply}
-h1{margin:12px 0 4px;font-size:28px}
-h2{margin:28px 0 6px;font-size:18px}
-p,li{font-size:15px}
-.muted{color:var(--muted);font-size:13px}
-.box{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:4px 20px 18px}
-nav{margin-top:28px;padding-top:14px;border-top:1px solid var(--line);font-size:14px}
-nav a,main a{color:var(--ink)}
-nav a{margin-right:14px}
-</style>
+<meta name="theme-color" content="#f8fafc">
+<link rel="icon" href="logo.jpg">
+<title>Privacy — 9NATION EMBEDS</title>
+<link rel="stylesheet" href="styles.css?v=42">
 </head>
 <body>
-<main>
-<header><img src="logo.png" alt=""><b>9 Nation Embed Dashboard</b></header>
-<div class="box">
+<header class="nav">
+  <div class="nav-in">
+    <a class="brand" href="../"><img src="logo.jpg" alt="9NATION" class="logo"><span>9NATION <b>EMBEDS</b></span></a>
+    <nav class="nav-links">
+      <a href="../#features">Features</a>
+      <a href="status.html">Status</a>
+      <a href="about.html">About</a>
+    </nav>
+    <div class="nav-right">
+      <a href="./" style="text-decoration:none"><button class="primary" type="button">Open Dashboard</button></a>
+    </div>
+  </div>
+</header>
+<main class="wrap" style="max-width:760px;padding:28px 16px 48px">
+<div class="bcard" style="background:var(--panel);padding:22px 26px">
 
 <h1>Privacy</h1>
 <p class="muted">Last updated 24 November 2026</p>
@@ -55,7 +52,7 @@ nav a{margin-right:14px}
 <p>Delete any message in the dashboard to remove it, its versions, its schedules and its button records. To remove everything for a server or for yourself, ask the owner and it will be deleted. Backup copies disappear within 14 days.</p>
 
 </div>
-<nav><a href="./">Open the dashboard</a><a href="about.html">About</a><a href="privacy.html">Privacy</a><a href="terms.html">Terms</a></nav>
+<p class="muted" style="text-align:center;margin-top:20px"><a href="./">Open Dashboard</a> &middot; <a href="about.html">About</a> &middot; <a href="privacy.html">Privacy</a> &middot; <a href="terms.html">Terms</a> &middot; <a href="status.html">Status</a></p>
 </main>
 </body>
 </html>
