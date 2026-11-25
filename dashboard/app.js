@@ -1506,9 +1506,19 @@ $("newBtn").onclick = (e) => {
 document.addEventListener("click", (e) => { if (!e.target.closest(".newwrap")) closeNewMenu(); });
 document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeNewMenu(); });
 
-$("newClassicBtn").onclick = () => {
+async function fetchBrandKit(gid) {
+  if (!gid) return null;
+  try { return await api("/guilds/" + gid + "/settings"); } catch (e) { return null; }
+}
+
+$("newClassicBtn").onclick = async () => {
   closeNewMenu();
-  openBuilder({ id: null, name: "Untitled embed", layout: { kind: "classic", content: "", embeds: [newEmbed()], blocks: [], replies: [], forms: [] } });
+  const gid = libGuild || (guilds[0] && guilds[0].id) || "";
+  const bk = await fetchBrandKit(gid);
+  const em = newEmbed();
+  if (bk && bk.default_color) em.color = bk.default_color;
+  if (bk && bk.default_footer) em.footer_text = bk.default_footer;
+  openBuilder({ id: null, name: "Untitled embed", guild_id: gid, layout: { kind: "classic", guild_id: gid, content: "", embeds: [em], blocks: [], replies: [], forms: [] } });
 };
 
 function label(b) {
@@ -2649,7 +2659,7 @@ function libRow(m) {
     '<button class="primary small" data-open="' + esc(m.id) + '">' + ic("edit") + "Open</button>" +
     '<div class="cardmenu-wrap"><button class="small ib" data-cardmenu="' + esc(m.id) + '" title="More options" aria-label="More options" aria-haspopup="true" aria-expanded="false">' + ic("more") + "</button>" +
     '<div class="cardmenu hidden" role="menu">' +
-    '<button class="small" role="menuitem" data-copy="' + esc(m.id) + '">' + ic("copy") + "Make a copy</button>" +
+    '<button class="small" role="menuitem" data-copy="' + esc(m.id) + '">' + ic("copy") + "Make a copy</button>" + (guilds.length > 1 ? '<button class="small" role="menuitem" data-copyto="' + esc(m.id) + '">' + ic("copy") + "Copy to server...</button>" : "") +
     '<button class="small" role="menuitem" data-export="' + esc(m.id) + '">' + ic("export") + "Export JSON</button>" +
     '<button class="small danger" role="menuitem" data-del="' + esc(m.id) + '">' + ic("trash") + "Delete</button>" +
     "</div></div></div></div>";
@@ -2803,6 +2813,11 @@ $("list").addEventListener("click", async (e) => {
   closeCardMenus();
   try {
     if (d.open) await openBuilder(await api("/messages/" + d.open));
+    if (d.copyto) {
+      copyTargetId = d.copyto;
+      $("copyToGuild").innerHTML = opts(guilds.map((g) => [g.id, g.name]), "");
+      $("copyToOverlay").classList.remove("hidden");
+    }
     if (d.copy) {
       const m = await api("/messages/" + d.copy);
       await api("/messages", {
@@ -2827,11 +2842,15 @@ $("list").addEventListener("click", async (e) => {
   }
 });
 
-$("newLayoutBtn").onclick = () => {
+$("newLayoutBtn").onclick = async () => {
   closeNewMenu();
+  const gid = libGuild || (guilds[0] && guilds[0].id) || "";
+  const bk = await fetchBrandKit(gid);
   const box = newBlock("box");
+  if (bk && bk.default_color) box.accent = bk.default_color;
   box.children.push({ id: uid(), type: "text", content: "# Hello there\nStart writing your message." });
-  openBuilder({ id: null, name: "Untitled message", layout: { blocks: [box], replies: [], forms: [] } });
+  if (bk && bk.default_footer) box.children.push({ id: uid(), type: "text", content: "-# " + bk.default_footer });
+  openBuilder({ id: null, name: "Untitled message", guild_id: gid, layout: { guild_id: gid, blocks: [box], replies: [], forms: [] } });
 };
 
 $("backBtn").onclick = async () => {
@@ -3619,7 +3638,7 @@ document.addEventListener("keydown", (e) => {
     hideAddMenu();
     const fm = $("fmtMore");
     if (fm) fm.classList.add("hidden");
-    for (const id of ["sendOverlay", "toolsOverlay", "histOverlay", "schedOverlay", "emojiOverlay", "rawJsonOverlay", "galleryOverlay", "helpOverlay", "srvOverlay", "respOverlay", "autoOverlay", "cmdOverlay", "trigOverlay"]) {
+    for (const id of ["sendOverlay", "toolsOverlay", "histOverlay", "schedOverlay", "emojiOverlay", "rawJsonOverlay", "galleryOverlay", "helpOverlay", "srvOverlay", "respOverlay", "autoOverlay", "cmdOverlay", "trigOverlay", "roleWizOverlay", "copyToOverlay"]) {
       if (!$(id).classList.contains("hidden")) { $(id).classList.add("hidden"); if (id === "emojiOverlay") emojiCb = null; }
     }
     return;
@@ -3899,9 +3918,10 @@ async function loadAutomation() {
   if (!gid) return;
   $("autoStatus").textContent = "Loading...";
   try {
-    const [data, chList] = await Promise.all([
+    const [data, chList, cmdsList] = await Promise.all([
       api("/guilds/" + gid + "/automation"),
       api("/guilds/" + gid + "/channels"),
+      api("/guilds/" + gid + "/commands"),
     ]);
     autoChans = chList;
     const chOpts = '<option value="">Choose channel...</option>' +
@@ -3921,6 +3941,7 @@ async function loadAutomation() {
     $("kwMsg").innerHTML = msgOpts;
     $("feedMsg").innerHTML = msgOpts;
     $("stickyMsg").innerHTML = msgOpts;
+    $("cmdMsg").innerHTML = msgOpts;
 
     const st = data.settings || {};
     $("autoWelOn").checked = !!st.welcome_enabled;
@@ -3945,6 +3966,14 @@ async function loadAutomation() {
         '<button class="small ib danger" data-rmfeed="' + esc(f.id) + '">' + ic("trash") + "</button></div>"
       ).join("")
       : '<p class="muted">No feeds yet.</p>';
+
+    $("autoCmdList").innerHTML = (cmdsList || []).length
+      ? cmdsList.map((c) =>
+        '<div class="mrow"><div class="grow"><b>/faq ' + esc(c.name) + '</b><div class="muted">' +
+        esc(c.description) + ' &rarr; ' + esc(msgName(c.message_id)) + '</div></div>' +
+        '<button class="small ib danger" data-rmcmd="' + esc(c.id) + '">' + ic("trash") + "</button></div>"
+      ).join("")
+      : '<p class="muted">No custom commands yet.</p>';
 
     $("autoStickyList").innerHTML = (data.stickies || []).length
       ? data.stickies.map((s) =>
@@ -4042,6 +4071,7 @@ $("autoOverlay").addEventListener("click", async (e) => {
     if (d.rmkw) { await api("/keywords/" + d.rmkw, { method: "DELETE" }); loadAutomation(); }
     if (d.rmfeed) { await api("/feeds/" + d.rmfeed, { method: "DELETE" }); loadAutomation(); }
     if (d.rmsticky) { await api("/stickies/" + d.rmsticky, { method: "DELETE" }); loadAutomation(); }
+    if (d.rmcmd) { await api("/commands/" + d.rmcmd, { method: "DELETE" }); loadAutomation(); }
   } catch (err) { if (err.message !== "login") $("autoStatus").textContent = "Failed: " + err.message; }
 });
 /* ---------- Phase 8: Brand Kit, Editors, Bulk Replace, Trash, Activity, Data Rights ---------- */
@@ -4319,4 +4349,84 @@ $("trigList").addEventListener("click", async (e) => {
   await api("/triggers/" + id, { method: "DELETE" });
   loadTriggers();
 });
+let copyTargetId = null;
+$("copyToClose").onclick = () => { $("copyToOverlay").classList.add("hidden"); };
+$("copyToOverlay").onclick = (e) => { if (e.target === $("copyToOverlay")) $("copyToOverlay").classList.add("hidden"); };
+$("copyToGo").onclick = async () => {
+  const target_guild_id = $("copyToGuild").value;
+  if (!copyTargetId || !target_guild_id) return;
+  try {
+    await api("/messages/" + copyTargetId + "/copy-to", {
+      method: "POST",
+      body: JSON.stringify({ target_guild_id }),
+    });
+    $("copyToOverlay").classList.add("hidden");
+    notify("Copied to " + guildName(target_guild_id) + "!", "ok");
+    openLibrary();
+  } catch (e) { if (e.message !== "login") notifyErr(e.message); }
+};
+
+$("cmdAddBtn").onclick = async () => {
+  const gid = $("autoGuild").value;
+  const name = $("cmdName").value.trim().toLowerCase();
+  const description = $("cmdDesc").value.trim() || "Reply with saved message";
+  const message_id = Number($("cmdMsg").value || 0);
+  if (!name || !message_id) { $("autoStatus").textContent = "Enter a command name and choose a message."; return; }
+  try {
+    await api("/guilds/" + gid + "/commands", { method: "POST", body: JSON.stringify({ name, description, message_id }) });
+    $("cmdName").value = ""; $("cmdDesc").value = "";
+    loadAutomation();
+  } catch (e) { if (e.message !== "login") $("autoStatus").textContent = "Failed: " + e.message; }
+};
+
+$("sendVerifyBtn").onclick = async () => {
+  if (!cur || !cur.id) return;
+  setStatus("Checking Discord...");
+  try {
+    const r = await api("/messages/" + cur.id + "/verify-posted", { method: "POST" });
+    fresh = r.message;
+    cur.posted_message_id = fresh.posted_message_id;
+    refreshSendButtons();
+    setStatus(r.exists ? "Verified: message still exists in Discord." : "Message was deleted in Discord — status cleared so you can post again.");
+  } catch (e) { if (e.message !== "login") setStatus("Failed: " + e.message); }
+};
+
+$("roleWizBtn").onclick = () => {
+  const assignable = roles.filter((r) => r.assignable && !r.dangerous);
+  $("rwRoles").innerHTML = assignable.length
+    ? assignable.map((r) =>
+      '<label style="text-transform:none;display:flex;gap:8px;align-items:center;letter-spacing:0;margin:4px 0">' +
+      '<input type="checkbox" class="rw-chk" value="' + esc(r.id) + '" data-rname="' + esc(r.name) + '"> ' + esc(r.name) + "</label>"
+    ).join("")
+    : '<p class="muted">No assignable non-admin roles found in this server.</p>';
+  $("roleWizOverlay").classList.remove("hidden");
+};
+$("rwClose").onclick = () => { $("roleWizOverlay").classList.add("hidden"); };
+$("roleWizOverlay").onclick = (e) => { if (e.target === $("roleWizOverlay")) $("roleWizOverlay").classList.add("hidden"); };
+$("rwGenBtn").onclick = () => {
+  const picked = Array.from(document.querySelectorAll(".rw-chk:checked")).slice(0, 25).map((c) => ({ id: c.value, name: c.dataset.rname }));
+  if (!picked.length) { notifyErr("Select at least one role."); return; }
+  const style = $("rwStyle").value;
+  if (style === "dropdown") {
+    const optsList = picked.map((r) => ({ id: uid(), label: r.name.slice(0, 100), description: "Toggle " + r.name.slice(0, 80), action: { type: "role", mode: "toggle", role_id: r.id }, allowed_roles: [], cooldown: 0, once: false }));
+    const dd = { id: uid(), type: "dropdown", placeholder: "Pick your roles...", min_values: 1, max_values: optsList.length, options: optsList };
+    if (isClassic()) cur.layout.blocks.push(dd);
+    else activeBlocks().push({ id: uid(), type: "box", accent: "#5865F2", children: [{ id: uid(), type: "text", content: "## Self Roles\nPick your roles from the menu below." }, dd] });
+  } else {
+    const rows = [];
+    for (let i = 0; i < picked.length; i += 5) {
+      rows.push({
+        id: uid(),
+        type: "button_row",
+        buttons: picked.slice(i, i + 5).map((r) => ({ id: uid(), label: r.name.slice(0, 80), style: "blue", action: { type: "role", mode: "toggle", role_id: r.id }, allowed_roles: [], cooldown: 0, once: false })),
+      });
+    }
+    if (isClassic()) cur.layout.blocks.push(...rows.slice(0, 5 - cur.layout.blocks.length));
+    else activeBlocks().push({ id: uid(), type: "box", accent: "#5865F2", children: [{ id: uid(), type: "text", content: "## Self Roles\nClick a button to toggle a role." }, ...rows] });
+  }
+  $("roleWizOverlay").classList.add("hidden");
+  markDirty();
+  renderAll();
+  notify("Generated role menu!", "ok");
+};
 start();

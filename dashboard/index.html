@@ -9,7 +9,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="logo.png">
 <title>Embed Dashboard</title>
-<link rel="stylesheet" href="styles.css?v=26">
+<link rel="stylesheet" href="styles.css?v=28">
 </head>
 <body>
 
@@ -168,6 +168,7 @@
           <button class="small" data-add="button_row"><svg class="ic"><use href="#i-buttons"></use></svg>Buttons</button>
           <button class="small" data-add="dropdown"><svg class="ic"><use href="#i-dropdown"></use></svg>Dropdown</button>
           <button class="small hidden" data-add="embed"><svg class="ic"><use href="#i-section"></use></svg>Embed</button>
+          <button type="button" class="small" id="roleWizBtn"><svg class="ic"><use href="#i-plus"></use></svg>Role Menu</button>
         </div>
       </div>
       <div id="fieldPalette" class="hidden">
@@ -240,6 +241,7 @@
     <div class="btnrow">
       <button class="primary" id="sendPost"><svg class="ic"><use href="#i-send"></use></svg>Post as new</button>
       <button id="sendUpdate"><svg class="ic"><use href="#i-edit"></use></svg>Update posted message</button>
+      <button id="sendVerifyBtn" title="Check if message still exists in Discord">Verify post</button>
       <button class="danger" id="sendDelete"><svg class="ic"><use href="#i-trash"></use></svg>Delete from Discord</button>
       <button id="sendClose"><svg class="ic"><use href="#i-close"></use></svg>Close</button>
     </div>
@@ -486,6 +488,18 @@
     </div>
 
     <div class="bcard">
+      <h3 style="margin-top:0">Custom Slash Commands (/faq)</h3>
+      <p class="muted">Members can trigger these using <code>/faq &lt;name&gt;</code> in Discord.</p>
+      <div id="autoCmdList"></div>
+      <div class="btnrow" style="margin-top:8px">
+        <input id="cmdName" maxlength="32" placeholder="name (e.g. rules)" style="flex:1;min-width:110px">
+        <input id="cmdDesc" maxlength="100" placeholder="Description" style="flex:1;min-width:130px">
+        <select id="cmdMsg" style="flex:1;min-width:120px"></select>
+        <button class="primary small" id="cmdAddBtn"><svg class="ic"><use href="#i-plus"></use></svg>Add</button>
+      </div>
+    </div>
+
+    <div class="bcard">
       <h3 style="margin-top:0">Sticky Messages</h3>
       <div id="autoStickyList"></div>
       <div class="btnrow" style="margin-top:8px">
@@ -521,6 +535,33 @@
   </div>
 </div>
 
+<div id="roleWizOverlay" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="roleWizTitle">
+  <div class="modal" style="width:min(480px,100%)">
+    <h2 id="roleWizTitle">Quick Role Menu Generator</h2>
+    <p class="muted">Select roles to include, then generate a self-role Dropdown or Button Rows.</p>
+    <label>Style</label>
+    <select id="rwStyle"><option value="dropdown">Dropdown menu (up to 25 roles)</option><option value="buttons">Button rows (5 per row)</option></select>
+    <label>Roles</label>
+    <div id="rwRoles" style="max-height:240px;overflow:auto;margin:6px 0"></div>
+    <div class="btnrow" style="margin-top:12px">
+      <button class="primary" id="rwGenBtn"><svg class="ic"><use href="#i-check"></use></svg>Generate</button>
+      <button id="rwClose"><svg class="ic"><use href="#i-close"></use></svg>Close</button>
+    </div>
+  </div>
+</div>
+
+<div id="copyToOverlay" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="copyToTitle">
+  <div class="modal" style="width:min(420px,100%)">
+    <h2 id="copyToTitle">Copy to Another Server</h2>
+    <p class="muted">Old role and channel IDs will be cleared automatically.</p>
+    <label>Target server</label><select id="copyToGuild"></select>
+    <div class="btnrow" style="margin-top:14px">
+      <button class="primary" id="copyToGo"><svg class="ic"><use href="#i-copy"></use></svg>Copy</button>
+      <button id="copyToClose"><svg class="ic"><use href="#i-close"></use></svg>Close</button>
+    </div>
+  </div>
+</div>
+
 <div id="dialogOverlay" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="dialogTitle">
   <div class="modal" style="width:min(420px,100%)">
     <h2 id="dialogTitle"></h2>
@@ -535,6 +576,6 @@
 
 <div id="testToast" class="ttoast hidden"></div>
 
-<script src="app.js?v=26"></script>
+<script src="app.js?v=28"></script>
 </body>
 </html>
