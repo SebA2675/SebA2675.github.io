@@ -363,6 +363,7 @@ label{display:block;font-size:12px;color:var(--muted);margin:10px 0 4px;text-tra
   .builder[data-tree="open"] ~ .treeEdge{left:272px}
   .col{min-height:0;overflow:auto}
 }
+.tree-hdr{width:100%;justify-content:space-between;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:7px 10px;margin-bottom:4px;font-weight:600}
 @media(min-width:901px) and (max-width:1180px){
   .builder{grid-template-columns:minmax(0,1fr) 300px}
   .builder[data-tree="open"]{grid-template-columns:220px minmax(0,1fr) 300px}

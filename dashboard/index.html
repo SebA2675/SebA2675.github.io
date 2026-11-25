@@ -9,7 +9,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="logo.jpg">
 <title>9NATION EMBEDS — Dashboard</title>
-<link rel="stylesheet" href="styles.css?v=36">
+<link rel="stylesheet" href="styles.css?v=37">
 </head>
 <body>
 
@@ -428,8 +428,11 @@
   <div class="builder" id="builderEl" data-pane="preview">
     <div class="col pane-tree">
       <div id="tabs"></div>
-      <b id="treeTitle">Message tree</b>
-      <div class="muted">Drag rows to reorder, or use the arrows.</div>
+      <button type="button" id="treeCollapseBtn" class="tree-hdr" aria-expanded="true">
+        <span style="display:inline-flex;align-items:center;gap:6px"><svg class="ic" style="width:16px;height:16px"><use href="#i-tree"></use></svg><b id="treeTitle">Message tree</b></span>
+        <svg class="ic" id="treeCollapseIc" style="width:15px;height:15px"><use href="#i-down"></use></svg>
+      </button>
+      <div class="muted" id="treeHint" style="font-size:12px">Drag rows to reorder, or use the arrows.</div>
       <div id="tree" style="margin-top:8px"></div>
       <div id="blockPalette">
         <div class="muted" style="margin-top:8px">Add a part (goes inside a selected Box):</div>
@@ -701,6 +704,6 @@
 
 <div id="testToast" class="ttoast hidden"></div>
 
-<script src="app.js?v=36"></script>
+<script src="app.js?v=37"></script>
 </body>
 </html>

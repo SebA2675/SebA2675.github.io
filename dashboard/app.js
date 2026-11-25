@@ -4624,6 +4624,15 @@ function initAppearance() {
   if ($("navAdminBtn")) $("navAdminBtn").onclick = (e) => { e.preventDefault(); closeUm(); openAdmin(); };
   if ($("umOwnerBtn")) $("umOwnerBtn").onclick = () => { closeUm(); openAdmin(); };
   if ($("srvOwnerBtn")) $("srvOwnerBtn").onclick = () => { closeUm(); openAdmin(); };
+  if ($("treeCollapseBtn")) {
+    $("treeCollapseBtn").onclick = () => {
+      const collapsed = $("tree").classList.toggle("hidden");
+      if ($("treeHint")) $("treeHint").classList.toggle("hidden", collapsed);
+      $("treeCollapseBtn").setAttribute("aria-expanded", String(!collapsed));
+      const useEl = $("treeCollapseIc") && $("treeCollapseIc").querySelector("use");
+      if (useEl) useEl.setAttribute("href", collapsed ? "#i-up" : "#i-down");
+    };
+  }
 }
 initAppearance();
 start();
