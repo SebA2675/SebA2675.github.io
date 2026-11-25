@@ -152,8 +152,13 @@
       <select id="libGuild" class="hidden" aria-label="Server" style="display:none"></select>
       <div class="sb-sec">Server Workspace</div>
       <button type="button" id="msgTabBtn" class="sb-btn on"><svg class="ic"><use href="#i-section"></use></svg>Messages</button>
-      <button id="autoBtn" class="sb-btn" title="Automation"><svg class="ic"><use href="#i-schedule"></use></svg>Automation</button>
       <button id="toolsBtn" class="sb-btn" title="Server tools"><svg class="ic"><use href="#i-tools"></use></svg>Server tools</button>
+      <div class="sb-sec">Automation</div>
+      <button type="button" class="sb-btn" data-autotab="wel"><svg class="ic"><use href="#i-mail"></use></svg>Welcome &amp; Goodbye</button>
+      <button type="button" class="sb-btn" data-autotab="kw"><svg class="ic"><use href="#i-reply"></use></svg>Keyword Replies</button>
+      <button type="button" class="sb-btn" data-autotab="feed"><svg class="ic"><use href="#i-schedule"></use></svg>Social Feeds</button>
+      <button type="button" class="sb-btn" data-autotab="cmd"><svg class="ic"><use href="#i-code"></use></svg>Custom /faq</button>
+      <button type="button" class="sb-btn" data-autotab="sticky"><svg class="ic"><use href="#i-buttons"></use></svg>Sticky Messages</button>
       <div class="sb-sec">Resources</div>
       <button id="helpBtn" class="sb-btn" title="Tour &amp; guides"><svg class="ic"><use href="#i-question"></use></svg>Guides</button>
       <div class="sb-foot"><b>Need a hand?</b><br>Setup steps, variables and FAQ are in Guides.</div>
@@ -195,7 +200,7 @@
         <p id="autoStatus" class="muted" style="min-height:20px;margin:0 0 12px"></p>
 
         <div style="display:grid;gap:14px">
-          <div class="bcard" style="background:var(--panel);padding:18px">
+          <div class="bcard" id="autoCardWel" style="background:var(--panel);padding:18px">
             <h3 style="margin-top:0">Welcome &amp; Goodbye</h3>
             <label style="text-transform:none;display:flex;gap:8px;align-items:center;letter-spacing:0"><input type="checkbox" id="autoWelOn"> Enable Welcome message</label>
             <label>Welcome channel</label><select id="autoWelCh"></select>
@@ -206,7 +211,7 @@
             <button class="primary small" id="autoSaveBtn" style="margin-top:12px"><svg class="ic"><use href="#i-save"></use></svg>Save Welcome/Goodbye</button>
           </div>
 
-          <div class="bcard" style="background:var(--panel);padding:18px">
+          <div class="bcard" id="autoCardKw" style="background:var(--panel);padding:18px">
             <h3 style="margin-top:0">Keyword Auto-Replies</h3>
             <div id="autoKwList"></div>
             <div class="btnrow" style="margin-top:8px">
@@ -217,7 +222,7 @@
             </div>
           </div>
 
-          <div class="bcard" style="background:var(--panel);padding:18px">
+          <div class="bcard" id="autoCardFeed" style="background:var(--panel);padding:18px">
             <h3 style="margin-top:0">RSS / YouTube / Reddit Feeds</h3>
             <p class="muted">Template messages can use <code>{{title}}</code>, <code>{{link}}</code>, and <code>{{author}}</code>.</p>
             <div id="autoFeedList"></div>
@@ -230,7 +235,7 @@
             </div>
           </div>
 
-          <div class="bcard" style="background:var(--panel);padding:18px">
+          <div class="bcard" id="autoCardCmd" style="background:var(--panel);padding:18px">
             <h3 style="margin-top:0">Custom Slash Commands (/faq)</h3>
             <p class="muted">Members can trigger these using <code>/faq &lt;name&gt;</code> in Discord.</p>
             <div id="autoCmdList"></div>
@@ -242,7 +247,7 @@
             </div>
           </div>
 
-          <div class="bcard" style="background:var(--panel);padding:18px">
+          <div class="bcard" id="autoCardSticky" style="background:var(--panel);padding:18px">
             <h3 style="margin-top:0">Sticky Messages</h3>
             <div id="autoStickyList"></div>
             <div class="btnrow" style="margin-top:8px">
@@ -696,6 +701,6 @@
 
 <div id="testToast" class="ttoast hidden"></div>
 
-<script src="app.js?v=33"></script>
+<script src="app.js?v=34"></script>
 </body>
 </html>

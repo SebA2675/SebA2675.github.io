@@ -2806,7 +2806,7 @@ if ($("srvHubGrid")) $("srvHubGrid").addEventListener("click", async (e) => {
   const gid = d.hubopen || d.hubauto || d.hubtools;
   if (!gid) return;
   await openLibrary(gid);
-  if (d.hubauto && $("autoBtn")) $("autoBtn").click();
+  if (d.hubauto) openAutoSub("wel");
   if (d.hubtools && $("toolsBtn")) $("toolsBtn").click();
 });
 $("srvSearch").oninput = drawServerModal;
@@ -2833,13 +2833,15 @@ $("libChips").addEventListener("click", (e) => {
   renderLibList();
 });
 
-function showWsTab(tab) {
+function showWsTab(tab, autoSub) {
   if ($("wsMessages")) $("wsMessages").classList.toggle("hidden", tab !== "messages");
   if ($("wsAutomation")) $("wsAutomation").classList.toggle("hidden", tab !== "automation");
   if ($("wsTools")) $("wsTools").classList.toggle("hidden", tab !== "tools");
   if ($("msgTabBtn")) $("msgTabBtn").classList.toggle("on", tab === "messages");
-  if ($("autoBtn")) $("autoBtn").classList.toggle("on", tab === "automation");
   if ($("toolsBtn")) $("toolsBtn").classList.toggle("on", tab === "tools");
+  document.querySelectorAll(".sidebar [data-autotab]").forEach((b) => {
+    b.classList.toggle("on", tab === "automation" && b.dataset.autotab === autoSub);
+  });
 }
 if ($("msgTabBtn")) $("msgTabBtn").onclick = () => showWsTab("messages");
 
@@ -4091,7 +4093,14 @@ async function loadAutomation() {
   }
 }
 
-$("autoBtn").onclick = async () => {
+const AUTO_TABS = {
+  wel: ["autoCardWel", "Welcome & Goodbye"],
+  kw: ["autoCardKw", "Keyword Auto-Replies"],
+  feed: ["autoCardFeed", "RSS / YouTube / Reddit Feeds"],
+  cmd: ["autoCardCmd", "Custom Slash Commands (/faq)"],
+  sticky: ["autoCardSticky", "Sticky Messages"],
+};
+async function openAutoSub(sub) {
   await loadGuilds();
   if (!guilds.length) { notifyErr("No server available."); return; }
   const gid = libGuild || guilds[0].id;
@@ -4099,9 +4108,17 @@ $("autoBtn").onclick = async () => {
   if ($("autoSrvLabel")) $("autoSrvLabel").textContent = g ? ("Server: " + g.name) : "";
   $("autoGuild").innerHTML = opts(guilds.map((x) => [x.id, x.name]), gid);
   $("autoGuild").value = gid;
-  showWsTab("automation");
+  const meta = AUTO_TABS[sub] || AUTO_TABS.wel;
+  if ($("autoTitle")) $("autoTitle").textContent = meta[1];
+  Object.values(AUTO_TABS).forEach(([cid]) => {
+    if ($(cid)) $(cid).classList.toggle("hidden", cid !== meta[0]);
+  });
+  showWsTab("automation", sub);
   loadAutomation();
-};
+}
+document.querySelectorAll(".sidebar [data-autotab]").forEach((b) => {
+  b.onclick = () => openAutoSub(b.dataset.autotab);
+});
 $("autoGuild").onchange = loadAutomation;
 $("autoClose").onclick = () => showWsTab("messages");
 
@@ -4289,7 +4306,11 @@ function cmdActions() {
     { label: "New Layout Message", hint: "Create", run: () => $("newLayoutBtn").click() },
     { label: "New Classic Embed", hint: "Create", run: () => $("newClassicBtn").click() },
     { label: "Starter Template Gallery", hint: "Create", run: () => $("newGalleryBtn").click() },
-    { label: "Open Server Automation", hint: "Manage", run: () => $("autoBtn").click() },
+    { label: "Welcome & Goodbye", hint: "Automation", run: () => openAutoSub("wel") },
+    { label: "Keyword Replies", hint: "Automation", run: () => openAutoSub("kw") },
+    { label: "Social Feeds (RSS/YT/Reddit)", hint: "Automation", run: () => openAutoSub("feed") },
+    { label: "Custom /faq Commands", hint: "Automation", run: () => openAutoSub("cmd") },
+    { label: "Sticky Messages", hint: "Automation", run: () => openAutoSub("sticky") },
     { label: "Open Server Tools (Trash, Brand Kit, Backups)", hint: "Manage", run: () => $("toolsBtn").click() },
     { label: "Open Guides & Quick Tour", hint: "Help", run: () => $("helpBtn").click() },
   ];
